@@ -217,8 +217,7 @@ function print_short_help {
   echo
   echo "known commands":
   echo "  completion    : print bash completion code. Activate completion in your"
-  echo "                  shell with:"
-  echo "                  eval ($MYNAME completion)"
+  echo "                  shell with:  eval \$($MYNAME completion)"
   echo "  init [NAME]   : create/select a patch queue with name 'NAME'."
   echo "                  This is optional, the default patch queue is named"
   echo "                  'default'."
