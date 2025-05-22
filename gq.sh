@@ -11,7 +11,7 @@ PATCHDIR=".patches"
 SERIESFILE="$PATCHDIR/series"
 PARENTFILE="$PATCHDIR/parent"
 
-ALL_COMMANDS="completion qabort qapplied qbackup qcontinue qdelete qfold qnew qparent qpop qpush qrefresh qunapplied"
+ALL_COMMANDS="completion qabort qapplied qbackup qcontinue qdelete qfold qnew qparent qpop qpush qrecord qrefresh qunapplied"
 
 ALL_COMMANDS_RX=$(echo "$ALL_COMMANDS" | sed -e 's/ /|/g')
 
@@ -80,6 +80,11 @@ function git_head_log {
 function git_add_changes {
     # add only changes files to stash
     CMD "git status --porcelain | grep -v '^??' | sed -e 's/^.. //' | xargs git add"
+}
+
+function git_select_changes {
+    # add only changes files to stash
+    CMD "git add --patch"
 }
 
 function git_add_all_changes {
@@ -196,26 +201,28 @@ function print_short_help {
   echo "usage: $MYNAME COMMAND [options]"
   echo
   echo "known commands":
-  echo "  completion   : print bash completion code. Activate completion in your"
-  echo "                 shell with:"
-  echo "                 eval ($MYNAME completion)"
-  echo "  qnew [NAME]  : create new patch (git commit with log-message NAME)"
-  echo "  qrefresh     : update the topmost patch"
-  echo "  qpop         : pop the topmost patch."
-  echo "  qpush        : apply the top patch from the patch queue"
-  echo "  qparent [REV}: set REV as patch queue parent revision. Do never go "
-  echo "                 beyond this revision with qpop. The default for REV"
-  echo "                 is 'HEAD'."
-  echo "  qfold NAME   : fold patch 'NAME' to the topmost patch. Patch 'name'"
-  echo "                 must not be appled already."
-  echo "  qdelete NAME : delete unapplied patch with given name."
-  echo "  qcontinue    : continue 'qpush' after you had a conflict and had"
-  echo "                 it fixed manually."
-  echo "  qabort       : abort (undo) 'qpush' after you had a conflict and could"
-  echo "                 not fix it manually."
-  echo "  qapplied     : show all applied patches up to parent+1"
-  echo "  qunapplied   : show all patches of the patch queue"
-  echo "  qbackup      : create backup tar file of patch directory."
+  echo "  completion    : print bash completion code. Activate completion in your"
+  echo "                  shell with:"
+  echo "                  eval ($MYNAME completion)"
+  echo "  qnew [NAME]   : create new patch (commit with log-message NAME)"
+  echo "  qrecord [NAME]: interactively select changes for a new patch"
+  echo "                  (commit with log-message NAME)"
+  echo "  qrefresh      : update the topmost patch"
+  echo "  qpop          : pop the topmost patch."
+  echo "  qpush         : apply the top patch from the patch queue"
+  echo "  qparent [REV} : set REV as patch queue parent revision. Do never go "
+  echo "                  beyond this revision with qpop. The default for REV"
+  echo "                  is 'HEAD'."
+  echo "  qfold NAME    : fold patch 'NAME' to the topmost patch. Patch 'name'"
+  echo "                  must not be appled already."
+  echo "  qdelete NAME  : delete unapplied patch with given name."
+  echo "  qcontinue     : continue 'qpush' after you had a conflict and had"
+  echo "                  it fixed manually."
+  echo "  qabort        : abort (undo) 'qpush' after you had a conflict and could"
+  echo "                  not fix it manually."
+  echo "  qapplied      : show all applied patches up to parent+1"
+  echo "  qunapplied    : show all patches of the patch queue"
+  echo "  qbackup       : create backup tar file of patch directory."
   echo
   echo "options:"
   echo "-h --help  : this help"
@@ -302,7 +309,7 @@ for arg in "${ARGS[@]}"; do
         rev="$arg"
         continue
     fi
-    if [[ "$COMMAND" =~ qfold|qnew|qdelete ]]; then
+    if [[ "$COMMAND" =~ qfold|qnew|qrecord|qdelete ]]; then
         if [ -n "$name" ]; then
             echo "unexpected: '$arg'" >&2
             exit 1
@@ -356,6 +363,15 @@ fi
 
 if [ "$COMMAND" == "qnew" ]; then
     git_add_changes
+    if [ -n "$name" ]; then
+        name="-m '$name'"
+    fi
+    CMD "git commit $name"
+    exit 0
+fi
+
+if [ "$COMMAND" == "qrecord" ]; then
+    git_select_changes
     if [ -n "$name" ]; then
         name="-m '$name'"
     fi
