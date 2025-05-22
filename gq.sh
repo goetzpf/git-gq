@@ -7,11 +7,14 @@ SCRIPT_FULL_NAME=$(readlink -e "$0")
 #MYDIR=$(dirname "$SCRIPT_FULL_NAME")
 MYNAME=$(basename "$SCRIPT_FULL_NAME")
 
-PATCHDIR=".patches"
+QUEUENAME="default"
+TOPPATCHDIR=".patches"
+PATCHDIR="$TOPPATCHDIR/$QUEUENAME"
 SERIESFILE="$PATCHDIR/series"
 PARENTFILE="$PATCHDIR/parent"
+QUEUEFILE="$TOPPATCHDIR/queue"
 
-ALL_COMMANDS="completion qabort qapplied qbackup qcontinue qdelete qfold qnew qparent qpop qpush qrecord qrefresh qunapplied"
+ALL_COMMANDS="completion qabort qapplied qbackup qcontinue qdelete qfold qinit qname qnew qparent qpop qpush qrecord qrefresh qunapplied"
 
 ALL_COMMANDS_RX=$(echo "$ALL_COMMANDS" | sed -e 's/ /|/g')
 
@@ -101,6 +104,16 @@ function git_amend {
     fi
     git_add_changes
     CMD "git commit --amend $EXTRA"
+}
+
+function select_queue {
+    # $1: queue name
+    # modifies global variables: QUEUENAME, PATCHDIR, SERIESFILE,
+    #                            PARENTFILE
+    QUEUENAME="$1"
+    PATCHDIR="$TOPPATCHDIR/$QUEUENAME"
+    SERIESFILE="$PATCHDIR/series"
+    PARENTFILE="$PATCHDIR/parent"
 }
 
 function qpop_check {
@@ -204,6 +217,12 @@ function print_short_help {
   echo "  completion    : print bash completion code. Activate completion in your"
   echo "                  shell with:"
   echo "                  eval ($MYNAME completion)"
+  echo "  qinit [NAME]  : create/select a patch queue with name 'NAME'."
+  echo "                  This is optional, the default patch queue is named"
+  echo "                  'default'."
+  echo "                  You must run this command once to initialize the"
+  echo "                  patch queue."
+  echo "  qname         : show current patch queue name."
   echo "  qnew [NAME]   : create new patch (commit with log-message NAME)"
   echo "  qrecord [NAME]: interactively select changes for a new patch"
   echo "                  (commit with log-message NAME)"
@@ -309,7 +328,7 @@ for arg in "${ARGS[@]}"; do
         rev="$arg"
         continue
     fi
-    if [[ "$COMMAND" =~ qfold|qnew|qrecord|qdelete ]]; then
+    if [[ "$COMMAND" =~ qinit|qfold|qnew|qrecord|qdelete ]]; then
         if [ -n "$name" ]; then
             echo "unexpected: '$arg'" >&2
             exit 1
@@ -339,16 +358,43 @@ if [ ! -d .git ]; then
     exit 1
 fi
 
-if [ ! -d $PATCHDIR ]; then
-    # initialize, take HEAD as parent of patch queue
-    mkdir -p $PATCHDIR
-    create_parentfile HEAD
-    echo "(directory '$PATCHDIR' created)">&2
+if [ "$COMMAND" == "qinit" ]; then
+    if [ -n "$name" ]; then
+        QUEUENAME="$name"
+    fi
+    mkdir -p "$TOPPATCHDIR"
+    echo "$QUEUENAME" > "$QUEUEFILE"
+    select_queue "$QUEUENAME"
+    mkdir -p "$TOPPATCHDIR/$QUEUENAME"
+    if [ ! -s "$PARENTFILE" ]; then
+        create_parentfile HEAD
+    fi
+    exit 0
+fi
+
+if [ ! -d "$TOPPATCHDIR" ]; then
+    echo "please run '$MYNAME qinit' first." >&2
+    exit 1
+fi
+
+QUEUENAME=$(cat "$QUEUEFILE")
+if [ ! -d "$PATCHDIR" ]; then
+    mkdir -p "$PATCHDIR/$QUEUENAME"
+fi
+select_queue "$QUEUENAME"
+
+if [ "$COMMAND" == "qname" ]; then
+    echo "Exissting queues:"
+    CMD "cd $TOPPATCHDIR && ls -d */ | sed -e 's#/##;s/^/\\t/'"
+    echo
+    echo "Currently selected:"
+    echo -e "\t$QUEUENAME"
+    exit 0
 fi
 
 if [ "$COMMAND" == "qbackup" ]; then
     date_=$(date '+%Y-%m-%dT%H%M%S')
-    CMD "tar -czf $PATCHDIR-$date_.tgz $PATCHDIR"
+    CMD "tar -czf $TOPPATCHDIR-$date_.tgz $TOPPATCHDIR"
     exit 0
 fi
 
@@ -447,7 +493,7 @@ if [ "$COMMAND" == "qapplied" ]; then
         CMDRET "cat $PARENTFILE"
         START="${cmddata}.."
     fi
-    CMD "git log --oneline $START"
+    CMD "git log --color=always --oneline $START | cat"
     exit 0
 fi
 
