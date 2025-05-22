@@ -249,7 +249,6 @@ function print_short_help {
   echo
   echo "options:"
   echo "-h --help  : this help"
-  echo "-f --file FILE: specify FILE"
   echo "-a --all    : qpush: push ALL patches"
   echo "-v --verbose: show what the script does"
   echo "-n --dry-run: just show what the script would do"
