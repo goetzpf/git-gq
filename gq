@@ -248,10 +248,11 @@ function print_short_help {
   echo "also be prepended with the letter 'q', for example 'qnew' instead of 'new'."
   echo
   echo "options:"
-  echo "-h --help  : this help"
-  echo "-a --all    : qpush: push ALL patches"
-  echo "-v --verbose: show what the script does"
-  echo "-n --dry-run: just show what the script would do"
+  echo "-h --help    : show help"
+  echo "-H --HELP    : show help without pager"
+  echo "-a --all     : qpush: push ALL patches"
+  echo "-v --verbose : show what the script does"
+  echo "-n --dry-run : just show what the script would do"
   exit 0
 }
 
@@ -264,13 +265,13 @@ while true; do
             # if the "less" is present, use it:
             if less -V >/dev/null 2>&1; then
                 # use less pager for help:
-                $SCRIPT_FULL_NAME --help-raw | less
+                $SCRIPT_FULL_NAME --HELP | less
                 exit 0
             else
                 print_short_help
             fi
             ;;
-        --help-raw)
+        -H | --HELP)
             print_short_help
             ;;
         -a | --all)
