@@ -14,7 +14,7 @@ SERIESFILE="$PATCHDIR/series"
 PARENTFILE="$PATCHDIR/parent"
 QUEUEFILE="$TOPPATCHDIR/queue"
 
-ALL_COMMANDS="bashcompletion change-order commands abort applied backup continue delete fold init name new parent pop push record refresh unapplied"
+ALL_COMMANDS="bashcompletion change-order commands abort applied backup continue delete fold init log name new parent pop push record refresh unapplied"
 
 ALL_COMMANDS_RX=$(echo "$ALL_COMMANDS" | sed -e 's/ /|/g')
 
@@ -263,6 +263,9 @@ function print_short_help {
     echo "  abort          : abort (undo) 'push' after you had a conflict and could"
     echo "                   not fix it manually."
     echo
+    echo "Miscellaneous"
+    echo "  log            : Display git patches as a tree in the terminal."
+    echo
     echo "OPTIONS:"
     echo "-h --help    : show help"
     echo "-H --HELP    : show help without pager"
@@ -466,6 +469,10 @@ if [ "$COMMAND" == "change-order" ]; then
     exit 0
 fi
 
+if [ "$COMMAND" == "log" ]; then
+    CMD "git log --graph --all --decorate"
+    exit 0
+fi
 
 if [ "$COMMAND" == "parent" ]; then
     if [ -z "$rev" ]; then 
