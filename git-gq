@@ -7,6 +7,8 @@ SCRIPT_FULL_NAME=$(readlink -e "$0")
 #MYDIR=$(dirname "$SCRIPT_FULL_NAME")
 MYNAME=$(basename "$SCRIPT_FULL_NAME")
 
+MYNAME_GIT="$(echo "MYNAME" | sed -s 's/-/ /')"
+
 QUEUENAME="default"
 TOPPATCHDIR=".gqpatches"
 PATCHDIR="$TOPPATCHDIR/$QUEUENAME"
@@ -14,85 +16,47 @@ SERIESFILE="$PATCHDIR/series"
 PARENTFILE="$PATCHDIR/parent"
 QUEUEFILE="$TOPPATCHDIR/queue"
 
-ALL_COMMANDS="bashcompletion change-order commands abort applied backup continue delete fold init log name new parent pop push record refresh unapplied"
+ALL_COMMANDS="bashcompletion change-order commands abort applied backup continue delete dump fold init log name new parent pop push record refresh unapplied"
 
+# shellcheck disable=SC2001
 ALL_COMMANDS_RX=$(echo "$ALL_COMMANDS" | sed -e 's/ /|/g')
-
-verbose=""
-dryrun=""
 
 all=""
 rev=""
 name=""
 
-cmdret=""
-cmddata=""
-
-function CMD {
-    # execute a shell command
-    # arguments:
-    #   $1: command
-    # returns:
-    #   cmdret (global variable): the return code of the command
-    if [ -n "$verbose" ] || [ -n "$dryrun" ]; then
-        echo "$1"
-    fi
-    if [ -z "$dryrun" ]; then
-        bash -c "$1"
-        cmdret=$?
-    else
-        cmdret=0
-    fi
-}
-
-function CMDRET {
-    # execute a shell command and catch standard out
-    # arguments:
-    #   $1: command
-    # returns:
-    #   cmdret (global variable): the return code of the command
-    #   cmddata (global variable): the stdout output of the command
-    if [ -n "$verbose" ] || [ -n "$dryrun" ]; then
-        echo "$1"
-    fi
-    cmdret=0
-    # without '|| ...' the script will exit right here
-    # in case of an error:
-    cmddata=$(bash -c "$1") || cmdret=$?
-}
-
-function CD {
-    # change directory but not when dryrun is set
-    # $1: dir
-    if [ -n "$verbose" ] || [ -n "$dryrun" ]; then
-        echo "cd $1"
-    fi
-    if [ -z "$dryrun" ]; then
-        if ! cd "$1" > /dev/null; then
-            echo "cd $1 failed!"
-            exit 1
+function git_goto_repo_dir {
+    while [ "$(pwd)" != "/" ]; do
+        if [ -d ".git" ]; then
+            break;
         fi
+        cd .. || exit 1
+    done
+    if [ ! -d ".git" ]; then
+        echo "error, '.git' not found" >&2
+        exit 1
     fi
 }
+
 
 function git_head_log {
     # $1: name of file to create
-    CMD "git log -1 --pretty=%B > $1"
+    git log -1 --pretty=%B > "$1"
 }
 
 function git_add_changes {
     # add only changes files to stash
-    CMD "git status --porcelain | grep -v '^??' | sed -e 's/^.. //' | xargs git add"
+    git status --porcelain | grep -v '^??' | sed -e 's/^.. //' | xargs git add
 }
 
 function git_select_changes {
     # add only changes files to stash
-    CMD "git add --patch"
+    git add --patch
 }
 
 function git_add_all_changes {
     # add all changes except patchqueue files
-    CMD "git status --porcelain | sed -e 's/^.. //' | grep -v '\(^$PATCHDIR[/-]\|\.rej$\)'| xargs git add"
+    git status --porcelain | sed -e 's/^.. //' | grep -v "\(^${PATCHDIR}[/-]\|\.rej$\)" | xargs git add
 }
 
 function git_amend {
@@ -103,7 +67,7 @@ function git_amend {
         EXTRA="-F $1"
     fi
     git_add_changes
-    CMD "git commit --amend $EXTRA"
+    git commit --amend "$EXTRA"
 }
 
 function select_queue {
@@ -120,12 +84,11 @@ function qpop_check {
     # returns 0 if qpop is not beyond parent,
     # returns 1 when qpop is not allowed.
     # $1: if non-zero, instead of returning 1 abort with an error message
-    CMDRET "git rev-parse --short HEAD"
-    rev="$cmddata"
-    CMD "[ ! -s $PARENTFILE ] || [ $(cat $PARENTFILE) != $cmddata ]"
-    if [ "$cmdret" -ne 0 ]; then
+    rev=$(git rev-parse --short HEAD)
+    if [ -s "$PARENTFILE" ] && [ "$(cat "$PARENTFILE")" == "$rev" ]; then
         if [ -n "$1" ]; then
-            echo "cannot do qpop, parent revision $rev reached" >&2
+            echo "Cannot perform pop, parent revision $rev reached." >&2
+            echo "You could change the parent with '$MYNAME_GIT parent REV'." >&2
             exit 1
         else
             return 1
@@ -136,28 +99,53 @@ function qpop_check {
 
 function qpop_one {
     # do a single 'qpop' operation.
-    CMD "git format-patch -o $PATCHDIR -1 HEAD > $PATCHDIR/NEW-1"
-    CMD "sed -e 's#$PATCHDIR/0001-##' $PATCHDIR/NEW-1 > $PATCHDIR/NEW"
-    CMD "mv $(cat $PATCHDIR/NEW-1) $PATCHDIR/$(cat $PATCHDIR/NEW)"
-    CMD "if [ ! -s $SERIESFILE ]; then cat $PATCHDIR/NEW > $SERIESFILE; else sed -i \"1i$(cat $PATCHDIR/NEW)\" $SERIESFILE; fi"
-    CMD "rm -f $PATCHDIR/NEW-1 $PATCHDIR/NEW"
-    CMD "git reset --hard HEAD~1"
+    local ORIG_PATCHNAME
+    local PATCHNAME
+    local TEMP_PATCHNAME
+    local CNT
+    ORIG_PATCHNAME=$(git format-patch -o "$TOPPATCHDIR" -1 HEAD | sed -e "s#^$TOPPATCHDIR/##")
+    # remove leading number from patchname:
+    # shellcheck disable=SC2001
+    PATCHNAME=$(echo "$ORIG_PATCHNAME"  | sed -e 's/^[0-9]\+-//')
+    # if a file with this name already exists:
+    if [ -e "$PATCHDIR/$PATCHNAME" ]; then
+        # generate a filename with a preceeding number
+        CNT=1
+        while true; do
+            TEMP_PATCHNAME="$(printf "%04d-%s" "$CNT" "$PATCHNAME")"
+            if [ ! -e "$PATCHDIR/$TEMP_PATCHNAME" ]; then
+                break
+            fi
+            CNT=$((CNT+1))
+        done
+        PATCHNAME="$TEMP_PATCHNAME"
+    fi
+    mv "$TOPPATCHDIR/$ORIG_PATCHNAME" "$PATCHDIR/$PATCHNAME"
+    if [ ! -s "$SERIESFILE" ]; then
+        echo "$PATCHNAME" > "$SERIESFILE"
+    else
+        # insert at first line
+        sed -i "1i$PATCHNAME" "$SERIESFILE"
+    fi
+    git reset --hard HEAD~1
 }
 
 function qpush_specified {
     # $1: name of patch
+    local PATCHNAME
     if [ ! -s "$SERIESFILE" ]; then
         echo "error, no patches in $SERIESFILE"
         exit 1
     fi
-    CMD "grep -F -e '$name' $SERIESFILE > $PATCHDIR/NEW"
-    if [ ! -s "$PATCHDIR/NEW" ]; then
+    PATCHNAME=$(grep -F -e "$name" "$SERIESFILE")
+    if [ -z "$PATCHNAME" ]; then 
         echo "error, patch '$name' not found in $SERIESFILE, maybe the patch is alraedy applied" >&2
         exit 1
     fi
-    CMD "grep -v -F -e '$name' $SERIESFILE > $SERIESFILE.new"
-    CMD "git am --reject $PATCHDIR/$(cat $PATCHDIR/NEW)"
-    if [ "$cmdret" -ne 0 ]; then
+    echo "$PATCHNAME" > "$PATCHDIR/PUSH"
+    # remove PATCHNAME from SERIESFILE:
+    grep -v -F -e "$name" "$SERIESFILE" > "$SERIESFILE.new"
+    if ! git am --reject "$PATCHDIR/$PATCHNAME"; then
         echo "The patch to be folded could not be applied."
         echo "Fix the change by looking at the *.rej files."
         echo "Then run:"
@@ -166,19 +154,21 @@ function qpush_specified {
         echo "  $MYNAME abort"
         exit 1
     fi
-    CMD "cp -a $SERIESFILE.new $SERIESFILE && rm -f $SERIESFILE.new $PATCHDIR/NEW"
+    rm -f "$PATCHDIR/$PATCHNAME" "$PATCHDIR/PUSH" "$SERIESFILE" && mv "$SERIESFILE.new" "$SERIESFILE"
 }
 
 function qpush_one {
     # do a single 'qpush' operation.
+    local PATCHNAME
     if [ ! -s "$SERIESFILE" ]; then
         echo "error, no patches in $SERIESFILE"
         exit 1
     fi
-    CMD "head -n 1 $SERIESFILE > $PATCHDIR/NEW"
-    CMD "cp -a $SERIESFILE $SERIESFILE.new && sed -i -e '1d' $SERIESFILE.new"
-    CMD "git am --reject $PATCHDIR/$(cat $PATCHDIR/NEW)"
-    if [ "$cmdret" -ne 0 ]; then
+    PATCHNAME=$(head -n 1 "$SERIESFILE")
+    echo "$PATCHNAME" > "$PATCHDIR/PUSH"
+    # remove PATCHNAME from SERIESFILE:
+    cp -a "$SERIESFILE" "$SERIESFILE.new" && sed -i -e '1d' "$SERIESFILE.new"
+    if ! git am --reject "$PATCHDIR/$PATCHNAME"; then
         echo "Fix the change by looking at the *.rej files."
         echo "Then run:"
         echo "  $MYNAME continue"
@@ -186,7 +176,7 @@ function qpush_one {
         echo "  $MYNAME abort"
         exit 1
     fi
-    CMD "cp -a $SERIESFILE.new $SERIESFILE && rm -f $SERIESFILE.new $PATCHDIR/NEW"
+    rm -f "$PATCHDIR/$PATCHNAME" "$PATCHDIR/PUSH" "$SERIESFILE" && mv "$SERIESFILE.new" "$SERIESFILE"
 }
 
 function qdelete {
@@ -195,30 +185,33 @@ function qdelete {
         echo "error, patch '$name' doesn't exist."
         exit 1
     fi
-    CMD "rm $PATCHDIR/$name"
-    CMD "if [ -s $SERIESFILE ]; then cp -a $SERIESFILE $SERIESFILE.bak && grep -v -F -e '$name' $SERIESFILE.bak > $SERIESFILE && rm -f $SERIESFILE.bak; fi"
+    rm "$PATCHDIR/$name"
+    if [ -s "$SERIESFILE" ]; then
+        cp -a "$SERIESFILE" "$SERIESFILE.bak" && grep -v -F -e "$name" "$SERIESFILE.bak" > "$SERIESFILE" && rm -f "$SERIESFILE.bak;"
+    fi
 }
 
 function create_parentfile {
     # $1: revision
-    CMDRET "git rev-parse --short $1"
-    if [ "$cmdret" -ne 0 ]; then
+    rev=$(git rev-parse --short "$1")
+    # shellcheck disable=SC2181
+    if [ $? -ne 0 ]; then
         echo "invalid revision: $1" >&2
         exit 1
     fi
-    if [ "$1" == "$cmddata" ]; then
+    if [ "$1" == "$rev" ]; then
         echo "queue parent revision set to $1"
     else
-        echo "queue parent revision set to $1 ($cmddata)"
+        echo "queue parent revision set to $1 ($rev)"
     fi
-    CMD "echo $cmddata > $PARENTFILE"
+    echo "$rev" > "$PARENTFILE"
 }
 
 function print_short_help {
-    GIT_SUBCMD="$(echo "$MYNAME" | sed -e 's/git-//')"
+    # shellcheck disable=SC2001
     echo "$MYNAME : handle git patch queues"
     echo
-    echo "usage: git $GIT_SUBCMD COMMAND [OPTIONS]"
+    echo "usage: $MYNAME_GIT COMMAND [OPTIONS]"
     echo
     echo "Known COMMANDS":
     echo
@@ -258,6 +251,7 @@ function print_short_help {
     echo "  fold NAME      : fold patch 'NAME' to the topmost patch. Patch 'name'"
     echo "                   must not be appled already."
     echo "  delete NAME    : delete unapplied patch with given name."
+    echo "  dump NAME      : dump an unapplied patch to the console."
     echo "  continue       : continue 'push' after you had a conflict and had"
     echo "                   it fixed manually."
     echo "  abort          : abort (undo) 'push' after you had a conflict and could"
@@ -271,8 +265,6 @@ function print_short_help {
     echo "-H --HELP    : show help without pager"
     echo "-a --all     : push: push ALL patches"
     echo "               pop : pop ALL patches"
-    echo "-v --verbose : show what the script does"
-    echo "-n --dry-run : just show what the script would do"
 }
 
 declare -a ARGS
@@ -297,15 +289,6 @@ while true; do
             ;;
         -a | --all)
             all="yes"
-            shift
-            ;;
-        -v | --verbose)
-            verbose="yes"
-            shift
-            ;;
-        -n | --dry-run)
-            verbose="yes"
-            dryrun="yes"
             shift
             ;;
         -- )
@@ -353,7 +336,7 @@ for arg in "${ARGS[@]}"; do
         rev="$arg"
         continue
     fi
-    if [[ "$COMMAND" =~ init|fold|new|record|delete ]]; then
+    if [[ "$COMMAND" =~ init|fold|new|record|delete|dump ]]; then
         if [ -n "$name" ]; then
             echo "unexpected: '$arg'" >&2
             exit 1
@@ -390,14 +373,12 @@ if [ "$COMMAND" == "commands" ]; then
 fi
 
 if [ "$COMMAND" == "bashcompletion" ]; then
+    # shellcheck disable=SC2016
     echo '_git_gq() { __gitcomp "$(git-gq commands)" "" "$cur"; }'
     exit 0
 fi
 
-if [ ! -d .git ]; then
-    echo "error, '.git' not found" >&2
-    exit 1
-fi
+git_goto_repo_dir
 
 if [ "$COMMAND" == "init" ]; then
     if [ -n "$name" ]; then
@@ -422,7 +403,7 @@ if [ "$COMMAND" == "name" ]; then
     if [ -z "$name" ]; then
         QUEUENAME=$(cat "$QUEUEFILE")
         echo "Existing queues:"
-        CMD "cd $TOPPATCHDIR && ls -d */ | sed -e 's#/##;s/^/\\t/'"
+        (cd $TOPPATCHDIR && find . -type d | grep -v '^\.$' | sed -e 's#^\./##')
         echo
         echo "Currently selected:"
         echo -e "\t$QUEUENAME"
@@ -446,7 +427,7 @@ select_queue "$QUEUENAME"
 
 if [ "$COMMAND" == "backup" ]; then
     date_=$(date '+%Y-%m-%dT%H%M%S')
-    CMD "tar -czf $TOPPATCHDIR-$date_.tgz $TOPPATCHDIR"
+    tar -czf "$TOPPATCHDIR-$date_.tgz" "$TOPPATCHDIR"
     exit 0
 fi
 
@@ -470,7 +451,7 @@ if [ "$COMMAND" == "change-order" ]; then
 fi
 
 if [ "$COMMAND" == "log" ]; then
-    CMD "git log --graph --all --decorate"
+    git log --graph --all --decorate
     exit 0
 fi
 
@@ -479,7 +460,7 @@ if [ "$COMMAND" == "parent" ]; then
         if [ ! -s "$PARENTFILE" ]; then
             echo "no PARENT revision defined"
         else
-            echo "Parent: $(cat $PARENTFILE)"
+            echo "Parent: $(cat "$PARENTFILE")"
         fi
         exit 0
     fi
@@ -492,7 +473,7 @@ if [ "$COMMAND" == "new" ]; then
     if [ -n "$name" ]; then
         name="-m '$name'"
     fi
-    CMD "git commit $name"
+    git commit "$name"
     exit 0
 fi
 
@@ -501,7 +482,7 @@ if [ "$COMMAND" == "record" ]; then
     if [ -n "$name" ]; then
         name="-m '$name'"
     fi
-    CMD "git commit $name"
+    git commit "$name"
     exit 0
 fi
 
@@ -543,12 +524,14 @@ fi
 
 if [ "$COMMAND" == "push" ]; then
     while true; do
-        if [ ! -s $SERIESFILE ]; then
-            break
-        fi
         qpush_one
         if [ -z "$all" ]; then
             break
+        else
+            # with "--all", reaching the end is no error:
+            if [ ! -s "$SERIESFILE" ]; then
+                break
+            fi
         fi
     done
     exit 0
@@ -560,62 +543,76 @@ if [ "$COMMAND" == "fold" ]; then
         exit 1
     fi
     git_head_log "$PATCHDIR/LOG"
-    CMD "echo -e '\n***\n' >> $PATCHDIR/LOG"
+    echo -e '\n***\n' >> "$PATCHDIR/LOG"
     qpush_specified "$name"
     git_head_log "$PATCHDIR/LOG2"
-    CMD "cat $PATCHDIR/LOG2 >> $PATCHDIR/LOG && rm -f $PATCHDIR/LOG2"
+    cat "$PATCHDIR/LOG2" >> "$PATCHDIR/LOG" && rm -f "$PATCHDIR/LOG2"
     qpop_one
-    CMD "git apply $PATCHDIR/$name"
+    git apply "$PATCHDIR/$name"
     git_amend "$PATCHDIR/LOG"
-    CMD "rm -f $PATCHDIR/LOG"
+    rm -f "$PATCHDIR/LOG"
     qdelete "$name"
     echo "Note: Log messages were combined into one" >&2
     exit 0
 fi
 
-if [ "$COMMAND" == "applied" ]; then
-    if [ -s $PARENTFILE ]; then
-        CMDRET "cat $PARENTFILE"
-        START="${cmddata}.."
+if [ "$COMMAND" == "dump" ]; then
+    if [ ! -e "$PATCHDIR/$name" ]; then
+        echo "error, patch '$name' not found" >&2
+        exit 1
     fi
-    CMD "git log --color=always --oneline $START | cat"
+    colordiff < "$PATCHDIR/$name" | less -R
+    exit 0
+fi
+
+if [ "$COMMAND" == "applied" ]; then
+    if [ -s "$PARENTFILE" ]; then
+        START="$(cat "$PARENTFILE").."
+    fi
+    git log --color=always --oneline "$START" | cat
     exit 0
 fi
 
 if [ "$COMMAND" == "unapplied" ]; then
-    if [ -s $SERIESFILE ]; then
-        CMD "cat $SERIESFILE"
+    if [ -s "$SERIESFILE" ]; then
+        cat "$SERIESFILE"
     fi
     exit 0
 fi
 
 if [ "$COMMAND" == "continue" ]; then
-    CMD "git status --porcelain | sed -e 's/^.. //' | grep -v '\(^$PATCHDIR/\|\.rej$\)'| xargs git add"
-    CMD "git am --continue"
-    if [ "$cmdret" -ne 0 ]; then
+    git status --porcelain | sed -e "s/^.. //" | grep -v "\(^$PATCHDIR/\|\.rej$\)"| xargs git add
+    if ! git am --continue; then
         echo "Fix the change by looking at the *.rej files."
         echo "Then run:"
         echo "  $MYNAME qcontinue"
         echo "To abort the operation without fixing run:"
         echo "  $MYNAME qabort"
+        exit 1
     fi
-    CMD "if [ -e $SERIESFILE.new ]; then cp -a $SERIESFILE.new $SERIESFILE && rm -f $SERIESFILE.new; fi"
+    if [ -e "$SERIESFILE.new" ]; then
+        cp -a "$SERIESFILE.new" "$SERIESFILE" 
+    fi
+    name=$(cat "$PATCHDIR/PUSH")
+    rm -f "$SERIESFILE.new;" "$PATCHDIR/$name" "$PATCHDIR/PUSH"
     exit 0
 fi
 
 if [ "$COMMAND" == "abort" ]; then
-    CMD "git am --abort"
-    CMD "rm -f $SERIESFILE.new"
+    git am --abort
+    rm -f "$SERIESFILE.new" "$PATCHDIR/PUSH"
     exit 0
 fi
 
 if [ "$COMMAND" == "continue" ]; then
     git_add_all_changes
-    CMD "git am --continue"
-    if [ "$cmdret" -ne 0 ]; then
+    if ! git am --continue; then
         echo "Fix the change by looking at the *.rej files."
         echo "Then run:"
         echo "  $MYNAME qcontinue"
+    fi
+    if [ -e "$SERIESFILE.new" ]; then
+        rm "$SERIESFILE" && mv "$SERIESFILE.new" "$SERIESFILE"
     fi
     exit 0
 fi
