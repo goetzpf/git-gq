@@ -7,7 +7,7 @@ SCRIPT_FULL_NAME=$(readlink -e "$0")
 #MYDIR=$(dirname "$SCRIPT_FULL_NAME")
 MYNAME=$(basename "$SCRIPT_FULL_NAME")
 
-MYNAME_GIT="$(echo "MYNAME" | sed -s 's/-/ /')"
+MYNAME_GIT="$(echo "$MYNAME" | sed -s 's/-/ /')"
 
 QUEUENAME="default"
 TOPPATCHDIR=".gqpatches"
