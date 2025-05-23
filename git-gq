@@ -14,11 +14,9 @@ SERIESFILE="$PATCHDIR/series"
 PARENTFILE="$PATCHDIR/parent"
 QUEUEFILE="$TOPPATCHDIR/queue"
 
-ALL_COMMANDS="completion abort applied backup continue delete fold init name new parent pop push record refresh unapplied"
+ALL_COMMANDS="bashcompletion change-order commands abort applied backup continue delete fold init name new parent pop push record refresh unapplied"
 
-ALL_COMMANDS_Q=$(echo "$ALL_COMMANDS" | sed -e 's/\</q/g')
-
-ALL_COMMANDS_RX=$(echo "$ALL_COMMANDS $ALL_COMMANDS_Q" | sed -e 's/ /|/g')
+ALL_COMMANDS_RX=$(echo "$ALL_COMMANDS" | sed -e 's/ /|/g')
 
 verbose=""
 dryrun=""
@@ -208,52 +206,70 @@ function create_parentfile {
         echo "invalid revision: $1" >&2
         exit 1
     fi
+    if [ "$1" == "$cmddata" ]; then
+        echo "queue parent revision set to $1"
+    else
+        echo "queue parent revision set to $1 ($cmddata)"
+    fi
     CMD "echo $cmddata > $PARENTFILE"
 }
 
 function print_short_help {
-  echo "$MYNAME : handle git patch queue"
-  echo "usage: $MYNAME COMMAND [options]"
-  echo
-  echo "known commands":
-  echo "  completion    : print bash completion code. Activate completion in your"
-  echo "                  shell with:  eval \$($MYNAME completion)"
-  echo "  init [NAME]   : create/select a patch queue with name 'NAME'."
-  echo "                  This is optional, the default patch queue is named"
-  echo "                  'default'."
-  echo "                  You must run this command once to initialize the"
-  echo "                  patch queue."
-  echo "  name          : show current patch queue name."
-  echo "  new [NAME]    : create new patch (commit with log-message NAME)"
-  echo "  record [NAME] : interactively select changes for a new patch"
-  echo "                  (commit with log-message NAME)"
-  echo "  refresh       : update the topmost patch"
-  echo "  pop           : pop the topmost patch."
-  echo "  push          : apply the top patch from the patch queue"
-  echo "  parent [REV}  : set REV as patch queue parent revision. Do never go "
-  echo "                  beyond this revision with pop. The default for REV"
-  echo "                  is 'HEAD'."
-  echo "  fold NAME     : fold patch 'NAME' to the topmost patch. Patch 'name'"
-  echo "                  must not be appled already."
-  echo "  delete NAME   : delete unapplied patch with given name."
-  echo "  continue      : continue 'push' after you had a conflict and had"
-  echo "                  it fixed manually."
-  echo "  abort         : abort (undo) 'push' after you had a conflict and could"
-  echo "                  not fix it manually."
-  echo "  applied       : show all applied patches up to parent+1"
-  echo "  unapplied     : show all patches of the patch queue"
-  echo "  backup        : create backup tar file of patch directory."
-  echo
-  echo "For compatibility with mercurial patch queue commands, all commands con"
-  echo "also be prepended with the letter 'q', for example 'qnew' instead of 'new'."
-  echo
-  echo "options:"
-  echo "-h --help    : show help"
-  echo "-H --HELP    : show help without pager"
-  echo "-a --all     : qpush: push ALL patches"
-  echo "-v --verbose : show what the script does"
-  echo "-n --dry-run : just show what the script would do"
-  exit 0
+    GIT_SUBCMD="$(echo "$MYNAME" | sed -e 's/git-//')"
+    echo "$MYNAME : handle git patch queues"
+    echo
+    echo "usage: git $GIT_SUBCMD COMMAND [OPTIONS]"
+    echo
+    echo "Known COMMANDS":
+    echo
+    echo "Completion:"
+    echo
+    echo "  commands       : list all known commands on the console"
+    echo "  bashcompletion : list the line you have to add to your .bashrc"
+    echo "                   to integrate completion into the 'git' command."
+    echo
+    echo "Quene management:"
+    echo "  init [QNAME]   : create/select a patch queue with name 'QNAME'."
+    echo "                   QNAME is optional, the default patch queue name is"
+    echo "                   'default'."
+    echo "                   You must run this command once to initialize the"
+    echo "                   patch queue in your repository."
+    echo "  name [QNAME]   : if QNAME is not given, show current patch queue name."
+    echo "                   if QNAME is given, change to patch queue QNAME."
+    echo "  backup         : create backup tar file of patch directory"
+    echo "                   '$TOPPATCHDIR'."
+    echo "  change-order   : call an editor to edit the file that contains all"
+    echo "                   currently unapplied patches. Note the the patches"
+    echo "                   in the file are applied from top to bottom."
+    echo "  applied        : show all applied patches up to parent+1"
+    echo "  unapplied      : show all patches of the patch queue"
+    echo "  parent [REV}   : Set REV as patch queue parent revision. Do never go "
+    echo "                   beyond this revision with pop. Use 'HEAD' to set your"
+    echo "                   repository HEAD as parent revision."
+    echo "                   If HEAD is not given, show the current parent revision."
+    echo
+    echo "Patch management:"
+    echo "  new [NAME]     : create new patch (commit with log-message NAME)"
+    echo "  record [NAME]  : interactively select changes for a new patch"
+    echo "                   (commit with log-message NAME)"
+    echo "  refresh        : update the topmost patch"
+    echo "  pop            : pop the topmost patch."
+    echo "  push           : apply the top patch from the patch queue"
+    echo "  fold NAME      : fold patch 'NAME' to the topmost patch. Patch 'name'"
+    echo "                   must not be appled already."
+    echo "  delete NAME    : delete unapplied patch with given name."
+    echo "  continue       : continue 'push' after you had a conflict and had"
+    echo "                   it fixed manually."
+    echo "  abort          : abort (undo) 'push' after you had a conflict and could"
+    echo "                   not fix it manually."
+    echo
+    echo "OPTIONS:"
+    echo "-h --help    : show help"
+    echo "-H --HELP    : show help without pager"
+    echo "-a --all     : push: push ALL patches"
+    echo "               pop : pop ALL patches"
+    echo "-v --verbose : show what the script does"
+    echo "-n --dry-run : just show what the script would do"
 }
 
 declare -a ARGS
@@ -269,10 +285,12 @@ while true; do
                 exit 0
             else
                 print_short_help
+                exit 0
             fi
             ;;
         -H | --HELP)
             print_short_help
+            exit 0
             ;;
         -a | --all)
             all="yes"
@@ -345,15 +363,31 @@ for arg in "${ARGS[@]}"; do
             echo "unexpected: '$arg'" >&2
             exit 1
         fi
-        COMMAND="$(echo "$arg" | sed -e 's/\<q//')"
+        COMMAND="$arg"
         continue
     fi
     echo "unexpeced argument: $arg"
     exit 1
 done
 
-if [ "$COMMAND" == "completion" ]; then
-    echo "complete -W \"$ALL_COMMANDS $ALL_COMMANDS_Q\" $MYNAME"
+if [ -z "$COMMAND" ]; then
+    if less -V >/dev/null 2>&1; then
+        # use less pager for help:
+        $SCRIPT_FULL_NAME --HELP | less
+        exit 0
+    else
+        print_short_help
+        exit 0
+    fi
+fi
+
+if [ "$COMMAND" == "commands" ]; then
+    echo -n "$ALL_COMMANDS"
+    exit 0
+fi
+
+if [ "$COMMAND" == "bashcompletion" ]; then
+    echo '_git_gq() { __gitcomp "$(git-gq commands)" "" "$cur"; }'
     exit 0
 fi
 
@@ -381,20 +415,31 @@ if [ ! -d "$TOPPATCHDIR" ]; then
     exit 1
 fi
 
+if [ "$COMMAND" == "name" ]; then
+    if [ -z "$name" ]; then
+        QUEUENAME=$(cat "$QUEUEFILE")
+        echo "Existing queues:"
+        CMD "cd $TOPPATCHDIR && ls -d */ | sed -e 's#/##;s/^/\\t/'"
+        echo
+        echo "Currently selected:"
+        echo -e "\t$QUEUENAME"
+        exit 0
+    else
+        echo "$QUEUENAME" > "$QUEUEFILE"
+        select_queue "$QUEUENAME"
+        mkdir -p "$PATCHDIR/$QUEUENAME"
+        if [ ! -s "$PARENTFILE" ]; then
+            create_parentfile HEAD
+        fi
+    fi
+fi
+
 QUEUENAME=$(cat "$QUEUEFILE")
 if [ ! -d "$PATCHDIR" ]; then
-    mkdir -p "$PATCHDIR/$QUEUENAME"
+    echo "error: $PATCHDIR does not exist" >&2
+    exit 1
 fi
 select_queue "$QUEUENAME"
-
-if [ "$COMMAND" == "name" ]; then
-    echo "Exissting queues:"
-    CMD "cd $TOPPATCHDIR && ls -d */ | sed -e 's#/##;s/^/\\t/'"
-    echo
-    echo "Currently selected:"
-    echo -e "\t$QUEUENAME"
-    exit 0
-fi
 
 if [ "$COMMAND" == "backup" ]; then
     date_=$(date '+%Y-%m-%dT%H%M%S')
@@ -402,12 +447,36 @@ if [ "$COMMAND" == "backup" ]; then
     exit 0
 fi
 
+if [ "$COMMAND" == "change-order" ]; then
+    editor="$EDITOR"
+    if [ -z "$EDITOR" ]; then
+        editor="$VISUAL"
+    fi
+    if [ -z "$EDITOR" ]; then
+        echo "Caution: default editor not set, using 'vi' instead."
+        echo "Note that you can abort editing with"
+        echo "  <ESC> :qa!"
+        read -p "Enter 'y' or 'Y' to continue, everything else aborts " -n 1 -r
+        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+            exit 1
+        fi
+        editor="vi"
+    fi
+    $editor "$SERIESFILE"
+    exit 0
+fi
+
+
 if [ "$COMMAND" == "parent" ]; then
     if [ -z "$rev" ]; then 
-        rev="HEAD"
-        exit 1
+        if [ ! -s "$PARENTFILE" ]; then
+            echo "no PARENT revision defined"
+        else
+            echo "Parent: $(cat $PARENTFILE)"
+        fi
+        exit 0
     fi
-    create_parentfile
+    create_parentfile "$rev"
     exit 0
 fi
 
@@ -447,6 +516,11 @@ if [ "$COMMAND" == "pop" ]; then
     abort_on_err=""
     if [ -z "$all" ]; then
         abort_on_err="yes"
+    else
+        if [ ! -s "$PARENTFILE" ]; then
+            echo "Error, 'pop -a' not allowed when no parent revision is defined." >&2
+            exit 1
+        fi
     fi
     while true; do
         if ! qpop_check "$abort_on_err"; then
