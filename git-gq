@@ -12,18 +12,273 @@ MYNAME_GIT="$(echo "$MYNAME" | sed -s 's/-/ /')"
 QUEUENAME="default"
 TOPPATCHDIR=".gqpatches"
 PATCHDIR="$TOPPATCHDIR/$QUEUENAME"
+APPLIEDDIR="$PATCHDIR/applied"
 SERIESFILE="$PATCHDIR/series"
 PARENTFILE="$PATCHDIR/parent"
 QUEUEFILE="$TOPPATCHDIR/queue"
 
-ALL_COMMANDS="bashcompletion change-order commands abort applied backup continue delete dump fold init log name new parent pop push record refresh unapplied"
+ALL_COMMANDS="bashcompletion change-order commands abort applied backup continue delete doc dump fold help init log man name new parent pop push record refresh restore unapplied"
 
 # shellcheck disable=SC2001
 ALL_COMMANDS_RX=$(echo "$ALL_COMMANDS" | sed -e 's/ /|/g')
 
+debug=""
 all=""
 rev=""
 name=""
+file=""
+
+function print_doc {
+cat << EOF
+======================================================
+$MYNAME_GIT - patch queues for git
+======================================================
+
+Overview
+--------
+
+Patches vs. Revisions
++++++++++++++++++++++
+
+git manages a repository with *commits*. All commits are ordered in a sense
+that a commit has only one predecessor, but may have more than one
+successor.
+
+Git distinguishes commits by their hash key. Git hashes are calculated based on
+the contents of the files in the commit, the metadata of the commit (like
+timestamp and author), and the parent commit's hash.
+
+The *difference* of two consecutive commits is called a *patch*.
+
+A patch here can have two states:
+
+- *applied* : the patch is applied in the repository and is a commit.
+- *unapplied* : the patch is represented by a *patch file* and is not a
+  commit in the repository.
+
+A *patch file* contains all changes to files, the log message, timestamp and
+author but *no hash key*. So patch files are not strictly dependent on their
+predecessor patch files.
+
+Each time you unapply and then apply a patch, the hash key of the commit in git
+will change. Git considers the commit now as something different. For this
+reason, you should never unapply and apply a patch for a commit that is also
+present in another git repository. This would lead to duplicate patches and
+branches in your repository.
+
+The *patch file* is created with the \`git format-patch\` command. This is
+basically a recipe how to apply all the changes of the patch to the files in
+the repository.
+
+Applying a patch may lead to *conflicts*. In this case, one or more of the
+recipes in the patch file fails. Reasons for this may be:
+
+- the file to change doesn't exist
+- the location in the file, marked by surrounding lines, cannot be found
+
+All recipes, called "hunks", that couldn't be applied are put in a *reject
+file*. For example, a conflict in file 'README.txt' creates a file
+'README.txt.rej'. In this case you have to load both, the reject file and the
+original file in an editor and apply the recipe manually. This is called
+*resolving the conflict*.
+
+Conflicts may happen when:
+
+- you change the order of unapplied patches
+- you unapply patches, make changes in the repository, e.g. \`git pull\` and
+  then apply the patches again
+- you combine ('fold') unapplied patches that are not in consecutive order
+
+The patch queue
++++++++++++++++
+
+$MYNAME_GIT manages unapplied patches in a *patch queue*. This is an ordered
+set of unapplied patches that knows two basic operations:
+
+- pop : Removes the top ('HEAD') commit from the git repository and puts it as
+  a patch on the top of the patch queue.
+- push : Takes the top patch from the patch queue and puts it back at the top
+  ('HEAD') position of the git repository as a new commit.
+
+$MYNAME_GIT can manage one or more than one patch queues in your git
+repository. The patch queues *are not* part of your repository and are ignored
+by git, they can however, be used to remove or add patches to your repository.
+
+How the patch queue is implemented
+++++++++++++++++++++++++++++++++++
+
+All data of $MYNAME_GIT is put in a directory '$TOPPATCHDIR'. If you make a
+backup of your patch queue, a file "$TOPPATCHDIR-DATE.tgz" is created, which
+contains all files from directory '$TOPPATCHDIR'.
+
+Even if you have several patch queues, all data is stored in directory
+'$TOPPATCHDIR'.
+
+In patch directory '$TOPPATCHDIR', the file '$QUEUEFILE' contains the name
+of the currently used patch queue. All it's data is in a sub directory with the
+same name.
+
+This sub directory contains all patches currently in the queue as single files.
+These files are created with the command \`git format-patch\` when you run
+\`$MYNAME_GIT pop\`. When you run \`$MYNAME_GIT push\`, the command \`git am
+FILENAME\` is called. The order of the patch files is defined by their order in
+the file 'series'.
+
+Finally, the file 'parent' contains the parent revision. You cannot go beyond
+the parent revision with \`$MYNAME_GIT pop\`.
+
+Patches and git hash keys
++++++++++++++++++++++++++
+
+It is important to understand, that a \`$MYNAME_GIT pop\` followed by
+\`$MYNAME_GIT push\` restores the commit along with the commit message, date
+and author but changes the hash key, so for git this is a new commit even if it
+seems unchanged.
+
+For this reason *you must never* use the patch queue on git revisions that were
+already published or were pulled from another repository.
+
+\`$MYNAME_GIT\` helps you to obey this rule with the definition of the *parent
+revision*. \`$MYNAME_GIT\` will not allow you to run \`$MYNAME_GIT pop\` on
+this revision and beyond. The parent revision is stored when you initialize
+$MYNAME_GIT with \`$MYNAME_GIT init\' and can be changed with the command
+\`$MYNAME_GIT name\`.
+
+Example Workflows
+-----------------
+
+Local development
++++++++++++++++++
+
+Assuming you have cloned another git repository and want to start development
+here. With \`$MYNAME_GIT\` you don't need to create a local branch. Just run::
+
+  $MYNAME_GIT init
+
+This sets up the \`$MYNAME_GIT\` directory and marks the current HEAD revision
+as parent revision.
+
+You can now begin to make changes. You create preliminary commits with::
+
+  $MYNAME_GIT new NAME
+
+where NAME should be a one line string with no spaces in it. This is a
+preliminary log message that you can later update and extend. Every time you
+make more changes you can either:
+
+- run \`$MYNAME_GIT new\` to create a new commit
+- run \`$MYNAME_GIT refresh\` to update the topmost commit
+- run the \`git add..\` and \`git commit\` as usual to create a new commit
+
+You can see what patches are applied with::
+
+  $MYNAME_GIT applied
+
+You can see what patches are unapplied with::
+
+  $MYNAME_GIT unapplied
+
+When you want to finalize your commits and update commit messages, first move
+all of them as patches to the patch queue::
+
+  $MYNAME_GIT pop -a
+
+Then for each patch, to provide a proper log message, run::
+
+  $MYNAME_GIT push
+  $MYNAME_GIT refresh
+
+You can also combine ('fold') an unapplied patch with::
+
+  $MYNAME_GIT fold PATCH
+
+When you are finished for all patches you can finalize these changes by setting
+the parent version to the current HEAD version::
+
+  $MYNAME_GIT parent HEAD
+
+You are now ready to publish your patches.
+
+Updates from a remote repository
+++++++++++++++++++++++++++++++++
+
+When you have created local patches and want to update your repository with new
+patches from a remote repository, the usual way would be to run
+\`git pull\` and then \`git merge\` or \`git rebase -i\`.
+
+With the patch queue, there is now another way to handle this. Before pulling
+patches from the public repository, put all your local changes on the patch
+queue::
+
+  $MYNAME_GIT pull -a
+
+As a safety measure backup your patch queue with::
+
+  $MYNAME_GIT backup
+
+Now pull patches from the remote repository::
+
+  git pull
+
+Reset the parent revision to the new repository HEAD::
+
+  $MYNAME_GIT parent HEAD
+
+Finally re-apply all your patches::
+
+  $MYNAME_GIT push -a
+
+If you get messages about conflicts ("rejects") see below at "resolve conflicts".
+
+This workflow allows to resolve conflicts step by step which is usually easier
+than resolving all conflicts all at once. Also the reject files created for
+each conflict clearly show which change was intended at the patch which is
+usually easier than the common 3-way merge.
+
+Resolve conflicts
++++++++++++++++++
+
+If \`$MYNAME_GIT push\` git complains about conflicts, you have to resolve this
+manually.
+
+Conflicts may occur when:
+
+- the order of unapplied patches was changed
+- new patches were pulled from another repository and the patch queue parent
+  was changed
+
+You must resolve the conflict for each conflicting patch. Git always creates a
+reject (\*.rej) file that contains the changes that couldn't be applied since
+lines nearby had changes. Usually you see at once what change was intended and
+in most cases it is easy to apply the intended change manually.
+
+This is not as difficult as it sounds, search for lines in the reject file
+without '-' or '+' at the start, locate these lines in the original file. This
+shows where the change should be applied. Lines starting with '-' have to be
+removed, lines with '+' have to be added.
+
+After you resolved all conflicts, continue with::
+
+  $MYNAME_GIT continue
+
+If it seems to difficult to resolve the conflicts this way, you may abort the
+operation that lead to the conflicts with::
+
+  $MYNAME_GIT abort
+
+This may be needed when the hunk in the reject file is very large, then it may
+be easier to compare files and apply changes directly.
+
+Command line interface
+----------------------
+
+EOF
+short_help_text
+}
+
+function print_short_help {
+    short_help_text | grep -v '^+\+$'
+}
 
 function git_goto_repo_dir {
     while [ "$(pwd)" != "/" ]; do
@@ -67,7 +322,28 @@ function git_amend {
         EXTRA="-F $1"
     fi
     git_add_changes
-    git commit --amend "$EXTRA"
+    # shellcheck disable=SC2086
+    git commit --amend $EXTRA
+}
+
+function save_applied_patches {
+    # save all applued patches
+    local PARENT
+    if [ ! -s "$PARENTFILE" ]; then
+        echo "Error, $PARENTFILE is empty/non-existent" >&2
+        exit 1
+    fi
+    PARENT=$(cat "$PARENTFILE")
+    rev=$(git rev-parse --short HEAD)
+    rm -rf "$APPLIEDDIR"
+    if [ "$rev" != "$PARENT" ]; then
+        mkdir -p "$APPLIEDDIR"
+        git format-patch -o "$APPLIEDDIR" "$PARENT.."
+    fi
+}
+
+function del_applied_patches {
+    rm -rf "$APPLIEDDIR"
 }
 
 function select_queue {
@@ -76,6 +352,7 @@ function select_queue {
     #                            PARENTFILE
     QUEUENAME="$1"
     PATCHDIR="$TOPPATCHDIR/$QUEUENAME"
+    APPLIEDDIR="$PATCHDIR/applied"
     SERIESFILE="$PATCHDIR/series"
     PARENTFILE="$PATCHDIR/parent"
 }
@@ -134,11 +411,11 @@ function qpush_specified {
     # $1: name of patch
     local PATCHNAME
     if [ ! -s "$SERIESFILE" ]; then
-        echo "error, no patches in $SERIESFILE"
+        echo "Error, all patchea in queue are already applued." >&2
         exit 1
     fi
     PATCHNAME=$(grep -F -e "$name" "$SERIESFILE")
-    if [ -z "$PATCHNAME" ]; then 
+    if [ -z "$PATCHNAME" ]; then
         echo "error, patch '$name' not found in $SERIESFILE, maybe the patch is alraedy applied" >&2
         exit 1
     fi
@@ -161,7 +438,7 @@ function qpush_one {
     # do a single 'qpush' operation.
     local PATCHNAME
     if [ ! -s "$SERIESFILE" ]; then
-        echo "error, no patches in $SERIESFILE"
+        echo "Error, all patchea in queue are already applued." >&2
         exit 1
     fi
     PATCHNAME=$(head -n 1 "$SERIESFILE")
@@ -207,64 +484,140 @@ function create_parentfile {
     echo "$rev" > "$PARENTFILE"
 }
 
-function print_short_help {
-    # shellcheck disable=SC2001
-    echo "$MYNAME : handle git patch queues"
-    echo
-    echo "usage: $MYNAME_GIT COMMAND [OPTIONS]"
-    echo
-    echo "Known COMMANDS":
-    echo
-    echo "Completion:"
-    echo
-    echo "  commands       : list all known commands on the console"
-    echo "  bashcompletion : list the line you have to add to your .bashrc"
-    echo "                   to integrate completion into the 'git' command."
-    echo
-    echo "Quene management:"
-    echo "  init [QNAME]   : create/select a patch queue with name 'QNAME'."
-    echo "                   QNAME is optional, the default patch queue name is"
-    echo "                   'default'."
-    echo "                   You must run this command once to initialize the"
-    echo "                   patch queue in your repository."
-    echo "  name [QNAME]   : if QNAME is not given, show current patch queue name."
-    echo "                   if QNAME is given, change to patch queue QNAME."
-    echo "  backup         : create backup tar file of patch directory"
-    echo "                   '$TOPPATCHDIR'."
-    echo "  change-order   : call an editor to edit the file that contains all"
-    echo "                   currently unapplied patches. Note the the patches"
-    echo "                   in the file are applied from top to bottom."
-    echo "  applied        : show all applied patches up to parent+1"
-    echo "  unapplied      : show all patches of the patch queue"
-    echo "  parent [REV}   : Set REV as patch queue parent revision. Do never go "
-    echo "                   beyond this revision with pop. Use 'HEAD' to set your"
-    echo "                   repository HEAD as parent revision."
-    echo "                   If HEAD is not given, show the current parent revision."
-    echo
-    echo "Patch management:"
-    echo "  new [NAME]     : create new patch (commit with log-message NAME)"
-    echo "  record [NAME]  : interactively select changes for a new patch"
-    echo "                   (commit with log-message NAME)"
-    echo "  refresh        : update the topmost patch"
-    echo "  pop            : pop the topmost patch."
-    echo "  push           : apply the top patch from the patch queue"
-    echo "  fold NAME      : fold patch 'NAME' to the topmost patch. Patch 'name'"
-    echo "                   must not be appled already."
-    echo "  delete NAME    : delete unapplied patch with given name."
-    echo "  dump NAME      : dump an unapplied patch to the console."
-    echo "  continue       : continue 'push' after you had a conflict and had"
-    echo "                   it fixed manually."
-    echo "  abort          : abort (undo) 'push' after you had a conflict and could"
-    echo "                   not fix it manually."
-    echo
-    echo "Miscellaneous"
-    echo "  log            : Display git patches as a tree in the terminal."
-    echo
-    echo "OPTIONS:"
-    echo "-h --help    : show help"
-    echo "-H --HELP    : show help without pager"
-    echo "-a --all     : push: push ALL patches"
-    echo "               pop : pop ALL patches"
+function short_help_text {
+cat << EOF
+$MYNAME : handle git patch queues
+
+usage: $MYNAME_GIT COMMAND [OPTIONS]
+
+Bash completion commands
+++++++++++++++++++++++++
+
+  commands       
+    List all known commands on the console
+
+  bashcompletion 
+    List the line you have to add to your .bashrc
+    to integrate completion into the 'git' command.
+
+Queue management commands
++++++++++++++++++++++++++
+
+  init [QNAME]   
+    Create/select a patch queue with name 'QNAME'. QNAME is optional, the
+    default patch queue name is 'default'. You must run this command once to
+    initialize the patch queue in your repository.
+
+  name [QNAME]   
+    If QNAME is not given, show current patch queue name. if QNAME is given,
+    change to patch queue QNAME.
+
+  backup         
+    Create backup tar file of patch directory '$TOPPATCHDIR'.
+
+  restore FILE   
+    Restore patch directory from a backup file. '$TOPPATCHDIR'.
+
+  change-order   
+    Call an editor to edit the file that contains all currently unapplied
+    patches. Note the the patches in the file are applied from top to bottom.
+
+  applied    
+    Show all applied patches up to parent+1.
+
+  unapplied      
+    Show all patches of the patch queue.
+
+  parent [REV}   
+    Set REV as patch queue parent revision. Do never go beyond this revision
+    with pop. Use 'HEAD' to set your repository HEAD as parent revision. If
+    HEAD is not given, show the current parent revision.
+
+Patch management commands
++++++++++++++++++++++++++
+
+  new [NAME]     
+    Create new patch (commit with log-message NAME).
+
+  record [NAME]  
+    Interactively select changes for a new patch (commit with log-message NAME)
+
+  refresh        
+    Update the topmost patch.
+
+  pop            
+    Pop the topmost patch.
+
+  push           
+    Apply the top patch from the patch queue.
+
+  fold NAME      
+    Fold patch 'NAME' to the topmost patch. Patch 'name' must not be appled
+    already.
+
+  delete NAME    
+    Delete unapplied patch with given name.
+
+  dump NAME      
+    Dump an unapplied patch to the console.
+
+  continue       
+    Continue 'push' after you had a conflict and had it fixed manually.
+
+  abort          
+    Abort (undo) 'push' after you had a conflict and could not fix it manually.
+
+Miscellaneous commands
+++++++++++++++++++++++
+
+  help           
+    Show this help.
+
+  doc            
+    Show reStructuredText source of man page.
+
+  man            
+    Show man page.
+
+  log            
+    Display applied patches (commits) as a tree on the console.
+
+OPTIONS
++++++++
+
+  -h --help
+    Show help.
+
+  -H --HELP
+    Show help without pager.
+
+  -a --all
+    push/pop: apply on ALL patches.
+EOF
+}
+
+function pager_help {
+    if less -V >/dev/null 2>&1; then
+        # use less pager for help:
+        $SCRIPT_FULL_NAME --HELP | less
+    else
+        print_short_help
+    fi
+}
+
+function manpage {
+    # display man page generated with rst2man
+    if ! rst2man --version > /dev/null; then
+        echo "rst2man not found, display reStructuredText instead." >&2
+        if less -V >/dev/null 2>&1; then
+            # use less pager for help:
+            $SCRIPT_FULL_NAME doc | less
+        else
+            print_doc
+        fi
+    else
+        $SCRIPT_FULL_NAME doc | rst2man | man -l -
+    fi
 }
 
 declare -a ARGS
@@ -273,15 +626,8 @@ skip_options=""
 while true; do
     case "$1" in
         -h | --help)
-            # if the "less" is present, use it:
-            if less -V >/dev/null 2>&1; then
-                # use less pager for help:
-                $SCRIPT_FULL_NAME --HELP | less
-                exit 0
-            else
-                print_short_help
-                exit 0
-            fi
+            pager_help
+            exit 0
             ;;
         -H | --HELP)
             print_short_help
@@ -289,6 +635,10 @@ while true; do
             ;;
         -a | --all)
             all="yes"
+            shift
+            ;;
+        --debug)
+            debug="yes"
             shift
             ;;
         -- )
@@ -328,6 +678,14 @@ for arg in "${ARGS[@]}"; do
     # if [ "§arg" == "doit" ]; then ...
     #     continue
     # fi
+    if [ "$COMMAND" == "restore" ]; then
+        if [ -n "$file" ]; then
+            echo "unexpected: '$arg'" >&2
+            exit 1
+        fi
+        file="$arg"
+        continue
+    fi
     if [ "$COMMAND" == "parent" ]; then
         if [ -n "$rev" ]; then
             echo "unexpected: '$arg'" >&2
@@ -356,15 +714,23 @@ for arg in "${ARGS[@]}"; do
     exit 1
 done
 
-if [ -z "$COMMAND" ]; then
-    if less -V >/dev/null 2>&1; then
-        # use less pager for help:
-        $SCRIPT_FULL_NAME --HELP | less
-        exit 0
-    else
-        print_short_help
-        exit 0
-    fi
+if [ -n "$debug" ]; then
+    set -x
+fi
+
+if [ -z "$COMMAND" ] || [ "$COMMAND" == "help" ]; then
+    manpage
+    exit 0
+fi
+
+if [ "$COMMAND" == "doc" ]; then
+    print_doc
+    exit 0
+fi
+
+if [ "$COMMAND" == "man" ]; then
+    manpage
+    exit 0
 fi
 
 if [ "$COMMAND" == "commands" ]; then
@@ -378,7 +744,35 @@ if [ "$COMMAND" == "bashcompletion" ]; then
     exit 0
 fi
 
+if [ -n "$file" ]; then
+    if [ ! -e "$file" ]; then
+        echo "Error, file $file doesn't exist." >&2
+        exit 1
+    fi
+    # convert 'file' to an absolute path:
+    file="$(readlink -e "$file")"
+fi
+
 git_goto_repo_dir
+
+if [ "$COMMAND" == "restore" ]; then
+    if [ -d "$TOPPATCHDIR" ]; then
+        echo "Error, $TOPPATCHDIR already exists, you must remove/delete">&2
+        echo "this first.">&2
+        exit 1
+    fi
+    tar -xzf "$file"
+    QUEUENAME=$(cat "$QUEUEFILE")
+    select_queue "$QUEUENAME"
+    PARENT=$(cat "$PARENTFILE")
+    git reset --hard "$PARENT"
+    if [ -d "$APPLIEDDIR" ]; then
+        # shellcheck disable=SC2086
+        git am $APPLIEDDIR/*.patch
+    fi
+    rm -rf "$APPLIEDDIR"
+    exit 0
+fi
 
 if [ "$COMMAND" == "init" ]; then
     if [ -n "$name" ]; then
@@ -403,7 +797,7 @@ if [ "$COMMAND" == "name" ]; then
     if [ -z "$name" ]; then
         QUEUENAME=$(cat "$QUEUEFILE")
         echo "Existing queues:"
-        (cd $TOPPATCHDIR && find . -type d | grep -v '^\.$' | sed -e 's#^\./##')
+        (cd $TOPPATCHDIR && find . -type d | grep -v '^\.$' | sed -e 's#^\./#\t#')
         echo
         echo "Currently selected:"
         echo -e "\t$QUEUENAME"
@@ -426,8 +820,10 @@ fi
 select_queue "$QUEUENAME"
 
 if [ "$COMMAND" == "backup" ]; then
+    save_applied_patches
     date_=$(date '+%Y-%m-%dT%H%M%S')
     tar -czf "$TOPPATCHDIR-$date_.tgz" "$TOPPATCHDIR"
+    del_applied_patches
     exit 0
 fi
 
@@ -456,7 +852,7 @@ if [ "$COMMAND" == "log" ]; then
 fi
 
 if [ "$COMMAND" == "parent" ]; then
-    if [ -z "$rev" ]; then 
+    if [ -z "$rev" ]; then
         if [ ! -s "$PARENTFILE" ]; then
             echo "no PARENT revision defined"
         else
@@ -591,7 +987,7 @@ if [ "$COMMAND" == "continue" ]; then
         exit 1
     fi
     if [ -e "$SERIESFILE.new" ]; then
-        cp -a "$SERIESFILE.new" "$SERIESFILE" 
+        cp -a "$SERIESFILE.new" "$SERIESFILE"
     fi
     name=$(cat "$PATCHDIR/PUSH")
     rm -f "$SERIESFILE.new;" "$PATCHDIR/$name" "$PATCHDIR/PUSH"
