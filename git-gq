@@ -37,8 +37,8 @@ $MYNAME_GIT - patch queues for git
 Overview
 --------
 
-Patches vs. Revisions
-+++++++++++++++++++++
+Patches vs. Commits
++++++++++++++++++++
 
 git manages a repository with *commits*. All commits are ordered in a sense
 that a commit has only one predecessor, but may have more than one
