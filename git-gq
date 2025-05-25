@@ -17,7 +17,7 @@ SERIESFILE="$PATCHDIR/series"
 PARENTFILE="$PATCHDIR/parent"
 QUEUEFILE="$TOPPATCHDIR/queue"
 
-ALL_COMMANDS="bashcompletion change-order commands abort applied backup continue delete doc dump fold help init log man name new parent pop push record refresh restore unapplied"
+ALL_COMMANDS="bashcompletion change-order commands abort applied backup continue delete doc dump fold goto help init log man name new parent pop push record refresh restore unapplied"
 
 # shellcheck disable=SC2001
 ALL_COMMANDS_RX=$(echo "$ALL_COMMANDS" | sed -e 's/ /|/g')
@@ -27,6 +27,8 @@ all=""
 rev=""
 name=""
 file=""
+
+patchname=""
 
 function print_doc {
 cat << EOF
@@ -293,6 +295,31 @@ function git_goto_repo_dir {
     fi
 }
 
+function find_unapplied_patch {
+    # $1: regexp
+    # finds unapplied patch
+    grep "$1" "$SERIESFILE"
+}
+
+function find_applied_patch {
+    # $1: regexp
+    # finds applied patch, returns hash key
+    local START
+    START="$(cat "$PARENTFILE").."
+    git log --oneline "$START" | grep "$1" | sed -e 's/ .*//'
+}
+
+function find_applied_top_patch {
+    # $1: regexp
+    # finds applied top patch, returns hash key
+    local START
+    git log --oneline HEAD | grep "$1" | sed -e 's/ .*//'
+}
+
+function dump_patch_file {
+    # $1: file
+    colordiff < "$1" | less -R
+}
 
 function git_head_log {
     # $1: name of file to create
@@ -301,7 +328,7 @@ function git_head_log {
 
 function git_add_changes {
     # add only changes files to stash
-    git status --porcelain | grep -v '^??' | sed -e 's/^.. //' | xargs git add
+    git status --porcelain | grep -v '^??' | sed -e 's/^.. //' | grep -v "\(^${TOPPATCHDIR}[/-]\|\.rej$\)" |xargs git add
 }
 
 function git_select_changes {
@@ -311,7 +338,7 @@ function git_select_changes {
 
 function git_add_all_changes {
     # add all changes except patchqueue files
-    git status --porcelain | sed -e 's/^.. //' | grep -v "\(^${PATCHDIR}[/-]\|\.rej$\)" | xargs git add
+    git status --porcelain | sed -e 's/^.. //' | grep -v "\(^${TOPPATCHDIR}[/-]\|\.rej$\)" | xargs git add
 }
 
 function git_amend {
@@ -327,7 +354,7 @@ function git_amend {
 }
 
 function save_applied_patches {
-    # save all applued patches
+    # save all applied patches
     local PARENT
     if [ ! -s "$PARENTFILE" ]; then
         echo "Error, $PARENTFILE is empty/non-existent" >&2
@@ -411,7 +438,7 @@ function qpush_specified {
     # $1: name of patch
     local PATCHNAME
     if [ ! -s "$SERIESFILE" ]; then
-        echo "Error, all patchea in queue are already applued." >&2
+        echo "Error, all patches in queue are already applied." >&2
         exit 1
     fi
     PATCHNAME=$(grep -F -e "$name" "$SERIESFILE")
@@ -438,7 +465,7 @@ function qpush_one {
     # do a single 'qpush' operation.
     local PATCHNAME
     if [ ! -s "$SERIESFILE" ]; then
-        echo "Error, all patchea in queue are already applued." >&2
+        echo "Error, all patches in queue are already applied." >&2
         exit 1
     fi
     PATCHNAME=$(head -n 1 "$SERIESFILE")
@@ -551,15 +578,18 @@ Patch management commands
   push           
     Apply the top patch from the patch queue.
 
-  fold NAME      
-    Fold patch 'NAME' to the topmost patch. Patch 'name' must not be appled
+  goto NAME|REGEXP
+    Do push or pop until the specified patch is the latest applied patch.
+
+  fold NAME|REGEXP
+    Fold patch 'NAME' to the topmost patch. Patch 'NAME' must not be appled
     already.
 
   delete NAME    
     Delete unapplied patch with given name.
 
-  dump NAME      
-    Dump an unapplied patch to the console.
+  dump NAME|REGEXP
+    Dump an applied or unapplied patch to the console.
 
   continue       
     Continue 'push' after you had a conflict and had it fixed manually.
@@ -694,7 +724,7 @@ for arg in "${ARGS[@]}"; do
         rev="$arg"
         continue
     fi
-    if [[ "$COMMAND" =~ init|fold|new|record|delete|dump ]]; then
+    if [[ "$COMMAND" =~ init|fold|goto|new|record|delete|dump ]]; then
         if [ -n "$name" ]; then
             echo "unexpected: '$arg'" >&2
             exit 1
@@ -938,6 +968,51 @@ if [ "$COMMAND" == "fold" ]; then
         echo "error, patchname is missing" >&2
         exit 1
     fi
+    exit 0
+fi
+
+if [ "$COMMAND" == "goto" ]; then
+    if [ -z "$name" ]; then
+        echo "error, patchname is missing" >&2
+        exit 1
+    fi
+    patchname=$(find_unapplied_patch "$name")
+    if [ -n "$patchname" ]; then
+        while true; do
+            qpush_one
+            if [ -z "$(find_unapplied_patch "$name")" ]; then
+                break
+            fi
+        done
+        exit 0
+    fi
+    patchname=$(find_applied_patch "$name")
+    if [ -n "$patchname" ]; then
+        while true; do
+            qpop_one
+            if [ -n "$(find_applied_top_patch "$patchname")" ]; then
+                break
+            fi
+        done
+        exit 0
+    fi
+    echo "Error, patch '$name' not found."
+    exit 1
+fi
+
+if [ "$COMMAND" == "fold" ]; then
+    if [ -z "$name" ]; then
+        echo "error, patchname is missing" >&2
+        exit 1
+    fi
+    if [ ! -e "$PATCHDIR/$name" ]; then
+        patchname=$(find_unapplied_patch "$name")
+        if [ -z "$patchname" ]; then
+            echo "Error, patch '$name' not found." >&2
+            exit 1
+        fi
+        name="$patchname"
+    fi
     git_head_log "$PATCHDIR/LOG"
     echo -e '\n***\n' >> "$PATCHDIR/LOG"
     qpush_specified "$name"
@@ -953,12 +1028,23 @@ if [ "$COMMAND" == "fold" ]; then
 fi
 
 if [ "$COMMAND" == "dump" ]; then
-    if [ ! -e "$PATCHDIR/$name" ]; then
-        echo "error, patch '$name' not found" >&2
-        exit 1
+    patchname="$name"
+    if [ -e "$PATCHDIR/$patchname" ]; then
+        dump_patch_file "$PATCHDIR/$patchname"
+        exit 0
     fi
-    colordiff < "$PATCHDIR/$name" | less -R
-    exit 0
+    patchname="$(find_unapplied_patch "$name")"
+    if [ -n "$patchname" ]; then
+        dump_patch_file "$PATCHDIR/$patchname"
+        exit 0
+    fi
+    patchname="$(find_applied_patch "$name")"
+    if [ -n "$patchname" ]; then
+        git show "$patchname"
+        exit 0
+    fi
+    echo "error, patch '$name' not found" >&2
+    exit 1
 fi
 
 if [ "$COMMAND" == "applied" ]; then
