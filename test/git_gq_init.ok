@@ -1,0 +1,7 @@
+Run 'gq init'
+queue parent revision set to HEAD (abcdef0)
+Files in .gqpatches:
+.gqpatches
+.gqpatches/queue
+.gqpatches/default
+.gqpatches/default/parent

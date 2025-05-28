@@ -1,0 +1,23 @@
+Add two more patches after 'git gq init'
+[master abcdef0] README was improved.
+1 file changed, 1 insertion(+), 1 deletion(-)
+[master abcdef0] script.sh was improved.
+1 file changed, 1 insertion(+), 1 deletion(-)
+Output of 'git log' now:
+commit abcdef0123456789abcdef0123456789
+Author: Homer Simpson <simpson@burns-powerplant.com>
+Date: Sun Dec 31 09:12:34 2001 +0100
+
+script.sh was improved.
+
+commit abcdef0123456789abcdef0123456789
+Author: Homer Simpson <simpson@burns-powerplant.com>
+Date: Sun Dec 31 09:12:34 2001 +0100
+
+README was improved.
+
+commit abcdef0123456789abcdef0123456789
+Author: Homer Simpson <simpson@burns-powerplant.com>
+Date: Sun Dec 31 09:12:34 2001 +0100
+
+initial commit
