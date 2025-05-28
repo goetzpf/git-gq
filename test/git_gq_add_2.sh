@@ -16,10 +16,10 @@ cp -a $SRCDIR $TMPDIR
 cd $TMPDIR || exit 1
 
 echo "This is an improved README file." > README.txt
-git commit -a -m 'README was improved.' 2>&1 | dummy_hash_filter_sqbr | dummy_hash_filter_commit
+git commit -a -m 'README was improved.' 2>&1 | filter_squarebracket_hash | filter_commit_hash
 sed -i -e 's/^echo.*/echo "Script prototype"/' script.sh
-git commit -a -m 'script.sh was improved.'  2>&1 | dummy_hash_filter_sqbr | dummy_hash_filter_commit
+git commit -a -m 'script.sh was improved.'  2>&1 | filter_squarebracket_hash | filter_commit_hash
 echo "Output of 'git log' now:"
-git log | dummy_hash_filter_commit | dummy_hash_filter_author | dummy_hash_filter_date
+git log | filter_commit_hash | filter_author | filter_mail_date
 
 

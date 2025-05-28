@@ -13,6 +13,6 @@ cp -a repo $TMPDIR
 
 cd $TMPDIR || exit 1
 
-$GIT_GQ init 2>&1 | dummy_hash_filter_br
+$GIT_GQ init 2>&1 | filter_parenthesis_hash
 echo "Files in .gqpatches:"
 find .gqpatches

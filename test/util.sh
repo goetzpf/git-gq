@@ -7,73 +7,66 @@ DUMMY_HASH_LONG="abcdef0123456789abcdef0123456789"
 DUMMY_AUTHOR="Homer Simpson <simpson@burns-powerplant.com>"
 DUMMY_DATE="Sun Dec 31 09:12:34 2001 +0100"
 
-function dummy_hash_filter_br {
+function filter_parenthesis_hash {
     local line
     while read -r line ; do
         echo "$line" | sed -e "s/([a-f0-9]\+)/($DUMMY_HASH)/"
     done
 }
 
-function dummy_hash_filter_sqbr {
+function filter_squarebracket_hash {
     local line
     while read -r line ; do
         echo "$line" | sed -e "s/^\[\([^ ]\+\) \+[a-f0-9]\+\]/[\1 $DUMMY_HASH]/"
     done
 }
 
-function dummy_hash_filter_commit {
+function filter_commit_hash {
     local line
     while read -r line ; do
         echo "$line" | sed -e "s/^\(commit\) \+[a-f0-9]\+/\1 $DUMMY_HASH_LONG/"
     done
 }
 
-function dummy_hash_filter_from_hash {
+function filter_from_hash {
     local line
     while read -r line ; do
         echo "$line" | sed -e "s/^\(From\) \+[a-f0-9]\+/\1 $DUMMY_HASH_LONG/"
     done
 }
 
-function dummy_hash_filter_git {
-    local line
-    while read -r line ; do
-        echo "$line" | sed -e "s/[0-9a-f]\{7\}/$DUMMY_HASH/"
-    done
-}
-
-function dummy_hash_filter_author {
+function filter_author {
     local line
     while read -r line ; do
         echo "$line" | sed -e "s/^\(Author:\).*/\1 $DUMMY_AUTHOR/"
     done
 }
 
-function dummy_hash_filter_from_author {
+function filter_mail_from {
     local line
     while read -r line ; do
         echo "$line" | sed -e "s/^\(From:\).*/\1 $DUMMY_AUTHOR/"
     done
 }
 
-function dummy_hash_filter_author {
-    local line
-    while read -r line ; do
-        echo "$line" | sed -e "s/^\(Author:\).*/\1 $DUMMY_AUTHOR/"
-    done
-}
-
-function dummy_hash_filter_date {
+function filter_mail_date {
     local line
     while read -r line ; do
         echo "$line" | sed -e "s/^\(Date:\).*/\1 $DUMMY_DATE/"
     done
 }
 
-function dummy_hash_filter_index {
+function filter_git_index_hash {
     local line
     while read -r line ; do
         echo "$line" | sed -e "s/^\(index\) \+[0-9a-f \.]\+$/\1 $DUMMY_HASH..$DUMMY_HASH2 $DUMMY_HASH3/"
+    done
+}
+
+function filter_git_head_hash {
+    local line
+    while read -r line ; do
+        echo "$line" | sed -e "s/^\(HEAD is now at\) \+[a-f0-9]\+ \+\(.*\)/\1 $DUMMY_HASH \2/"
     done
 }
 

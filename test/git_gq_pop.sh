@@ -15,12 +15,12 @@ cp -a $SRCDIR $TMPDIR
 
 cd $TMPDIR || exit 1
 
-$GIT_GQ pop
+$GIT_GQ pop 2>&1 | filter_git_head_hash
 
 echo "Output of 'git log' now:"
-git log | dummy_hash_filter_commit | dummy_hash_filter_author | dummy_hash_filter_date
+git log | filter_commit_hash | filter_author | filter_mail_date
 
 echo "Files in .gqpatches:"
-find ls .gqpatches/default | sort
+find .gqpatches/default | sort
 echo "Content of patch file:"
-cat .gqpatches/default/script.sh-was-improved.patch | dummy_hash_filter_from_hash | dummy_hash_filter_from_author | dummy_hash_filter_date | dummy_hash_filter_index
+cat .gqpatches/default/script.sh-was-improved.patch | filter_from_hash | filter_mail_from | filter_mail_date | filter_git_index_hash
