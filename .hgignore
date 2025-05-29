@@ -1,0 +1,5 @@
+^test/repo/
+^test/repo.stamp
+^test/tmp_.*
+^test/.*\.out
+^test/.*\.tst
