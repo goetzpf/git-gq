@@ -472,7 +472,7 @@ function qpush_one {
     echo "$PATCHNAME" > "$PATCHDIR/PUSH"
     # remove PATCHNAME from SERIESFILE:
     cp -a "$SERIESFILE" "$SERIESFILE.new" && sed -i -e '1d' "$SERIESFILE.new"
-    if ! git am --reject "$PATCHDIR/$PATCHNAME"; then
+    if ! git am --reject "$PATCHDIR/$PATCHNAME" 2>&1; then
         echo "Fix the change by looking at the *.rej files."
         echo "Then run:"
         echo "  $MYNAME continue"
@@ -1051,7 +1051,8 @@ if [ "$COMMAND" == "applied" ]; then
     if [ -s "$PARENTFILE" ]; then
         START="$(cat "$PARENTFILE").."
     fi
-    git log --color=always --oneline "$START" | cat
+    #git log --color=always --oneline "$START" | cat
+    GIT_PAGER=cat git log --color=auto --oneline "$START" 
     exit 0
 fi
 
