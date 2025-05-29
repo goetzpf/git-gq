@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo "* Test git gq pop"
+echo "* Test git gq push -a"
 echo "---------------------------------------"
 echo
 
@@ -8,15 +8,15 @@ GIT_GQ="$1"
 
 source util.sh
 
-SRCDIR="tmp_git_gq_add_2"
-TMPDIR="tmp_git_gq_pop"
+SRCDIR="tmp_git_gq_pop_all"
+TMPDIR="tmp_git_gq_push_all"
 
 cp -a $SRCDIR $TMPDIR
 
 cd $TMPDIR || exit 1
 
-echo "\$ git gq pop"
-$GIT_GQ pop | filter_git_head_hash
+echo "\$ git gq push -a"
+$GIT_GQ push -a | filter_git_head_hash
 
 echo
 echo "\$ git log"
@@ -33,5 +33,3 @@ echo
 echo "# Files in .gqpatches:"
 find .gqpatches/default | sort
 echo
-echo "# Content of patch file:"
-cat .gqpatches/default/script.sh-was-improved.patch | filter_from_hash | filter_mail_from | filter_mail_date | filter_git_index_hash

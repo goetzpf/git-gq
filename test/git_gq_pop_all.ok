@@ -1,16 +1,11 @@
-* Test git gq pop
+* Test git gq pop -a
 ---------------------------------------
 
-$ git gq pop
+$ git gq pop -a
 HEAD is now at abcdef0 README was improved.
+HEAD is now at abcdef0 initial commit
 
 $ git log
-commit abcdef0123456789abcdef0123456789
-Author: Homer Simpson <simpson@burns-powerplant.com>
-Date: Sun Dec 31 09:12:34 2001 +0100
-
-README was improved.
-
 commit abcdef0123456789abcdef0123456789
 Author: Homer Simpson <simpson@burns-powerplant.com>
 Date: Sun Dec 31 09:12:34 2001 +0100
@@ -18,18 +13,40 @@ Date: Sun Dec 31 09:12:34 2001 +0100
 initial commit
 
 $ git gq applied
-abcdef0 README was improved.
 
 $ git gq unapplied
+README-was-improved.patch
 script.sh-was-improved.patch
 
 # Files in .gqpatches:
 .gqpatches/default
 .gqpatches/default/parent
+.gqpatches/default/README-was-improved.patch
 .gqpatches/default/script.sh-was-improved.patch
 .gqpatches/default/series
 
-# Content of patch file:
+# Content of patch file README-was-improved.patch:
+From abcdef0123456789abcdef0123456789 Mon Sep 17 00:00:00 2001
+From: Homer Simpson <simpson@burns-powerplant.com>
+Date: Sun Dec 31 09:12:34 2001 +0100
+Subject: [PATCH] README was improved.
+
+---
+README.txt | 2 +-
+1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/README.txt b/README.txt
+index abcdef0..abcdef1 abcdef3
+--- a/README.txt
++++ b/README.txt
+@@ -1 +1 @@
+-A readme file
++This is an improved README file.
+--
+2.49.0
+
+
+# Content of patch file script.sh-was-improved.patch:
 From abcdef0123456789abcdef0123456789 Mon Sep 17 00:00:00 2001
 From: Homer Simpson <simpson@burns-powerplant.com>
 Date: Sun Dec 31 09:12:34 2001 +0100

@@ -1,15 +1,10 @@
-* Add two more patches after 'git gq init'
+* Test git gq push
 ---------------------------------------
 
-# Change README.txt ...
-$ git commit
-[master abcdef0] README was improved.
-1 file changed, 1 insertion(+), 1 deletion(-)
-
-# Change script.sh ...
-$ git commit
-[master abcdef0] script.sh was improved.
-1 file changed, 1 insertion(+), 1 deletion(-)
+$ git gq push
+Checking patch script.sh...
+Applied patch script.sh cleanly.
+Applying: script.sh was improved.
 
 $ git log
 commit abcdef0123456789abcdef0123456789
@@ -35,3 +30,8 @@ abcdef0 script.sh was improved.
 abcdef0 README was improved.
 
 $ git gq unapplied
+
+# Files in .gqpatches:
+.gqpatches/default
+.gqpatches/default/parent
+.gqpatches/default/series

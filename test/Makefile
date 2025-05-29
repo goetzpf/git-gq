@@ -44,6 +44,13 @@ $(shell_tests_tst): %.tst: %.sh %.ok %.out
 
 git_gq_add_2.out: git_gq_init.tst
 git_gq_pop: git_gq_add_2.out
+git_gq_push: git_gq_pop.out
+git_gq_pop_all: git_gq_add_2
+git_gq_push_all: git_gq_pop_all
+git_gq_pop_all_push_all: git_gq_add_2
+git_gq_pop_reorder_push: git_gq_add_2
+git_gq_new: git_gq_add_2
+git_gq_refresh: git_gq_add_2
 
 #--------------------------
 #

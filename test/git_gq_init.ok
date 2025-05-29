@@ -1,7 +1,15 @@
-Run 'gq init'
+* Test git gq init
+---------------------------------------
+
+$ git gq init
 queue parent revision set to HEAD (abcdef0)
-Files in .gqpatches:
+
+# Files in directory .gqpatches:
 .gqpatches
 .gqpatches/queue
 .gqpatches/default
 .gqpatches/default/parent
+
+$ git gq applied
+
+$ git gq unapplied

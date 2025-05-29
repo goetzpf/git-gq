@@ -7,7 +7,16 @@ DUMMY_HASH_LONG="abcdef0123456789abcdef0123456789"
 DUMMY_AUTHOR="Homer Simpson <simpson@burns-powerplant.com>"
 DUMMY_DATE="Sun Dec 31 09:12:34 2001 +0100"
 
+function filter_linestart_hash {
+    # '983fda7 TEXT' --> 'abcdef0 TEXT'
+    local line
+    while read -r line ; do
+        echo "$line" | sed -e "s/^[a-f0-9]\+ \+/$DUMMY_HASH /"
+    done
+}
+
 function filter_parenthesis_hash {
+    # '(983fda7)' --> '(abcdef0)'
     local line
     while read -r line ; do
         echo "$line" | sed -e "s/([a-f0-9]\+)/($DUMMY_HASH)/"
@@ -15,6 +24,7 @@ function filter_parenthesis_hash {
 }
 
 function filter_squarebracket_hash {
+    # '[sometext 76ad5f4]' --> '[sometext abcdef0]'
     local line
     while read -r line ; do
         echo "$line" | sed -e "s/^\[\([^ ]\+\) \+[a-f0-9]\+\]/[\1 $DUMMY_HASH]/"
@@ -22,6 +32,7 @@ function filter_squarebracket_hash {
 }
 
 function filter_commit_hash {
+    # 'commit 76abd54efac7d5e783' --> 'commit abcdef0123456789abcdef0123456789'
     local line
     while read -r line ; do
         echo "$line" | sed -e "s/^\(commit\) \+[a-f0-9]\+/\1 $DUMMY_HASH_LONG/"
@@ -29,6 +40,7 @@ function filter_commit_hash {
 }
 
 function filter_from_hash {
+    # 'From 76abd54efac7d5e783' --> 'From abcdef0123456789abcdef0123456789'
     local line
     while read -r line ; do
         echo "$line" | sed -e "s/^\(From\) \+[a-f0-9]\+/\1 $DUMMY_HASH_LONG/"
@@ -36,6 +48,8 @@ function filter_from_hash {
 }
 
 function filter_author {
+    # 'Author: Max Meyer <meyer@ibm.com>' --> 
+    # 'Author: Homer Simpson <simpson@burns-powerplant.com>"
     local line
     while read -r line ; do
         echo "$line" | sed -e "s/^\(Author:\).*/\1 $DUMMY_AUTHOR/"
@@ -43,6 +57,8 @@ function filter_author {
 }
 
 function filter_mail_from {
+    # 'From: Max Meyer <meyer@ibm.com>' --> 
+    # 'From: Homer Simpson <simpson@burns-powerplant.com>"
     local line
     while read -r line ; do
         echo "$line" | sed -e "s/^\(From:\).*/\1 $DUMMY_AUTHOR/"
@@ -50,6 +66,8 @@ function filter_mail_from {
 }
 
 function filter_mail_date {
+    # 'Date: Wed May 15 10:12:00 2025 +0200' -->
+    # 'Sun Dec 31 09:12:34 2001 +0100'
     local line
     while read -r line ; do
         echo "$line" | sed -e "s/^\(Date:\).*/\1 $DUMMY_DATE/"
@@ -57,6 +75,8 @@ function filter_mail_date {
 }
 
 function filter_git_index_hash {
+    # 'index a5de4ef..234abd6 876defa' -->
+    # 'abcdef0..abcdef1 abcdef2'
     local line
     while read -r line ; do
         echo "$line" | sed -e "s/^\(index\) \+[0-9a-f \.]\+$/\1 $DUMMY_HASH..$DUMMY_HASH2 $DUMMY_HASH3/"
@@ -64,6 +84,8 @@ function filter_git_index_hash {
 }
 
 function filter_git_head_hash {
+    # 'HEAD is not at 54da6cd' -->
+    # 'HEAD is not at abcdef0'
     local line
     while read -r line ; do
         echo "$line" | sed -e "s/^\(HEAD is now at\) \+[a-f0-9]\+ \+\(.*\)/\1 $DUMMY_HASH \2/"
