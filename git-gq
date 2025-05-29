@@ -345,14 +345,19 @@ function git_add_all_changes {
 
 function git_amend {
     # simple amend of HEAD revision
-    # $1: if not empty, take log message from here
-    EXTRA=""
+    # $1: if not empty, this is the log message
+    # $2: if not empty, take log message from this file
+    local EXTRA
+    EXTRA=()
     if [ -n "$1" ]; then
-        EXTRA="-F $1"
+        EXTRA+=("-m" "$1")
+    fi
+    if [ -n "$2" ]; then
+        EXTRA+=("-F" "$2")
     fi
     git_add_changes
     # shellcheck disable=SC2086
-    git commit --amend $EXTRA
+    git commit --amend "${EXTRA[@]}"
 }
 
 function save_applied_patches {
@@ -904,23 +909,27 @@ fi
 if [ "$COMMAND" == "new" ]; then
     git_add_changes
     if [ -n "$name_arg" ]; then
-        name_arg="-m '$name_arg'"
+        # shellcheck disable=SC2089
+        name_opt=("-m" "$name_arg")
+    else
+        name_opt=()
     fi
-    git commit "$name"
+    git commit "${name_opt[@]}"
     exit 0
 fi
 
 if [ "$COMMAND" == "record" ]; then
     git_select_changes
-    if [ -n "$name" ]; then
-        name="-m '$name'"
+    EXTRA=()
+    if [ -n "$name_arg" ]; then
+        EXTRA=("-m" "$name_arg")
     fi
-    git commit "$name"
+    git commit "${EXTRA[@]}"
     exit 0
 fi
 
 if [ "$COMMAND" == "refresh" ]; then
-    git_amend ""
+    git_amend "" ""
     exit 0
 fi
 
@@ -1027,7 +1036,7 @@ if [ "$COMMAND" == "fold" ]; then
     cat "$PATCHDIR/LOG2" >> "$PATCHDIR/LOG" && rm -f "$PATCHDIR/LOG2"
     qpop_one
     git apply "$PATCHDIR/$name_arg"
-    git_amend "$PATCHDIR/LOG"
+    git_amend "" "$PATCHDIR/LOG"
     rm -f "$PATCHDIR/LOG"
     qdelete "$name_arg"
     echo "Note: Log messages were combined into one" >&2
@@ -1058,7 +1067,7 @@ if [ "$COMMAND" == "applied" ]; then
     if [ -s "$PARENTFILE" ]; then
         START="$(cat "$PARENTFILE").."
     fi
-    #git log --color=always --oneline "$START" | cat
+    # shellcheck disable=SC2209
     GIT_PAGER=cat git log --color=auto --oneline "$START" 
     exit 0
 fi
