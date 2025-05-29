@@ -24,6 +24,8 @@ ALL_COMMANDS_RX=$(echo "$ALL_COMMANDS" | sed -e 's/ /|/g')
 
 debug=""
 all=""
+edit=""
+message=""
 file=""
 
 rev_arg=""
@@ -635,6 +637,15 @@ OPTIONS
 
   -a --all
     push/pop: apply on ALL patches.
+
+  -e --edit
+    refresh: edit log message
+
+  -m --message MESSAGE
+    refresh: use MESSAGE as log message
+
+  -F --file FILE
+    refresh: take log message from FILE.
 EOF
 }
 
@@ -678,6 +689,18 @@ while true; do
         -a | --all)
             all="yes"
             shift
+            ;;
+        -e | --edit)
+            edit="yes"
+            shift
+            ;;
+        -m | --message)
+            message="$2"
+            shift 2
+            ;;
+        -F | --file)
+            file="$2"
+            shift 2
             ;;
         --debug)
             debug="yes"
@@ -929,7 +952,17 @@ if [ "$COMMAND" == "record" ]; then
 fi
 
 if [ "$COMMAND" == "refresh" ]; then
-    git_amend "" ""
+    if [ -z "$message" ] && [ -z "$file" ] && [ -z "$edit" ]; then
+        # re-use existing log message and keep this as
+        # log message
+        git log --format=%B -1 > "$PATCHDIR/LOG"
+        git_amend "" "$PATCHDIR/LOG"
+        rm -f "$PATCHDIR/LOG"
+    else
+        # if $message and $file are empty, this starts an editor for changing
+        # the log message.
+        git_amend "$message" "$file"
+    fi
     exit 0
 fi
 
