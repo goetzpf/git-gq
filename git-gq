@@ -24,9 +24,11 @@ ALL_COMMANDS_RX=$(echo "$ALL_COMMANDS" | sed -e 's/ /|/g')
 
 debug=""
 all=""
-rev=""
-name=""
 file=""
+
+rev_arg=""
+name_arg=""
+file_arg=""
 
 patchname=""
 
@@ -356,6 +358,7 @@ function git_amend {
 function save_applied_patches {
     # save all applied patches
     local PARENT
+    local rev
     if [ ! -s "$PARENTFILE" ]; then
         echo "Error, $PARENTFILE is empty/non-existent" >&2
         exit 1
@@ -388,6 +391,7 @@ function qpop_check {
     # returns 0 if qpop is not beyond parent,
     # returns 1 when qpop is not allowed.
     # $1: if non-zero, instead of returning 1 abort with an error message
+    local rev
     rev=$(git rev-parse --short HEAD)
     if [ -s "$PARENTFILE" ] && [ "$(cat "$PARENTFILE")" == "$rev" ]; then
         if [ -n "$1" ]; then
@@ -441,14 +445,14 @@ function qpush_specified {
         echo "Error, all patches in queue are already applied." >&2
         exit 1
     fi
-    PATCHNAME=$(grep -F -e "$name" "$SERIESFILE")
+    PATCHNAME=$(grep -F -e "$name_arg" "$SERIESFILE")
     if [ -z "$PATCHNAME" ]; then
-        echo "error, patch '$name' not found in $SERIESFILE, maybe the patch is alraedy applied" >&2
+        echo "error, patch '$name_arg' not found in $SERIESFILE, maybe the patch is alraedy applied" >&2
         exit 1
     fi
     echo "$PATCHNAME" > "$PATCHDIR/PUSH"
     # remove PATCHNAME from SERIESFILE:
-    grep -v -F -e "$name" "$SERIESFILE" > "$SERIESFILE.new"
+    grep -v -F -e "$name_arg" "$SERIESFILE" > "$SERIESFILE.new"
     if ! git am --reject "$PATCHDIR/$PATCHNAME"; then
         echo "The patch to be folded could not be applied."
         echo "Fix the change by looking at the *.rej files."
@@ -485,6 +489,8 @@ function qpush_one {
 
 function qdelete {
     # $1: name of patch to delete
+    local name
+    name="$1"
     if [ ! -e "$PATCHDIR/$name" ]; then
         echo "error, patch '$name' doesn't exist."
         exit 1
@@ -497,6 +503,7 @@ function qdelete {
 
 function create_parentfile {
     # $1: revision
+    local rev
     rev=$(git rev-parse --short "$1")
     # shellcheck disable=SC2181
     if [ $? -ne 0 ]; then
@@ -709,19 +716,19 @@ for arg in "${ARGS[@]}"; do
     #     continue
     # fi
     if [ "$COMMAND" == "restore" ]; then
-        if [ -n "$file" ]; then
+        if [ -n "$file_arg" ]; then
             echo "unexpected: '$arg'" >&2
             exit 1
         fi
-        file="$arg"
+        file_arg="$arg"
         continue
     fi
     if [ "$COMMAND" == "parent" ]; then
-        if [ -n "$rev" ]; then
+        if [ -n "$rev_arg" ]; then
             echo "unexpected: '$arg'" >&2
             exit 1
         fi
-        rev="$arg"
+        rev_arg="$arg"
         continue
     fi
     if [[ "$COMMAND" =~ init|fold|goto|new|record|delete|dump ]]; then
@@ -729,7 +736,7 @@ for arg in "${ARGS[@]}"; do
             echo "unexpected: '$arg'" >&2
             exit 1
         fi
-        name="$arg"
+        name_arg="$arg"
         continue
     fi
     if [[ "$arg" =~ $ALL_COMMANDS_RX ]]; then
@@ -774,13 +781,13 @@ if [ "$COMMAND" == "bashcompletion" ]; then
     exit 0
 fi
 
-if [ -n "$file" ]; then
-    if [ ! -e "$file" ]; then
-        echo "Error, file $file doesn't exist." >&2
+if [ -n "$file_arg" ]; then
+    if [ ! -e "$file_arg" ]; then
+        echo "Error, file $file_arg doesn't exist." >&2
         exit 1
     fi
-    # convert 'file' to an absolute path:
-    file="$(readlink -e "$file")"
+    # convert 'file_arg' to an absolute path:
+    file_arg="$(readlink -e "$file_arg")"
 fi
 
 git_goto_repo_dir
@@ -791,7 +798,7 @@ if [ "$COMMAND" == "restore" ]; then
         echo "this first.">&2
         exit 1
     fi
-    tar -xzf "$file"
+    tar -xzf "$file_arg"
     QUEUENAME=$(cat "$QUEUEFILE")
     select_queue "$QUEUENAME"
     PARENT=$(cat "$PARENTFILE")
@@ -805,8 +812,8 @@ if [ "$COMMAND" == "restore" ]; then
 fi
 
 if [ "$COMMAND" == "init" ]; then
-    if [ -n "$name" ]; then
-        QUEUENAME="$name"
+    if [ -n "$name_arg" ]; then
+        QUEUENAME="$name_arg"
     fi
     mkdir -p "$TOPPATCHDIR"
     echo "$QUEUENAME" > "$QUEUEFILE"
@@ -824,7 +831,7 @@ if [ ! -d "$TOPPATCHDIR" ]; then
 fi
 
 if [ "$COMMAND" == "name" ]; then
-    if [ -z "$name" ]; then
+    if [ -z "$name_arg" ]; then
         QUEUENAME=$(cat "$QUEUEFILE")
         echo "Existing queues:"
         (cd $TOPPATCHDIR && find . -type d | grep -v '^\.$' | sed -e 's#^\./#\t#')
@@ -882,7 +889,7 @@ if [ "$COMMAND" == "log" ]; then
 fi
 
 if [ "$COMMAND" == "parent" ]; then
-    if [ -z "$rev" ]; then
+    if [ -z "$rev_arg" ]; then
         if [ ! -s "$PARENTFILE" ]; then
             echo "no PARENT revision defined"
         else
@@ -890,14 +897,14 @@ if [ "$COMMAND" == "parent" ]; then
         fi
         exit 0
     fi
-    create_parentfile "$rev"
+    create_parentfile "$rev_arg"
     exit 0
 fi
 
 if [ "$COMMAND" == "new" ]; then
     git_add_changes
-    if [ -n "$name" ]; then
-        name="-m '$name'"
+    if [ -n "$name_arg" ]; then
+        name_arg="-m '$name_arg'"
     fi
     git commit "$name"
     exit 0
@@ -918,11 +925,11 @@ if [ "$COMMAND" == "refresh" ]; then
 fi
 
 if [ "$COMMAND" == "delete" ]; then
-    if [ -z "$name" ]; then
+    if [ -z "$name_arg" ]; then
         echo "error, patchname is missing" >&2
         exit 1
     fi
-    qdelete "$name"
+    qdelete "$name_arg"
     exit 0
 fi
 
@@ -964,7 +971,7 @@ if [ "$COMMAND" == "push" ]; then
 fi
 
 if [ "$COMMAND" == "fold" ]; then
-    if [ -z "$name" ]; then
+    if [ -z "$name_arg" ]; then
         echo "error, patchname is missing" >&2
         exit 1
     fi
@@ -972,21 +979,21 @@ if [ "$COMMAND" == "fold" ]; then
 fi
 
 if [ "$COMMAND" == "goto" ]; then
-    if [ -z "$name" ]; then
+    if [ -z "$name_arg" ]; then
         echo "error, patchname is missing" >&2
         exit 1
     fi
-    patchname=$(find_unapplied_patch "$name")
+    patchname=$(find_unapplied_patch "$name_arg")
     if [ -n "$patchname" ]; then
         while true; do
             qpush_one
-            if [ -z "$(find_unapplied_patch "$name")" ]; then
+            if [ -z "$(find_unapplied_patch "$name_arg")" ]; then
                 break
             fi
         done
         exit 0
     fi
-    patchname=$(find_applied_patch "$name")
+    patchname=$(find_applied_patch "$name_arg")
     if [ -n "$patchname" ]; then
         while true; do
             qpop_one
@@ -996,54 +1003,54 @@ if [ "$COMMAND" == "goto" ]; then
         done
         exit 0
     fi
-    echo "Error, patch '$name' not found."
+    echo "Error, patch '$name_arg' not found."
     exit 1
 fi
 
 if [ "$COMMAND" == "fold" ]; then
-    if [ -z "$name" ]; then
+    if [ -z "$name_arg" ]; then
         echo "error, patchname is missing" >&2
         exit 1
     fi
-    if [ ! -e "$PATCHDIR/$name" ]; then
-        patchname=$(find_unapplied_patch "$name")
+    if [ ! -e "$PATCHDIR/$name_arg" ]; then
+        patchname=$(find_unapplied_patch "$name_arg")
         if [ -z "$patchname" ]; then
-            echo "Error, patch '$name' not found." >&2
+            echo "Error, patch '$name_arg' not found." >&2
             exit 1
         fi
-        name="$patchname"
+        name_arg="$patchname"
     fi
     git_head_log "$PATCHDIR/LOG"
     echo -e '\n***\n' >> "$PATCHDIR/LOG"
-    qpush_specified "$name"
+    qpush_specified "$name_arg"
     git_head_log "$PATCHDIR/LOG2"
     cat "$PATCHDIR/LOG2" >> "$PATCHDIR/LOG" && rm -f "$PATCHDIR/LOG2"
     qpop_one
-    git apply "$PATCHDIR/$name"
+    git apply "$PATCHDIR/$name_arg"
     git_amend "$PATCHDIR/LOG"
     rm -f "$PATCHDIR/LOG"
-    qdelete "$name"
+    qdelete "$name_arg"
     echo "Note: Log messages were combined into one" >&2
     exit 0
 fi
 
 if [ "$COMMAND" == "dump" ]; then
-    patchname="$name"
+    patchname="$name_arg"
     if [ -e "$PATCHDIR/$patchname" ]; then
         dump_patch_file "$PATCHDIR/$patchname"
         exit 0
     fi
-    patchname="$(find_unapplied_patch "$name")"
+    patchname="$(find_unapplied_patch "$name_arg")"
     if [ -n "$patchname" ]; then
         dump_patch_file "$PATCHDIR/$patchname"
         exit 0
     fi
-    patchname="$(find_applied_patch "$name")"
+    patchname="$(find_applied_patch "$name_arg")"
     if [ -n "$patchname" ]; then
         git show "$patchname"
         exit 0
     fi
-    echo "error, patch '$name' not found" >&2
+    echo "error, patch '$name_arg' not found" >&2
     exit 1
 fi
 
@@ -1076,8 +1083,8 @@ if [ "$COMMAND" == "continue" ]; then
     if [ -e "$SERIESFILE.new" ]; then
         cp -a "$SERIESFILE.new" "$SERIESFILE"
     fi
-    name=$(cat "$PATCHDIR/PUSH")
-    rm -f "$SERIESFILE.new;" "$PATCHDIR/$name" "$PATCHDIR/PUSH"
+    name_arg=$(cat "$PATCHDIR/PUSH")
+    rm -f "$SERIESFILE.new;" "$PATCHDIR/$name_arg" "$PATCHDIR/PUSH"
     exit 0
 fi
 
