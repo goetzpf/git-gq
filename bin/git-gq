@@ -299,6 +299,21 @@ function git_goto_repo_dir {
     fi
 }
 
+function find_single_unapplied_patch {
+    # $1: regexp
+    # finds unapplied patch
+    # exits the script if more than one patch matches !
+    if [ ! -e "$SERIESFILE" ]; then
+        echo ""
+        return
+    fi
+    if [ 1 -ne "$(grep -c "$1" "$SERIESFILE")" ]; then
+        echo "Error, more than one unapplied patch matches" >&2
+        exit 1
+    fi
+    grep "$1" "$SERIESFILE"
+}
+
 function find_unapplied_patch {
     # $1: regexp
     # finds unapplied patch
@@ -470,7 +485,7 @@ function qpush_specified {
     echo "$PATCHNAME" > "$PATCHDIR/PUSH"
     # remove PATCHNAME from SERIESFILE:
     grep -v -F -e "$name_arg" "$SERIESFILE" > "$SERIESFILE.new"
-    if ! git am --reject "$PATCHDIR/$PATCHNAME"; then
+    if ! git am --reject "$PATCHDIR/$PATCHNAME" 2>&1; then
         echo "The patch to be folded could not be applied."
         echo "Fix the change by looking at the *.rej files."
         echo "Then run:"
@@ -607,7 +622,9 @@ Patch management commands
 
   fold NAME|REGEXP
     Fold patch 'NAME' to the topmost patch. Patch 'NAME' must not be appled
-    already.
+    already. Note that the log message of the fold-patch is appended to the
+    existing log message. You may change the log message with \`$MYNAME_GIT
+    refresh -e\`.
 
   delete NAME    
     Delete unapplied patch with given name.
@@ -1022,14 +1039,6 @@ if [ "$COMMAND" == "push" ]; then
     exit 0
 fi
 
-if [ "$COMMAND" == "fold" ]; then
-    if [ -z "$name_arg" ]; then
-        echo "error, patchname is missing" >&2
-        exit 1
-    fi
-    exit 0
-fi
-
 if [ "$COMMAND" == "goto" ]; then
     if [ -z "$name_arg" ]; then
         echo "error, patchname is missing" >&2
@@ -1062,7 +1071,7 @@ if [ "$COMMAND" == "fold" ]; then
         exit 1
     fi
     if [ ! -e "$PATCHDIR/$name_arg" ]; then
-        patchname=$(find_unapplied_patch "$name_arg")
+        patchname=$(find_single_unapplied_patch "$name_arg")
         if [ -z "$patchname" ]; then
             echo "Error, patch '$name_arg' not found." >&2
             exit 1
@@ -1079,7 +1088,7 @@ if [ "$COMMAND" == "fold" ]; then
     git_amend "" "$PATCHDIR/LOG"
     rm -f "$PATCHDIR/LOG"
     qdelete "$name_arg"
-    echo "Note: Log messages were combined into one" >&2
+    echo "Note: Log messages were combined into one"
     exit 0
 fi
 
