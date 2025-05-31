@@ -1,0 +1,107 @@
+* Test git gq fold
+---------------------------------------
+
+$ git gq applied
+abcdef0 script.sh was improved.
+abcdef0 README was improved.
+
+$ git gq unapplied
+
+# Change README.txt again ...
+$ git gq new README-fold
+[master abcdef0] README-fold
+1 file changed, 1 insertion(+)
+
+$ git show HEAD
+commit abcdef0123456789abcdef0123456789
+Author: Homer Simpson <simpson@burns-powerplant.com>
+Date: Sun Dec 31 09:12:34 2001 +0100
+
+README-fold
+
+diff --git a/README.txt b/README.txt
+index abcdef0..abcdef1 abcdef3
+--- a/README.txt
++++ b/README.txt
+@@ -1 +1,2 @@
+This is an improved README file.
++This file will describe my project.
+
+$ git gq applied
+abcdef0 README-fold
+abcdef0 script.sh was improved.
+abcdef0 README was improved.
+
+$ git gq unapplied
+$ git gq pop
+$ git gq pop
+HEAD is now at abcdef0 script.sh was improved.
+HEAD is now at abcdef0 README was improved.
+
+$ git gq applied
+abcdef0 README was improved.
+
+$ git gq unapplied
+script.sh-was-improved.patch
+README-fold.patch
+
+$ git show HEAD
+commit abcdef0123456789abcdef0123456789
+Author: Homer Simpson <simpson@burns-powerplant.com>
+Date: Sun Dec 31 09:12:34 2001 +0100
+
+README was improved.
+
+diff --git a/README.txt b/README.txt
+index abcdef0..abcdef1 abcdef3
+--- a/README.txt
++++ b/README.txt
+@@ -1 +1 @@
+-A readme file
++This is an improved README file.
+
+$ git gq fold README-fold
+Checking patch README.txt...
+Applied patch README.txt cleanly.
+Applying: README-fold
+HEAD is now at abcdef0 README was improved.
+[master abcdef0] README was improved.
+Date: Sun Dec 31 09:12:34 2001 +0100
+1 file changed, 2 insertions(+), 1 deletion(-)
+Note: Log messages were combined into one
+
+$ git show HEAD
+commit abcdef0123456789abcdef0123456789
+Author: Homer Simpson <simpson@burns-powerplant.com>
+Date: Sun Dec 31 09:12:34 2001 +0100
+
+README was improved.
+
+***
+
+README-fold
+
+diff --git a/README.txt b/README.txt
+index abcdef0..abcdef1 abcdef3
+--- a/README.txt
++++ b/README.txt
+@@ -1 +1,2 @@
+-A readme file
++This is an improved README file.
++This file will describe my project.
+
+$ git gq applied
+abcdef0 README was improved.
+
+$ git gq unapplied
+script.sh-was-improved.patch
+$ git gq push -a
+Checking patch script.sh...
+Applied patch script.sh cleanly.
+Applying: script.sh was improved.
+
+$ git gq applied
+abcdef0 script.sh was improved.
+abcdef0 README was improved.
+
+$ git gq unapplied

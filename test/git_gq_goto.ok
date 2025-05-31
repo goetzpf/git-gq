@@ -1,0 +1,38 @@
+* Test git gq goto
+---------------------------------------
+
+
+$ git gq applied
+abcdef0 README-was-extended
+abcdef0 script.sh was improved.
+abcdef0 README was improved.
+
+$ git gq unapplied
+
+# git gq goto to an applied patch
+$ git gq goto 'README was'
+HEAD is now at abcdef0 script.sh was improved.
+HEAD is now at abcdef0 README was improved.
+
+$ git gq applied
+abcdef0 README was improved.
+
+$ git gq unapplied
+script.sh-was-improved.patch
+README-was-extended.patch
+
+# git gq goto to an unapplied patch
+$ git gq goto 'was-extended'
+Checking patch script.sh...
+Applied patch script.sh cleanly.
+Applying: script.sh was improved.
+Checking patch README.txt...
+Applied patch README.txt cleanly.
+Applying: README-was-extended
+
+$ git gq applied
+abcdef0 README-was-extended
+abcdef0 script.sh was improved.
+abcdef0 README was improved.
+
+$ git gq unapplied

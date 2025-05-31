@@ -42,63 +42,16 @@ $(shell_tests_tst): %.tst: %.sh %.ok %.out
 	@diff $(wordlist 2, 3, $+) 
 	@touch $@
 
-git_gq_add_2.out: git_gq_init.tst
-git_gq_pop: git_gq_add_2.out
-git_gq_push: git_gq_pop.out
-git_gq_pop_all: git_gq_add_2
-git_gq_push_all: git_gq_pop_all
-git_gq_pop_all_push_all: git_gq_add_2
-git_gq_pop_reorder_push: git_gq_add_2
-git_gq_new: git_gq_add_2
-git_gq_refresh: git_gq_add_2
+git_gq_add_2.out: git_gq_init.out
+git_gq_pop.out: git_gq_add_2.out
+git_gq_push.out: git_gq_pop.out
+git_gq_pop_all.out: git_gq_add_2.out
+git_gq_push_all.out: git_gq_pop_all.out
+git_gq_pop_all_push_all.out: git_gq_add_2.out
+git_gq_pop_reorder_push.out: git_gq_add_2.out
+git_gq_new.out: git_gq_add_2.out
+git_gq_refresh.out: git_gq_add_2.out
+git_gq_goto.out: git_gq_new.out
+git_gq_fold.out: git_gq_add_2.out
+git_gq_record.out: git_gq_add_2.out
 
-#--------------------------
-#
-#all: repo.tst gqpatches.tst 01_patch.tst 02_patch.tst 03_pop.tst \
-#	04_pop.tst 05_goto.tst 06_goto.tst
-#
-#clean:
-#	rm -rf .git* .gq* README* script* test* *.tst *.log
-#
-#repo.tst:
-#	echo "A readme file" > README.txt
-#	echo -e '#!/bin/bash\n\necho HOHO\n' > script.sh
-#	chmod u+x script.sh
-#	git init
-#	echo 'Makefile' > .gitignore
-#	echo '/test*' >> .gitignore
-#	echo '*.tst' >> .gitignore
-#	echo '*.log' >> .gitignore
-#	git add README.txt script.sh .gitignore
-#	git commit -m 'initial commit'
-#	touch $@
-#
-#gqpatches.tst: repo.tst
-#	git gq init
-#	touch $@
-#
-#01_patch.tst: gqpatches.tst
-#	echo "This is an improved README file." > README.txt
-#	git commit -a -m 'README was improved.'
-#	touch $@
-#
-#02_patch.tst: 01_patch.tst
-#	sed -i -e 's/^echo.*/echo "Script prototype"/' script.sh
-#	git commit -a -m 'script.sh was improved.'
-#	touch $@
-#
-#03_pop.tst: 02_patch.tst
-#	git gq pop
-#	touch $@
-#
-#04_pop.tst: 03_pop.tst
-#	git gq pop
-#	touch $@
-#
-#05_goto.tst: 04_pop.tst
-#	git gq goto script
-#	touch $@
-#
-#06_goto.tst: 05_goto.tst
-#	git gq goto README
-#	touch $@
