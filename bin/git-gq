@@ -302,6 +302,10 @@ function git_goto_repo_dir {
 function find_unapplied_patch {
     # $1: regexp
     # finds unapplied patch
+    if [ ! -e "$SERIESFILE" ]; then
+        echo ""
+        return
+    fi
     grep "$1" "$SERIESFILE"
 }
 
