@@ -347,7 +347,11 @@ function find_applied_top_patch {
 
 function dump_patch_file {
     # $1: file
-    colordiff < "$1" | less -R
+    if [ -t 1 ]; then
+        colordiff < "$1" | less -R
+    else
+        cat "$1"
+    fi
 }
 
 function git_head_log {
