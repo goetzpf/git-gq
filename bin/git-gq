@@ -308,8 +308,8 @@ function find_single_unapplied_patch {
         return
     fi
     if [ 1 -ne "$(grep -c "$1" "$SERIESFILE")" ]; then
-        echo "Error, more than one unapplied patch matches" >&2
-        exit 1
+        echo "ERR:MULTI"
+        return
     fi
     grep "$1" "$SERIESFILE"
 }
@@ -522,14 +522,20 @@ function qpush_one {
 function qdelete {
     # $1: name of patch to delete
     local name
+    local patchname
     name="$1"
-    if [ ! -e "$PATCHDIR/$name" ]; then
-        echo "error, patch '$name' doesn't exist."
+    patchname=$(find_single_unapplied_patch "$name")
+    if [ "$patchname" == "ERR:MULTI" ]; then
+        echo "Error, more than one unapplied patch matches" >&2
         exit 1
     fi
-    rm "$PATCHDIR/$name"
+    if [ -z "$patchname" ]; then
+        echo "Error, patch '$name' not found." >&2
+        exit 1
+    fi
+    rm "$PATCHDIR/$patchname"
     if [ -s "$SERIESFILE" ]; then
-        cp -a "$SERIESFILE" "$SERIESFILE.bak" && grep -v -F -e "$name" "$SERIESFILE.bak" > "$SERIESFILE" && rm -f "$SERIESFILE.bak;"
+        cp -a "$SERIESFILE" "$SERIESFILE.bak" && grep -v -F -e "$patchname" "$SERIESFILE.bak" > "$SERIESFILE" && rm -f "$SERIESFILE.bak;"
     fi
 }
 
@@ -1072,6 +1078,10 @@ if [ "$COMMAND" == "fold" ]; then
     fi
     if [ ! -e "$PATCHDIR/$name_arg" ]; then
         patchname=$(find_single_unapplied_patch "$name_arg")
+        if [ "$patchname" == "ERR:MULTI" ]; then
+            echo "Error, more than one unapplied patch matches" >&2
+            exit 1
+        fi
         if [ -z "$patchname" ]; then
             echo "Error, patch '$name_arg' not found." >&2
             exit 1
