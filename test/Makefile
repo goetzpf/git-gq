@@ -54,4 +54,6 @@ git_gq_refresh.out: git_gq_add_2.out
 git_gq_goto.out: git_gq_new.out
 git_gq_fold.out: git_gq_add_2.out
 git_gq_record.out: git_gq_add_2.out
+git_gq_delete.out: git_gq_new.out
+git_gq_dump.out: git_gq_pop.out
 
