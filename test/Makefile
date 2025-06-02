@@ -2,7 +2,7 @@ TOP:=$(shell pwd)
 GIT_GQ=$(TOP)/../bin/git-gq
 
 # The list of tests and their order is taken from file "TESTS":
-shell_tests:= $(shell cat TESTS)
+shell_tests:= $(shell grep -v '^\#' TESTS)
 
 # *.sh are the shell scripts:
 shell_tests_sh:= $(addsuffix .sh, $(shell_tests))
