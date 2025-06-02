@@ -33,7 +33,7 @@ echo
 echo "# Change README.txt again ..."
 echo "This file will describe my project." >> README.txt
 echo "\$ git gq refresh"
-git gq refresh | filter_squarebracket_hash | filter_mail_date
+$GIT_GQ refresh | filter_squarebracket_hash | filter_mail_date
 
 echo
 echo "\$ git log"
