@@ -1,0 +1,90 @@
+* Test git gq continue
+---------------------------------------
+
+
+$ git gq applied
+abcdef0 script.sh was improved.
+abcdef0 README was improved.
+
+$ git gq unapplied
+
+# Insert at line 1 of README.txt
+$ git gq new README-insert-line-1
+[master abcdef0] README-insert-line-1
+1 file changed, 1 insertion(+)
+
+# Append line to README.txt
+$ git gq new README-append-last-line
+[master abcdef0] README-append-last-line
+1 file changed, 1 insertion(+)
+
+Content of README.txt now:
+----------
+This is a new first line
+This is an improved README file.
+This is a new last line
+----------
+
+$ git gq pop
+HEAD is now at abcdef0 README-insert-line-1
+
+$ git gq pop
+HEAD is now at abcdef0 script.sh was improved.
+
+$ git gq applied
+abcdef0 script.sh was improved.
+abcdef0 README was improved.
+
+$ git gq unapplied
+README-insert-line-1.patch
+README-append-last-line.patch
+
+# Invert order of patches
+
+$ git gq applied
+abcdef0 script.sh was improved.
+abcdef0 README was improved.
+
+$ git gq unapplied
+README-append-last-line.patch
+README-insert-line-1.patch
+
+At the next 'push' we expect a conflict.
+$ git gq push
+Checking patch README.txt...
+error: while searching for:
+This is a new first line
+This is an improved README file.
+
+error: patch failed: README.txt:1
+Applying patch README.txt with 1 reject...
+Rejected hunk #1.
+hint: Use 'git am --show-current-patch=diff' to see the failed patch
+hint: When you have resolved this problem, run "git am --continue".
+hint: If you prefer to skip this patch, run "git am --skip" instead.
+hint: To restore the original branch and stop patching, run "git am --abort".
+hint: Disable this message with "git config set advice.mergeConflict false"
+Applying: README-append-last-line
+Patch failed at 0001 README-append-last-line
+Fix the change by looking at the *.rej files.
+Then run:
+git-gq continue
+To abort the operation without fixing run:
+git-gq abort
+
+# Take change from reject file and apply to file README.txt.
+
+$ git gq continue
+Applying: README-append-last-line
+
+$ git gq push
+Checking patch README.txt...
+Applied patch README.txt cleanly.
+Applying: README-insert-line-1
+
+Content of README.txt now:
+----------
+This is a new first line
+This is an improved README file.
+This is a new last line
+----------

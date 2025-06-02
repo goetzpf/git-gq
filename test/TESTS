@@ -12,4 +12,5 @@ git_gq_goto
 git_gq_fold
 git_gq_record
 git_gq_delete
-git_gq_dump
+#git_gq_dump
+git_gq_continue
