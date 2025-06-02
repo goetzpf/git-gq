@@ -57,4 +57,5 @@ git_gq_record.out: git_gq_add_2.out
 git_gq_delete.out: git_gq_new.out
 git_gq_dump.out: git_gq_pop.out
 git_gq_continue.out: git_gq_add_2.out
+git_gq_abort.out: git_gq_add_2.out
 
