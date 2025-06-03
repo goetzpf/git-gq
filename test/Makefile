@@ -4,7 +4,7 @@ GIT_GQ=$(TOP)/../bin/git-gq
 HASH=\#
 
 # The list of tests and their order is taken from file "TESTS":
-shell_tests:= $(shell grep -v '^$(HASH)' TESTS)
+shell_tests:= $(shell grep -v '^$(HASH)\|^X' TESTS | sed -e 's/ .*//')
 
 # *.sh are the shell scripts:
 shell_tests_sh:= $(addsuffix .sh, $(shell_tests))
