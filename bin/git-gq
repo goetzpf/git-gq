@@ -17,7 +17,7 @@ SERIESFILE="$PATCHDIR/series"
 PARENTFILE="$PATCHDIR/parent"
 QUEUEFILE="$TOPPATCHDIR/queue"
 
-ALL_COMMANDS="bashcompletion change-order commands abort applied backup continue delete doc dump fold goto help init log man name new parent pop push record refresh restore unapplied"
+ALL_COMMANDS="abort applied backup bashcompletion change-order commands continue delete doc dump fold goto help init log man name new parent pop push record refresh restore unapplied"
 
 # shellcheck disable=SC2001
 ALL_COMMANDS_RX=$(echo "$ALL_COMMANDS" | sed -e 's/ /|/g')
@@ -192,9 +192,10 @@ all of them as patches to the patch queue::
 Then for each patch, to provide a proper log message, run::
 
   $MYNAME_GIT push
-  $MYNAME_GIT refresh
+  $MYNAME_GIT refresh -e
 
-You can also combine ('fold') an unapplied patch with::
+You can also combine ('fold') an unapplied patch with the topmost commit with
+the command::
 
   $MYNAME_GIT fold PATCH
 
@@ -267,13 +268,13 @@ After you resolved all conflicts, continue with::
 
   $MYNAME_GIT continue
 
-If it seems to difficult to resolve the conflicts this way, you may abort the
+If it seems too difficult to resolve the conflicts this way, you may abort the
 operation that lead to the conflicts with::
 
   $MYNAME_GIT abort
 
 This may be needed when the hunk in the reject file is very large, then it may
-be easier to compare files and apply changes directly.
+be easier to compare versions of files and apply changes directly.
 
 Command line interface
 ----------------------
@@ -636,7 +637,7 @@ Patch management commands
     existing log message. You may change the log message with \`$MYNAME_GIT
     refresh -e\`.
 
-  delete NAME    
+  delete NAME|REGEXP
     Delete unapplied patch with given name.
 
   dump NAME|REGEXP
