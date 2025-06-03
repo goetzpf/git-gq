@@ -1,8 +1,10 @@
 TOP:=$(shell pwd)
 GIT_GQ=$(TOP)/../bin/git-gq
 
+HASH=\#
+
 # The list of tests and their order is taken from file "TESTS":
-shell_tests:= $(shell grep -v '^\#' TESTS)
+shell_tests:= $(shell grep -v '^$(HASH)' TESTS)
 
 # *.sh are the shell scripts:
 shell_tests_sh:= $(addsuffix .sh, $(shell_tests))
@@ -58,4 +60,5 @@ git_gq_delete.out: git_gq_new.out
 git_gq_dump.out: git_gq_pop.out
 git_gq_continue.out: git_gq_add_2.out
 git_gq_abort.out: git_gq_add_2.out
+git_gq_log.out: git_gq_add_2.out
 

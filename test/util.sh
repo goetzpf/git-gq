@@ -31,6 +31,14 @@ function filter_squarebracket_hash {
     done
 }
 
+function filter_star_commit_hash {
+    # '* commit 76abd54efac7d5e783' --> '* commit abcdef0123456789abcdef0123456789'
+    local line
+    while read -r line ; do
+        echo "$line" | sed -e "s/^\(\* commit\) \+[a-f0-9]\+/\1 $DUMMY_HASH_LONG/"
+    done
+}
+
 function filter_commit_hash {
     # 'commit 76abd54efac7d5e783' --> 'commit abcdef0123456789abcdef0123456789'
     local line
@@ -71,6 +79,15 @@ function filter_mail_date {
     local line
     while read -r line ; do
         echo "$line" | sed -e "s/^\(Date:\).*/\1 $DUMMY_DATE/"
+    done
+}
+
+function filter_pipe_mail_date {
+    # 'Date: Wed May 15 10:12:00 2025 +0200' -->
+    # 'Sun Dec 31 09:12:34 2001 +0100'
+    local line
+    while read -r line ; do
+        echo "$line" | sed -e "s/^\(| Date:\).*/\1 $DUMMY_DATE/"
     done
 }
 

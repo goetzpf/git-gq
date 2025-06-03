@@ -15,3 +15,4 @@ git_gq_delete
 #git_gq_dump
 git_gq_continue
 git_gq_abort
+git_gq_log
