@@ -315,22 +315,22 @@ function find_single_unapplied_patch {
     grep "$1" "$SERIESFILE"
 }
 
-function find_unapplied_patch {
+function find_first_unapplied_patch {
     # $1: regexp
     # finds unapplied patch
     if [ ! -e "$SERIESFILE" ]; then
         echo ""
         return
     fi
-    grep "$1" "$SERIESFILE"
+    grep "$1" "$SERIESFILE" | head -n 1
 }
 
-function find_applied_patch {
+function find_first_applied_patch {
     # $1: regexp
     # finds applied patch, returns hash key
     local START
     START="$(cat "$PARENTFILE").."
-    git log --oneline "$START" | grep "$1" | sed -e 's/ .*//'
+    git log --oneline "$START" | grep "$1" | head -n 1 | sed -e 's/ .*//'
 }
 
 function find_head_patch {
@@ -1055,17 +1055,17 @@ if [ "$COMMAND" == "goto" ]; then
         echo "error, patchname is missing" >&2
         exit 1
     fi
-    patchname=$(find_unapplied_patch "$name_arg")
+    patchname=$(find_first_unapplied_patch "$name_arg")
     if [ -n "$patchname" ]; then
         while true; do
             qpush_one
-            if [ -z "$(find_unapplied_patch "$name_arg")" ]; then
+            if [ -z "$(find_first_unapplied_patch "$patchname")" ]; then
                 break
             fi
         done
         exit 0
     fi
-    patchname=$(find_applied_patch "$name_arg")
+    patchname=$(find_first_applied_patch "$name_arg")
     if [ -n "$patchname" ]; then
         while [ -z "$(find_head_patch "$patchname")" ]; do
             qpop_one
@@ -1113,12 +1113,12 @@ if [ "$COMMAND" == "dump" ]; then
         dump_patch_file "$PATCHDIR/$patchname"
         exit 0
     fi
-    patchname="$(find_unapplied_patch "$name_arg")"
+    patchname="$(find_first_unapplied_patch "$name_arg")"
     if [ -n "$patchname" ]; then
         dump_patch_file "$PATCHDIR/$patchname"
         exit 0
     fi
-    patchname="$(find_applied_patch "$name_arg")"
+    patchname="$(find_first_applied_patch "$name_arg")"
     if [ -n "$patchname" ]; then
         git show "$patchname"
         exit 0
