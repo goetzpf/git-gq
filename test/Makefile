@@ -62,4 +62,5 @@ git_gq_continue.out: git_gq_add_2.out
 git_gq_abort.out: git_gq_add_2.out
 git_gq_log.out: git_gq_add_2.out
 git_gq_backup.out: git_gq_new.out
+git_gq_export.out: git_gq_add_2.out
 

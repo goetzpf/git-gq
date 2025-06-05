@@ -34,7 +34,7 @@ SERIESFILE="$PATCHDIR/series"
 PARENTFILE="$PATCHDIR/parent"
 QUEUEFILE="$TOPPATCHDIR/queue"
 
-ALL_COMMANDS="abort applied backup bashcompletion change-order commands continue delete doc dump fold goto help init log man name new parent pop push record refresh restore unapplied"
+ALL_COMMANDS="abort applied backup bashcompletion change-order commands continue delete doc dump export fold goto help init log man name new parent pop push record refresh restore unapplied"
 
 # shellcheck disable=SC2001
 ALL_COMMANDS_RX=$(echo "$ALL_COMMANDS" | sed -e 's/ /|/g')
@@ -52,6 +52,7 @@ full=""
 rev_arg=""
 name_arg=""
 file_arg=""
+dir_arg=""
 
 patchname=""
 
@@ -865,6 +866,11 @@ Patch management commands
   abort          
     Abort (undo) 'push' after you had a conflict and could not fix it manually.
 
+  export DIRECTORY
+    Create numbered patch files from all currently applied patches in
+    DIRECTORY. The numbers are in the order of patches from bottom to top.
+    DIRECTORY must exist.
+
 Miscellaneous commands
 ++++++++++++++++++++++
 
@@ -1014,6 +1020,14 @@ for arg in "${ARGS[@]}"; do
         file_arg="$arg"
         continue
     fi
+    if [ "$COMMAND" == "export" ]; then
+        if [ -n "$dir_arg" ]; then
+            echo "unexpected: '$arg'" >&2
+            exit 1
+        fi
+        dir_arg="$arg"
+        continue
+    fi
     if [ "$COMMAND" == "parent" ]; then
         if [ -n "$rev_arg" ]; then
             echo "unexpected: '$arg'" >&2
@@ -1096,6 +1110,15 @@ if [ -n "$file_arg" ]; then
     fi
     # convert 'file_arg' to an absolute path:
     file_arg="$(readlink -e "$file_arg")"
+fi
+
+if [ -n "$dir_arg" ]; then
+    if [ ! -d "$dir_arg" ]; then
+        echo "Error, directory '$dir_arg' doesn't exist." >&2
+        exit 1
+    fi
+    # convert 'dir_arg' to an absolute path:
+    dir_arg="$(readlink -e "$dir_arg")"
 fi
 
 if ! git_goto_repo_dir; then
@@ -1223,6 +1246,21 @@ if [ "$COMMAND" == "change-order" ]; then
         editor="vi"
     fi
     $editor "$SERIESFILE"
+    exit 0
+fi
+
+if [ "$COMMAND" == "export" ]; then
+    if [ -z "$dir_arg" ]; then
+        echo "Error, DIRECTORY missing." >&2
+        exit 1
+    fi
+    PARENT=$(get_parent)
+    rc="$?"
+    if [ "$rc" -ne 0 ]; then
+        exit "$rc"
+    fi
+    START="${PARENT}.."
+    git format-patch -o "$dir_arg" "$START"
     exit 0
 fi
 

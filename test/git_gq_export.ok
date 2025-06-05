@@ -1,0 +1,57 @@
+* Test git gq export
+---------------------------------------
+
+$ git gq export patchdir
+/patchdir/0001-README-was-improved.patch
+/patchdir/0002-script.sh-was-improved.patch
+
+$ ls patchdir
+0001-README-was-improved.patch
+0002-script.sh-was-improved.patch
+
+# Content of patchfiles:
+---------------------
+File: patchdir/0001-README-was-improved.patch
+From abcdef0123456789abcdef0123456789 Mon Sep 17 00:00:00 2001
+From: Homer Simpson <simpson@burns-powerplant.com>
+Date: Sun Dec 31 09:12:34 2001 +0100
+Subject: [PATCH 1/2] README was improved.
+
+---
+README.txt | 2 +-
+1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/README.txt b/README.txt
+index abcdef0..abcdef1 abcdef3
+--- a/README.txt
++++ b/README.txt
+@@ -1 +1 @@
+-A readme file
++This is an improved README file.
+--
+2.49.0
+
+---------------------
+File: patchdir/0002-script.sh-was-improved.patch
+From abcdef0123456789abcdef0123456789 Mon Sep 17 00:00:00 2001
+From: Homer Simpson <simpson@burns-powerplant.com>
+Date: Sun Dec 31 09:12:34 2001 +0100
+Subject: [PATCH 2/2] script.sh was improved.
+
+---
+script.sh | 2 +-
+1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/script.sh b/script.sh
+index abcdef0..abcdef1 abcdef3
+--- a/script.sh
++++ b/script.sh
+@@ -1,4 +1,4 @@
+#!/bin/bash
+
+-echo HOHO
++echo "Script prototype"
+
+--
+2.49.0
+

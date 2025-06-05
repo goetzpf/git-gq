@@ -30,3 +30,4 @@ X                               unapplied: tested during push/pop
 git_gq_add_2                    tests two 'git commit' commands
 git_gq_pop_all_push_all         git gq pop -a, git gq push -a
 git_gq_pop_reorder_push         git gq pop -a, reorder series file, git gq push -a
+git_gq_export                   git gq export

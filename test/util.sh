@@ -8,6 +8,15 @@ DUMMY_AUTHOR="Homer Simpson <simpson@burns-powerplant.com>"
 DUMMY_DATE="Sun Dec 31 09:12:34 2001 +0100"
 DUMMY_ISODATE="2001-12-31T091234"
 
+function filter_pwd {
+    # remove part of a file path
+    local pwd_
+    pwd_=$(pwd)
+    while read -r line ; do
+        echo "$line" | sed -e "s#$pwd_##"
+    done
+}
+
 function filter_tar_isodate {
     # .gqpatches-2025-06-04T144559.tgz --> .gqpatches-2001-12-31T091234.tgz
     local line
