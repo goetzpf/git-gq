@@ -44,6 +44,7 @@ all=""
 edit=""
 message=""
 file=""
+full=""
 
 rev_arg=""
 name_arg=""
@@ -465,6 +466,11 @@ function find_first_applied_patch {
     git log --oneline "$START" | grep "$1" | head -n 1 | sed -e 's/ .*//'
 }
 
+function git_head_revision {
+    # returns revision of HEAD
+    git rev-parse --short HEAD
+}
+
 function find_head_patch {
     # $1: regexp
     # finds applied patch, returns hash key
@@ -533,7 +539,7 @@ function save_applied_patches {
         exit 1
     fi
     PARENT=$(cat "$PARENTFILE")
-    rev=$(git rev-parse --short HEAD)
+    rev=$(git_head_revision)
     rm -rf "$APPLIEDDIR"
     if [ "$rev" != "$PARENT" ]; then
         mkdir -p "$APPLIEDDIR"
@@ -561,7 +567,7 @@ function qpop_check {
     # returns 1 when qpop is not allowed.
     # $1: if non-zero, instead of returning 1 abort with an error message
     local rev
-    rev=$(git rev-parse --short HEAD)
+    rev=$(git_head_revision)
     if [ -s "$PARENTFILE" ] && [ "$(cat "$PARENTFILE")" == "$rev" ]; then
         if [ -n "$1" ]; then
             echo "Cannot perform pop, parent revision $rev reached." >&2
@@ -816,6 +822,11 @@ OPTIONS
 
   -F --file FILE
     refresh: take log message from FILE.
+
+  --full
+    restore: do also restore all patches that were applied when the backup
+      was created. Caution: This runs 'git reset --hard' and 'git am' on
+      your repository.
 EOF
 }
 
@@ -858,6 +869,10 @@ while true; do
             ;;
         -a | --all)
             all="yes"
+            shift
+            ;;
+        --full)
+            full="yes"
             shift
             ;;
         -e | --edit)
@@ -992,20 +1007,36 @@ git_goto_repo_dir
 
 if [ "$COMMAND" == "restore" ]; then
     if [ -d "$TOPPATCHDIR" ]; then
-        echo "Error, $TOPPATCHDIR already exists, you must remove/delete">&2
-        echo "this first.">&2
-        exit 1
+        echo "$TOPPATCHDIR already exists, is it okay to rename it to"
+        date_=$(date '+%Y-%m-%dT%H%M%S')
+        echo "$TOPPATCHDIR-$date_ ?"
+        read -p "Enter 'y' or 'Y' to continue, everything else aborts " -n 1 -r
+        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+            exit 1
+        fi
+        mv "$TOPPATCHDIR" "$TOPPATCHDIR-$date_"
     fi
     tar -xzf "$file_arg"
     QUEUENAME=$(cat "$QUEUEFILE")
     select_queue "$QUEUENAME"
     PARENT=$(cat "$PARENTFILE")
-    git reset --hard "$PARENT"
-    if [ -d "$APPLIEDDIR" ]; then
-        # shellcheck disable=SC2086
-        git am $APPLIEDDIR/*.patch
+    if [ -n "$full" ] && [ -d "$APPLIEDDIR" ]; then
+        echo "Restore originally applied patches in repository ?"
+        read -p "Enter 'y' or 'Y' to make changes, everything else skips this " -n 1 -r
+        if [[ $REPLY =~ ^[Yy]$ ]]; then
+            # git reset --hard "$PARENT"
+            git checkout "$PARENT"
+            if [ -d "$APPLIEDDIR" ]; then
+                # all patches here have a preceeding number and should already
+                # have the right order by this.
+                # shellcheck disable=SC2086
+                git am $APPLIEDDIR/*.patch
+            fi
+            del_applied_patches
+        else
+            echo "Originally applied patches are in $APPLIEDDIR"
+        fi
     fi
-    rm -rf "$APPLIEDDIR"
     exit 0
 fi
 
