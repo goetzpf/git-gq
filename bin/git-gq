@@ -307,8 +307,8 @@ After you are finished, run::
   $MYNAME_GIT continue
 
 This finishes the operation and tells git that the conflict was resolved. You
-*must not* run \`git am continue\` yourself, \`$MYNAME_GIT\` already does this
-for you.
+*must not* run \`git am continue\` yourself, \`$MYNAME_GIT continue\` already
+does this for you.
 
 If you cannot resolve conflicts because the reject files are too long or
 complicated, you can abort the last command with::
@@ -815,8 +815,8 @@ Queue management commands
   init [QNAME [REV]]
     Create/select a patch queue with name 'QNAME'. QNAME is optional, the
     default patch queue name is 'default'. If 'REV' is given this is the parent
-    revision. You must run this command once to initialize the patch queue in
-    your repository.
+    revision, if it is not givem, 'HEAD' is taken as the parent. You must run
+    this command once to initialize the patch queue in your repository.
 
   qname [QNAME]   
     If QNAME is not given, show current patch queue name. if QNAME is given,
@@ -842,6 +842,11 @@ Queue management commands
     Set REV as patch queue parent revision. Do never go beyond this revision
     with pop. Use 'HEAD' to set your repository HEAD as parent revision. If
     HEAD is not given, show the current parent revision.
+
+  export DIRECTORY
+    Create numbered patch files from all currently applied patches in
+    DIRECTORY. The numbers are in the order of patches from bottom to top.
+    DIRECTORY must exist.
 
 Patch management commands
 +++++++++++++++++++++++++
@@ -882,11 +887,6 @@ Patch management commands
   abort          
     Abort (undo) 'push' after you had a conflict and could not fix it manually.
 
-  export DIRECTORY
-    Create numbered patch files from all currently applied patches in
-    DIRECTORY. The numbers are in the order of patches from bottom to top.
-    DIRECTORY must exist.
-
 Miscellaneous commands
 ++++++++++++++++++++++
 
@@ -923,10 +923,10 @@ OPTIONS
   -F --file FILE
     refresh: take log message from FILE.
 
-  --full
-    restore: do also restore all patches that were applied when the backup
-      was created. Caution: This runs 'git reset --hard' and 'git am' on
-      your repository.
+  -L --full
+    restore: do also restore all patches that were applied when the backup was
+    created. Caution: This runs \`git checkout PARENT\` and \`git am\` on your
+    repository.
 EOF
 }
 
@@ -971,7 +971,7 @@ while true; do
             all="yes"
             shift
             ;;
-        --full)
+        -L | --full)
             full="yes"
             shift
             ;;
