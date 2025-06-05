@@ -16,7 +16,7 @@ X                               help
 git_gq_init                     init
 git_gq_log                      log
 X                               man
-X                               name
+X                               qname
 git_gq_new                      new
 X                               parent
 git_gq_pop                      pop

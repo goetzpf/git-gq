@@ -34,7 +34,7 @@ SERIESFILE="$PATCHDIR/series"
 PARENTFILE="$PATCHDIR/parent"
 QUEUEFILE="$TOPPATCHDIR/queue"
 
-ALL_COMMANDS="abort applied backup bashcompletion change-order commands continue delete doc dump export fold goto help init log man name new parent pop push record refresh restore unapplied"
+ALL_COMMANDS="abort applied backup bashcompletion change-order commands continue delete doc dump export fold goto help init log man new parent pop push qname record refresh restore unapplied"
 
 # shellcheck disable=SC2001
 ALL_COMMANDS_RX=$(echo "$ALL_COMMANDS" | sed -e 's/ /|/g')
@@ -802,7 +802,7 @@ Queue management commands
     revision. You must run this command once to initialize the patch queue in
     your repository.
 
-  name [QNAME]   
+  qname [QNAME]   
     If QNAME is not given, show current patch queue name. if QNAME is given,
     change to patch queue QNAME.
 
@@ -1049,7 +1049,7 @@ for arg in "${ARGS[@]}"; do
         exit 1
     fi
     if [[ "$COMMAND" =~ fold|goto|new|record|delete|dump ]]; then
-        if [ -n "$name" ]; then
+        if [ -n "$name_arg" ]; then
             echo "unexpected: '$arg'" >&2
             exit 1
         fi
@@ -1190,7 +1190,7 @@ if [ ! -d "$TOPPATCHDIR" ]; then
     exit 1
 fi
 
-if [ "$COMMAND" == "name" ]; then
+if [ "$COMMAND" == "qname" ]; then
     if [ -z "$name_arg" ]; then
         QUEUENAME=$(cat "$QUEUEFILE")
         echo "Existing queues:"
