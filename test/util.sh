@@ -41,6 +41,14 @@ function filter_parenthesis_hash {
     done
 }
 
+function filter_set_to_hash {
+    # '(983fda7)' --> '(abcdef0)'
+    local line
+    while read -r line ; do
+        echo "$line" | sed -e "s/\(set to\) [a-f0-9]\+/\1 $DUMMY_HASH/"
+    done
+}
+
 function filter_squarebracket_hash {
     # '[sometext 76ad5f4]' --> '[sometext abcdef0]'
     local line

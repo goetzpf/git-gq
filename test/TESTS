@@ -18,7 +18,7 @@ git_gq_log                      log
 X                               man
 X                               qname
 git_gq_new                      new
-X                               parent
+git_gq_parent                   parent
 git_gq_pop                      pop
 git_gq_pop_all                  pop -a
 git_gq_push                     push
