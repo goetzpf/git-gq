@@ -20,7 +20,7 @@ echo "\$ git log"
 git log | filter_commit_hash | filter_author | filter_mail_date
 
 echo "\$ git gq pop -a"
-$GIT_GQ pop -a | filter_git_head_hash
+$GIT_GQ pop -a 2>&1 | filter_git_head_hash
 
 echo
 echo "# Invert order of patches"
@@ -29,7 +29,7 @@ tac "$SF" > "$SF.new" && rm -f "$SF" && mv "$SF.new" "$SF"
 
 echo
 echo "\$ git gq push -a"
-$GIT_GQ push -a | filter_git_head_hash
+$GIT_GQ push -a 2>&1 | filter_git_head_hash
 
 echo
 echo "\$ git log"

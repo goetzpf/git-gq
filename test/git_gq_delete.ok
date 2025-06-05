@@ -22,7 +22,7 @@ README-was-extended.patch
 .gqpatches/default/series
 
 $ git gq delete 'script was'
-Error, more than one unapplied patch matches
+Error, no patches match 'script was'.
 
 $ git gq delete 'script.sh-was'
 

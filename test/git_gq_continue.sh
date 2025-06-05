@@ -70,7 +70,7 @@ $GIT_GQ unapplied | filter_linestart_hash
 echo
 echo "At the next 'push' we expect a conflict."
 echo "\$ git gq push"
-$GIT_GQ push | filter_git_head_hash 2>&1
+$GIT_GQ push 2>&1 | filter_git_head_hash
 
 echo
 echo "# Take change from reject file and apply to file README.txt."
@@ -82,7 +82,7 @@ $GIT_GQ continue
 
 echo
 echo "\$ git gq push"
-$GIT_GQ push | filter_git_head_hash
+$GIT_GQ push 2>&1 | filter_git_head_hash
 
 echo
 echo "Content of README.txt now:"

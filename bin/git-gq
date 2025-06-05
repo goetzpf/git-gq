@@ -39,6 +39,9 @@ ALL_COMMANDS="abort applied backup bashcompletion change-order commands continue
 # shellcheck disable=SC2001
 ALL_COMMANDS_RX=$(echo "$ALL_COMMANDS" | sed -e 's/ /|/g')
 
+# general purpose return code variable:
+rc=""
+
 debug=""
 all=""
 edit=""
@@ -417,33 +420,83 @@ short_help_text
 }
 
 function print_short_help {
+    # print short help without reStructuredText underlines:
     short_help_text | grep -v '^+\+$'
 }
 
 function git_goto_repo_dir {
+    # returns: 
+    #   0 : no error
+    #   1 : fatal error
+    # in case of an error, the function prints an error message to stderr.
     while [ "$(pwd)" != "/" ]; do
         if [ -d ".git" ]; then
             break;
         fi
-        cd .. || exit 1
+        if ! cd ..; then
+            echo "Error, 'cd ..' failed" >&2
+            return 1
+        fi
     done
     if [ ! -d ".git" ]; then
         echo "error, '.git' not found" >&2
-        exit 1
+        return 1
     fi
+    return 0
+}
+
+function git_check_exists {
+    # $1: revision
+    # checks if revision exists
+    # returns: 
+    #   0 : revision exists
+    # 128 : revision does not exist
+    git cat-file  -e "$1"  2> /dev/null
+}
+
+function get_parent {
+    # returns: 
+    #   0 : no error
+    #   1 : fatal error
+    # in case of an error, the function prints an error message to stderr.
+    local PARENT
+    if [ ! -s "$PARENTFILE" ]; then
+        echo "Error, $PARENTFILE does not exist or is empty" >&2
+        return 1
+    fi
+    PARENT="$(cat "$PARENTFILE")"
+    if ! git_check_exists "$PARENT"; then
+        echo "Error, parent revision $PARENT doesn't exist in repository" >&2
+        return 1
+    fi
+    echo "$PARENT"
+    return 0
 }
 
 function find_single_unapplied_patch {
     # $1: regexp
-    # finds unapplied patch
-    # exits the script if more than one patch matches !
+    # finds a unique unapplied patch
+    # returns: 
+    #   0 : no error
+    #   1 : fatal error
+    # in case of an error, the function prints an error message to stderr.
+    local MATCHES
     if [ ! -e "$SERIESFILE" ]; then
-        echo ""
-        return
+        echo "Error, series file $SERIESFILE doesn't exist." >&2
+        return 1
     fi
-    if [ 1 -ne "$(grep -c "$1" "$SERIESFILE")" ]; then
-        echo "ERR:MULTI"
-        return
+    if [ ! -s "$SERIESFILE" ]; then
+        echo "Error, there are no unapplied patches." >&2
+        return 1
+    fi
+    MATCHES="$(grep -c "$1" "$SERIESFILE")"
+    if [ "$MATCHES" -eq 0 ]; then
+        echo "Error, no patches match '$1'." >&2
+        return 1
+    fi
+    if [ "$MATCHES" -ne 1 ]; then
+        echo "Error, multiple patches match '$1'." >&2
+        return 1
     fi
     grep "$1" "$SERIESFILE"
 }
@@ -451,6 +504,10 @@ function find_single_unapplied_patch {
 function find_first_unapplied_patch {
     # $1: regexp
     # finds unapplied patch
+    # returns:
+    #  the patch
+    #    - or -
+    #  an empty string
     if [ ! -e "$SERIESFILE" ]; then
         echo ""
         return
@@ -461,8 +518,18 @@ function find_first_unapplied_patch {
 function find_first_applied_patch {
     # $1: regexp
     # finds applied patch, returns hash key
+    # returns: 
+    #   0 : no error
+    #   1 : fatal error
+    # in case of an error, the function prints an error message to stderr.
     local START
-    START="$(cat "$PARENTFILE").."
+    local PARENT
+    PARENT=$(get_parent)
+    rc="$?"
+    if [ "$rc" -ne 0 ]; then
+        return "$rc"
+    fi
+    START="${PARENT}.."
     git log --oneline "$START" | grep "$1" | head -n 1 | sed -e 's/ .*//'
 }
 
@@ -473,19 +540,15 @@ function git_head_revision {
 
 function find_head_patch {
     # $1: regexp
-    # finds applied patch, returns hash key
+    # looks if the HEAD patch matches pattern
+    # returns:
+    #   hash key
     git log --oneline -1 | grep "$1" | sed -e 's/ .*//'
-}
-
-function find_applied_top_patch {
-    # $1: regexp
-    # finds applied top patch, returns hash key
-    local START
-    git log --oneline HEAD | grep "$1" | sed -e 's/ .*//'
 }
 
 function dump_patch_file {
     # $1: file
+    # test if we have a terminal:
     if [ -t 1 ]; then
         colordiff < "$1" | less -R
     else
@@ -494,23 +557,23 @@ function dump_patch_file {
 }
 
 function git_head_log {
+    # Get the pure log message of the HEAD patch.
     # $1: name of file to create
     git log -1 --pretty=%B > "$1"
 }
 
 function git_add_changes {
-    # add only changes files to stash
+    # add only changed files to stash
+    # Does not add:
+    # - unknown files
+    # - all files starting with $TOPPATCHDIR
+    # - all files ending with '.rej'
     git status --porcelain | grep -v '^??' | sed -e 's/^.. //' | grep -v "\(^${TOPPATCHDIR}[/-]\|\.rej$\)" |xargs git add
 }
 
 function git_select_changes {
-    # add only changes files to stash
+    # Interactively select files to add to stash.
     git add --patch
-}
-
-function git_add_all_changes {
-    # add all changes except patchqueue files
-    git status --porcelain | sed -e 's/^.. //' | grep -v "\(^${TOPPATCHDIR}[/-]\|\.rej$\)" | xargs git add
 }
 
 function git_amend {
@@ -518,6 +581,8 @@ function git_amend {
     # $1: if not empty, this is the log message
     # $2: if not empty, take log message from this file
     local EXTRA
+    # a bash array is the correct way to provide several extra arguments to a
+    # command:
     EXTRA=()
     if [ -n "$1" ]; then
         EXTRA+=("-m" "$1")
@@ -526,19 +591,22 @@ function git_amend {
         EXTRA+=("-F" "$2")
     fi
     git_add_changes
-    # shellcheck disable=SC2086
     git commit --amend "${EXTRA[@]}"
 }
 
 function save_applied_patches {
     # save all applied patches
+    # returns: 
+    #   0 : no error
+    #   1 : fatal error
+    # in case of an error, the function prints an error message to stderr.
     local PARENT
     local rev
-    if [ ! -s "$PARENTFILE" ]; then
-        echo "Error, $PARENTFILE is empty/non-existent" >&2
-        exit 1
+    PARENT=$(get_parent)
+    rc="$?"
+    if [ "$rc" -ne 0 ]; then
+        return "$rc"
     fi
-    PARENT=$(cat "$PARENTFILE")
     rev=$(git_head_revision)
     rm -rf "$APPLIEDDIR"
     if [ "$rev" != "$PARENT" ]; then
@@ -563,19 +631,21 @@ function select_queue {
 }
 
 function qpop_check {
-    # returns 0 if qpop is not beyond parent,
-    # returns 1 when qpop is not allowed.
-    # $1: if non-zero, instead of returning 1 abort with an error message
+    # returns: 
+    #   0 : no error, qpop is not beyond parent
+    #   1 : qpop is not allowed
+    #   2 : fatal error
+    # in case of a fatal error, the function prints an error message to stderr.
     local rev
+    local PARENT
+    PARENT=$(get_parent)
+    rc="$?"
+    if [ "$rc" -ne 0 ]; then
+        return 2
+    fi
     rev=$(git_head_revision)
-    if [ -s "$PARENTFILE" ] && [ "$(cat "$PARENTFILE")" == "$rev" ]; then
-        if [ -n "$1" ]; then
-            echo "Cannot perform pop, parent revision $rev reached." >&2
-            echo "You could change the parent with '$MYNAME_GIT parent REV'." >&2
-            exit 1
-        else
-            return 1
-        fi
+    if [ "$PARENT" == "$rev" ]; then
+        return 1
     fi
     return 0
 }
@@ -615,66 +685,70 @@ function qpop_one {
 
 function qpush_specified {
     # $1: name of patch
+    # returns: 
+    #   0 : no error
+    #   1 : fatal error
+    # in case of an error, the function prints an error message to stderr.
     local PATCHNAME
-    if [ ! -s "$SERIESFILE" ]; then
-        echo "Error, all patches in queue are already applied." >&2
-        exit 1
-    fi
-    PATCHNAME=$(grep -F -e "$name_arg" "$SERIESFILE")
-    if [ -z "$PATCHNAME" ]; then
-        echo "error, patch '$name_arg' not found in $SERIESFILE, maybe the patch is alraedy applied" >&2
-        exit 1
+    PATCHNAME=$(find_single_unapplied_patch "$1")
+    rc="$?"
+    if [ "$rc" -ne 0 ]; then
+        return "$rc"
     fi
     echo "$PATCHNAME" > "$PATCHDIR/PUSH"
     # remove PATCHNAME from SERIESFILE:
-    grep -v -F -e "$name_arg" "$SERIESFILE" > "$SERIESFILE.new"
-    if ! git am --reject "$PATCHDIR/$PATCHNAME" 2>&1; then
-        echo "The patch to be folded could not be applied."
-        echo "Fix the change by looking at the *.rej files."
-        echo "Then run:"
-        echo "  $MYNAME continue"
-        echo "To abort the operation without fixing run:"
-        echo "  $MYNAME abort"
-        exit 1
+    grep -v -F "$PATCHNAME" "$SERIESFILE" > "$SERIESFILE.new"
+    if ! git am --reject "$PATCHDIR/$PATCHNAME"; then
+        echo "The patch to be folded could not be applied." >&2
+        echo "Fix the change by looking at the *.rej files." >&2
+        echo "Then run:" >&2
+        echo "  $MYNAME continue" >&2
+        echo "To abort the operation without fixing run:" >&2
+        echo "  $MYNAME abort" >&2
+        return 1
     fi
     rm -f "$PATCHDIR/$PATCHNAME" "$PATCHDIR/PUSH" "$SERIESFILE" && mv "$SERIESFILE.new" "$SERIESFILE"
 }
 
 function qpush_one {
     # do a single 'qpush' operation.
+    # returns: 
+    #   0 : no error
+    #   1 : fatal error
+    # in case of an error, the function prints an error message to stderr.
     local PATCHNAME
     if [ ! -s "$SERIESFILE" ]; then
         echo "Error, all patches in queue are already applied." >&2
-        exit 1
+        return 1
     fi
     PATCHNAME=$(head -n 1 "$SERIESFILE")
     echo "$PATCHNAME" > "$PATCHDIR/PUSH"
     # remove PATCHNAME from SERIESFILE:
     cp -a "$SERIESFILE" "$SERIESFILE.new" && sed -i -e '1d' "$SERIESFILE.new"
-    if ! git am --reject "$PATCHDIR/$PATCHNAME" 2>&1; then
-        echo "Fix the change by looking at the *.rej files."
-        echo "Then run:"
-        echo "  $MYNAME continue"
-        echo "To abort the operation without fixing run:"
-        echo "  $MYNAME abort"
-        exit 1
+    if ! git am --reject "$PATCHDIR/$PATCHNAME"; then
+        echo "Fix the change by looking at the *.rej files." >&2
+        echo "Then run:" >&2
+        echo "  $MYNAME continue" >&2
+        echo "To abort the operation without fixing run:" >&2
+        echo "  $MYNAME abort" >&2
+        return 1
     fi
     rm -f "$PATCHDIR/$PATCHNAME" "$PATCHDIR/PUSH" "$SERIESFILE" && mv "$SERIESFILE.new" "$SERIESFILE"
 }
 
 function qdelete {
     # $1: name of patch to delete
+    # returns: 
+    #   0 : no error
+    #   1 : fatal error
+    # in case of an error, the function prints an error message to stderr.
     local name
     local patchname
     name="$1"
     patchname=$(find_single_unapplied_patch "$name")
-    if [ "$patchname" == "ERR:MULTI" ]; then
-        echo "Error, more than one unapplied patch matches" >&2
-        exit 1
-    fi
-    if [ -z "$patchname" ]; then
-        echo "Error, patch '$name' not found." >&2
-        exit 1
+    rc="$?"
+    if [ "$rc" -ne 0 ]; then
+        return "$rc"
     fi
     rm "$PATCHDIR/$patchname"
     if [ -s "$SERIESFILE" ]; then
@@ -684,12 +758,15 @@ function qdelete {
 
 function create_parentfile {
     # $1: revision
+    #   0 : no error
+    #   1 : fatal error
+    # in case of an error, the function prints an error message to stderr.
     local rev
     rev=$(git rev-parse --short "$1")
     # shellcheck disable=SC2181
     if [ $? -ne 0 ]; then
-        echo "invalid revision: $1" >&2
-        exit 1
+        echo "Error, invalid revision: $1" >&2
+        return 1
     fi
     if [ "$1" == "$rev" ]; then
         echo "queue parent revision set to $1"
@@ -1003,7 +1080,9 @@ if [ -n "$file_arg" ]; then
     file_arg="$(readlink -e "$file_arg")"
 fi
 
-git_goto_repo_dir
+if ! git_goto_repo_dir; then
+    exit $?
+fi
 
 if [ "$COMMAND" == "restore" ]; then
     if [ -d "$TOPPATCHDIR" ]; then
@@ -1019,7 +1098,11 @@ if [ "$COMMAND" == "restore" ]; then
     tar -xzf "$file_arg"
     QUEUENAME=$(cat "$QUEUEFILE")
     select_queue "$QUEUENAME"
-    PARENT=$(cat "$PARENTFILE")
+    PARENT=$(get_parent)
+    rc="$?"
+    if [ "$rc" -ne 0 ]; then
+        exit "$rc"
+    fi
     if [ -n "$full" ] && [ -d "$APPLIEDDIR" ]; then
         echo "Restore originally applied patches in repository ?"
         read -p "Enter 'y' or 'Y' to make changes, everything else skips this " -n 1 -r
@@ -1045,11 +1128,15 @@ if [ "$COMMAND" == "init" ]; then
         QUEUENAME="$name_arg"
     fi
     mkdir -p "$TOPPATCHDIR"
+    if [ -d "$TOPPATCHDIR/$QUEUENAME" ]; then
+        echo "Error, patch queue $QUEUENAME already exists" >&2
+        exit 1
+    fi
     echo "$QUEUENAME" > "$QUEUEFILE"
     select_queue "$QUEUENAME"
     mkdir -p "$TOPPATCHDIR/$QUEUENAME"
-    if [ ! -s "$PARENTFILE" ]; then
-        create_parentfile HEAD
+    if ! create_parentfile HEAD; then
+        exit 1
     fi
     exit 0
 fi
@@ -1071,9 +1158,11 @@ if [ "$COMMAND" == "name" ]; then
     else
         echo "$QUEUENAME" > "$QUEUEFILE"
         select_queue "$QUEUENAME"
-        mkdir -p "$PATCHDIR/$QUEUENAME"
-        if [ ! -s "$PARENTFILE" ]; then
-            create_parentfile HEAD
+        if [ ! -d "$PATCHDIR/$QUEUENAME" ]; then
+            mkdir -p "$PATCHDIR/$QUEUENAME"
+            if ! create_parentfile HEAD; then
+                exit 1
+            fi
         fi
     fi
 fi
@@ -1086,7 +1175,9 @@ fi
 select_queue "$QUEUENAME"
 
 if [ "$COMMAND" == "backup" ]; then
-    save_applied_patches
+    if ! save_applied_patches; then
+        exit $?
+    fi
     date_=$(date '+%Y-%m-%dT%H%M%S')
     tar -czf "$TOPPATCHDIR-$date_.tgz" "$TOPPATCHDIR"
     del_applied_patches
@@ -1124,11 +1215,18 @@ if [ "$COMMAND" == "parent" ]; then
         if [ ! -s "$PARENTFILE" ]; then
             echo "no PARENT revision defined"
         else
-            echo "Parent: $(cat "$PARENTFILE")"
+            PARENT=$(get_parent)
+            rc="$?"
+            if [ "$rc" -ne 0 ]; then
+                exit "$rc"
+            fi
+            echo "Parent: $PARENT"
         fi
         exit 0
     fi
-    create_parentfile "$rev_arg"
+    if ! create_parentfile "$rev_arg"; then
+        exit 1
+    fi
     exit 0
 fi
 
@@ -1146,6 +1244,8 @@ fi
 
 if [ "$COMMAND" == "record" ]; then
     git_select_changes
+    # a bash array is the correct way to provide several extra arguments to a
+    # command:
     EXTRA=()
     if [ -n "$name_arg" ]; then
         EXTRA=("-m" "$name_arg")
@@ -1174,22 +1274,24 @@ if [ "$COMMAND" == "delete" ]; then
         echo "error, patchname is missing" >&2
         exit 1
     fi
-    qdelete "$name_arg"
+    if ! qdelete "$name_arg"; then
+        exit 1
+    fi
     exit 0
 fi
 
 if [ "$COMMAND" == "pop" ]; then
-    abort_on_err=""
-    if [ -z "$all" ]; then
-        abort_on_err="yes"
-    else
-        if [ ! -s "$PARENTFILE" ]; then
-            echo "Error, 'pop -a' not allowed when no parent revision is defined." >&2
-            exit 1
-        fi
-    fi
     while true; do
-        if ! qpop_check "$abort_on_err"; then
+        qpop_check
+        rc="$?"
+        if [ "$rc" -eq 2 ]; then
+            exit "$rc"
+        fi
+        if [ "$rc" -eq 1 ]; then
+            if [ -z "$all" ]; then
+                echo "Error, 'pop' beyond parent revision not allowed." >&2
+                exit 1
+            fi
             break
         fi
         qpop_one
@@ -1202,7 +1304,9 @@ fi
 
 if [ "$COMMAND" == "push" ]; then
     while true; do
-        qpush_one
+        if ! qpush_one; then
+            exit 1
+        fi
         if [ -z "$all" ]; then
             break
         else
@@ -1223,7 +1327,9 @@ if [ "$COMMAND" == "goto" ]; then
     patchname=$(find_first_unapplied_patch "$name_arg")
     if [ -n "$patchname" ]; then
         while true; do
-            qpush_one
+            if ! qpush_one; then
+                exit 1
+            fi
             if [ -z "$(find_first_unapplied_patch "$patchname")" ]; then
                 break
             fi
@@ -1231,6 +1337,10 @@ if [ "$COMMAND" == "goto" ]; then
         exit 0
     fi
     patchname=$(find_first_applied_patch "$name_arg")
+    rc="$?"
+    if [ "$rc" -ne 0 ]; then
+        exit "$rc"
+    fi
     if [ -n "$patchname" ]; then
         while [ -z "$(find_head_patch "$patchname")" ]; do
             qpop_one
@@ -1248,19 +1358,17 @@ if [ "$COMMAND" == "fold" ]; then
     fi
     if [ ! -e "$PATCHDIR/$name_arg" ]; then
         patchname=$(find_single_unapplied_patch "$name_arg")
-        if [ "$patchname" == "ERR:MULTI" ]; then
-            echo "Error, more than one unapplied patch matches" >&2
-            exit 1
-        fi
-        if [ -z "$patchname" ]; then
-            echo "Error, patch '$name_arg' not found." >&2
-            exit 1
+        rc="$?"
+        if [ "$rc" -ne 0 ]; then
+            exit "$rc"
         fi
         name_arg="$patchname"
     fi
     git_head_log "$PATCHDIR/LOG"
     echo -e '\n***\n' >> "$PATCHDIR/LOG"
-    qpush_specified "$name_arg"
+    if ! qpush_specified "$name_arg"; then
+        exit 1
+    fi
     git_head_log "$PATCHDIR/LOG2"
     cat "$PATCHDIR/LOG2" >> "$PATCHDIR/LOG" && rm -f "$PATCHDIR/LOG2"
     qpop_one
@@ -1284,18 +1392,25 @@ if [ "$COMMAND" == "dump" ]; then
         exit 0
     fi
     patchname="$(find_first_applied_patch "$name_arg")"
+    rc="$?"
+    if [ "$rc" -ne 0 ]; then
+        exit "$rc"
+    fi
     if [ -n "$patchname" ]; then
         git show "$patchname"
         exit 0
     fi
-    echo "error, patch '$name_arg' not found" >&2
+    echo "Error, patch '$name_arg' not found." >&2
     exit 1
 fi
 
 if [ "$COMMAND" == "applied" ]; then
-    if [ -s "$PARENTFILE" ]; then
-        START="$(cat "$PARENTFILE").."
+    PARENT=$(get_parent)
+    rc="$?"
+    if [ "$rc" -ne 0 ]; then
+        exit "$rc"
     fi
+    START="${PARENT}.."
     # shellcheck disable=SC2209
     GIT_PAGER=cat git log --color=auto --oneline "$START" 
     exit 0
@@ -1333,7 +1448,7 @@ if [ "$COMMAND" == "abort" ]; then
 fi
 
 if [ "$COMMAND" == "continue" ]; then
-    git_add_all_changes
+    git_add_changes
     if ! git am --continue; then
         echo "Fix the change by looking at the *.rej files."
         echo "Then run:"

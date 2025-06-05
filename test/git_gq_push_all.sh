@@ -16,7 +16,7 @@ cp -a $SRCDIR $TMPDIR
 cd $TMPDIR || exit 1
 
 echo "\$ git gq push -a"
-$GIT_GQ push -a | filter_git_head_hash
+$GIT_GQ push -a 2>&1 | filter_git_head_hash
 
 echo
 echo "\$ git log"

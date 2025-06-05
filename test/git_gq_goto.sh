@@ -37,7 +37,7 @@ $GIT_GQ unapplied | filter_linestart_hash
 echo
 echo "# git gq goto to an unapplied patch"
 echo "\$ git gq goto 'was-extended'"
-$GIT_GQ goto 'was-extended' | filter_git_head_hash
+$GIT_GQ goto 'was-extended' 2>&1 | filter_git_head_hash
 
 echo
 echo "\$ git gq applied"

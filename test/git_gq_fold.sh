@@ -56,7 +56,7 @@ git show HEAD | filter_commit_hash | filter_author | filter_mail_date | filter_g
 
 echo
 echo "\$ git gq fold README-fold"
-$GIT_GQ fold README-fold | filter_squarebracket_hash | filter_mail_date | filter_git_head_hash
+$GIT_GQ fold README-fold 2>&1 | filter_squarebracket_hash | filter_mail_date | filter_git_head_hash
 
 echo
 echo "\$ git show HEAD"
@@ -70,7 +70,7 @@ echo "\$ git gq unapplied"
 $GIT_GQ unapplied | filter_linestart_hash
 
 echo "\$ git gq push -a"
-$GIT_GQ push -a | filter_git_head_hash
+$GIT_GQ push -a 2>&1 | filter_git_head_hash
 
 echo
 echo "\$ git gq applied"
