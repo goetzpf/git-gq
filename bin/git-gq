@@ -795,10 +795,11 @@ Bash completion commands
 Queue management commands
 +++++++++++++++++++++++++
 
-  init [QNAME]   
+  init [QNAME [REV]]
     Create/select a patch queue with name 'QNAME'. QNAME is optional, the
-    default patch queue name is 'default'. You must run this command once to
-    initialize the patch queue in your repository.
+    default patch queue name is 'default'. If 'REV' is given this is the parent
+    revision. You must run this command once to initialize the patch queue in
+    your repository.
 
   name [QNAME]   
     If QNAME is not given, show current patch queue name. if QNAME is given,
@@ -1021,7 +1022,19 @@ for arg in "${ARGS[@]}"; do
         rev_arg="$arg"
         continue
     fi
-    if [[ "$COMMAND" =~ init|fold|goto|new|record|delete|dump ]]; then
+    if [[ "$COMMAND" == "init" ]]; then
+        if [ -z "$name_arg" ]; then
+            name_arg="$arg"
+            continue
+        fi
+        if [ -z "$rev_arg" ]; then
+            rev_arg="$arg"
+            continue
+        fi
+        echo "unexpected: '$arg'" >&2
+        exit 1
+    fi
+    if [[ "$COMMAND" =~ fold|goto|new|record|delete|dump ]]; then
         if [ -n "$name" ]; then
             echo "unexpected: '$arg'" >&2
             exit 1
@@ -1140,7 +1153,10 @@ if [ "$COMMAND" == "init" ]; then
     echo "$QUEUENAME" > "$QUEUEFILE"
     select_queue "$QUEUENAME"
     mkdir -p "$TOPPATCHDIR/$QUEUENAME"
-    if ! create_parentfile HEAD; then
+    if [ -z "$rev_arg" ]; then
+        rev_arg="HEAD"
+    fi
+    if ! create_parentfile "$rev_arg"; then
         exit 1
     fi
     exit 0
