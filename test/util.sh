@@ -6,6 +6,15 @@ DUMMY_HASH3="abcdef3"
 DUMMY_HASH_LONG="abcdef0123456789abcdef0123456789"
 DUMMY_AUTHOR="Homer Simpson <simpson@burns-powerplant.com>"
 DUMMY_DATE="Sun Dec 31 09:12:34 2001 +0100"
+DUMMY_ISODATE="2001-12-31T091234"
+
+function filter_tar_isodate {
+    # .gqpatches-2025-06-04T144559.tgz --> .gqpatches-2001-12-31T091234.tgz
+    local line
+    while read -r line ; do
+        echo "$line" | sed -e "s/^\([^-]\+\)-[0-9T-]\+.tgz/\1-$DUMMY_ISODATE.tgz/"
+    done
+}
 
 function filter_linestart_hash {
     # '983fda7 TEXT' --> 'abcdef0 TEXT'

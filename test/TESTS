@@ -2,7 +2,7 @@
 # -------------------------------------------------------
 git_gq_abort                    abort
 X                               applied: tested during push/pop
-X                               backup
+git_gq_backup                   backup
 X                               bashcompletion
 X                               change-order
 X                               commands
