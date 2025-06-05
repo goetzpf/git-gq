@@ -1099,8 +1099,10 @@ if [ "$COMMAND" == "change-order" ]; then
         editor="$VISUAL"
     fi
     if [ -z "$EDITOR" ]; then
-        echo "Caution: default editor not set, using 'vi' instead."
-        echo "Note that you can abort editing with"
+        echo "Caution: No default editor is specified in environment "
+        echo "variables 'EDITOR' and 'VISUAL'."
+        echo "Use 'vi' instead ?"
+        echo "Note that you can always abort editing in 'vi' with"
         echo "  <ESC> :qa!"
         read -p "Enter 'y' or 'Y' to continue, everything else aborts " -n 1 -r
         if [[ ! $REPLY =~ ^[Yy]$ ]]; then
