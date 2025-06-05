@@ -1173,11 +1173,11 @@ if [ "$COMMAND" == "name" ]; then
 fi
 
 QUEUENAME=$(cat "$QUEUEFILE")
+select_queue "$QUEUENAME"
 if [ ! -d "$PATCHDIR" ]; then
     echo "error: $PATCHDIR does not exist" >&2
     exit 1
 fi
-select_queue "$QUEUENAME"
 
 if [ "$COMMAND" == "backup" ]; then
     if ! save_applied_patches; then
