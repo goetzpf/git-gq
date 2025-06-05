@@ -20,9 +20,14 @@
 # activate if the script should abort on error:
 # set -e
 
+# Note "git gq doc ARG" shows only part of the documentation and is used for
+# the web page generation.
+
 SCRIPT_FULL_NAME=$(readlink -e "$0")
 #MYDIR=$(dirname "$SCRIPT_FULL_NAME")
 MYNAME=$(basename "$SCRIPT_FULL_NAME")
+
+VERSION="1.0"
 
 MYNAME_GIT="$(echo "$MYNAME" | sed -s 's/-/ /')"
 
@@ -53,15 +58,23 @@ rev_arg=""
 name_arg=""
 file_arg=""
 dir_arg=""
+doc_arg=""
 
 patchname=""
 
 function print_doc {
+    # $1: if empty, print complete text
+    local part="$1"
+    if [ -z "$part" ]; then
 cat << EOF
 ======================================================
 $MYNAME_GIT - patch queues for git
 ======================================================
 
+EOF
+    fi
+    if [ -z "$part" ] || [ "$part" == "overview" ]; then
+cat << EOF
 Overview
 --------
 
@@ -153,6 +166,10 @@ Disadvantages of the patch queue
 - Applying new commits in the repository while some patches are unapplied may
   lead to conflicts when the patches are applied later.
 
+EOF
+    fi
+    if [ -z "$part" ] || [ "$part" == "implementation" ]; then
+cat << EOF
 Implementation
 --------------
 
@@ -219,6 +236,10 @@ Multiple patch queues
 Multiple patch queues are maintained in different directories. There is always
 one patch queue active, it's name is stored in the file 'queue'.
 
+EOF
+    fi
+    if [ -z "$part" ] || [ "$part" == "conflicts" ]; then
+cat << EOF
 Conflicts and conflict resolution
 ---------------------------------
 
@@ -317,6 +338,10 @@ complicated, you can abort the last command with::
 
 In this case you may have to compare two versions of files and apply changes
 directly.
+EOF
+    fi
+    if [ -z "$part" ] || [ "$part" == "examples" ]; then
+cat << EOF
 
 Example Workflows
 -----------------
@@ -414,10 +439,15 @@ than resolving all conflicts that arise from \`git pull\` all at once. Also the
 reject files created for each conflict clearly show which change was intended
 at the patch which is usually easier than the common 3-way merge.
 
+EOF
+    fi
+    if [ -z "$part" ] || [ "$part" == "commandline" ]; then
+cat << EOF
 Command line interface
 ----------------------
 EOF
 short_help_text
+    fi
 }
 
 function print_short_help {
@@ -911,6 +941,12 @@ OPTIONS
   -H --HELP
     Show help without pager.
 
+  -v --version
+    Show version and exit.
+
+  --debug
+    Run the script with "set -x" which shows what it does.
+
   -a --all
     push/pop: apply on ALL patches.
 
@@ -947,7 +983,7 @@ function manpage {
             # use less pager for help:
             $SCRIPT_FULL_NAME doc | less
         else
-            print_doc
+            print_doc ""
         fi
     else
         $SCRIPT_FULL_NAME doc | rst2man | man -l -
@@ -990,6 +1026,10 @@ while true; do
         --debug)
             debug="yes"
             shift
+            ;;
+        -v | --version)
+            echo "$MYNAME $VERSION"
+            exit 0
             ;;
         -- )
             skip_options="yes"
@@ -1044,6 +1084,14 @@ for arg in "${ARGS[@]}"; do
         dir_arg="$arg"
         continue
     fi
+    if [ "$COMMAND" == "doc" ]; then
+        if [ -n "$doc_arg" ]; then
+            echo "unexpected: '$arg'" >&2
+            exit 1
+        fi
+        doc_arg="$arg"
+        continue
+    fi
     if [ "$COMMAND" == "parent" ]; then
         if [ -n "$rev_arg" ]; then
             echo "unexpected: '$arg'" >&2
@@ -1094,7 +1142,7 @@ if [ -z "$COMMAND" ] || [ "$COMMAND" == "help" ]; then
 fi
 
 if [ "$COMMAND" == "doc" ]; then
-    print_doc
+    print_doc "$doc_arg"
     exit 0
 fi
 

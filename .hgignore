@@ -3,3 +3,10 @@
 ^test/tmp_.*
 ^test/.*\.out
 ^test/.*\.tst
+
+^doc/_build
+^doc/commandline.rst
+^doc/conflicts.rst
+^doc/examples.rst
+^doc/implementation.rst
+^doc/overview.rst
