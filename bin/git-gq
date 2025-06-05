@@ -1071,6 +1071,11 @@ if [ "$COMMAND" == "bashcompletion" ]; then
     exit 0
 fi
 
+if [ "$COMMAND" == "log" ]; then
+    git log --graph --all --decorate
+    exit 0
+fi
+
 if [ -n "$file_arg" ]; then
     if [ ! -e "$file_arg" ]; then
         echo "Error, file $file_arg doesn't exist." >&2
@@ -1202,11 +1207,6 @@ if [ "$COMMAND" == "change-order" ]; then
         editor="vi"
     fi
     $editor "$SERIESFILE"
-    exit 0
-fi
-
-if [ "$COMMAND" == "log" ]; then
-    git log --graph --all --decorate
     exit 0
 fi
 
