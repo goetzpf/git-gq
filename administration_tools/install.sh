@@ -23,20 +23,33 @@ fi
 cd "$MYDIR" || exit 1
 
 if [ "$1" == "gobal" ]; then
-    sudo cp bin/git-gq  /usr/local/bin
-    sudo bin/git-gq bashcompletion > /etc/profile.d/git-gq.sh
+    sudo cp -a bin/git-gq  /usr/local/bin
+    sudo cp -a profile.d/git-gq.sh /etc/profile.d
+    sudo mkdir -p /usr/local/share/man/man1
+    sudo cp -a man/man1/git-gq.1 /usr/local/share/man/man1
+    sudo mkdir -p /usr/local/share/git-gq
+    sudo cp -a html /usr/local/share/git-gq
     exit 0
 fi
 if [ "$1" == "local" ]; then
-    if [ -z "$2" ]; then
+    DIR="$2"
+    if [ -z "$DIR" ]; then
         echo "Error, DIRECTORY is missing." >&2
         exit 1
     fi
-    if [ ! -d "$2" ]; then
-        echo "Error, directory $2 doesn't exist." >&2
+    if [ ! -d "$DIR" ]; then
+        echo "Error, directory $DIR doesn't exist." >&2
         exit 1
     fi
-    cp bin/git-gq "$2"
+    mkdir -p "$DIR/bin"
+    cp -a bin/git-gq  "$DIR/bin"
+    mkdir -p "$DIR/profile.d"
+    sudo cp -a profile.d/git-gq.sh "$DIR/profile.d"
+    mkdir -p "$DIR/man/man1"
+    cp -a man/man1/git-gq.1 "$DIR/man/man1"
+    mkdir -p "$DIR/share/git-gq"
+    cp -a html "$DIR/share/git-gq"
+    exit 0
 fi
 
 
