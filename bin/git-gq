@@ -625,8 +625,8 @@ function dump_patch_file {
 
 function git_head_log {
     # Get the pure log message of the HEAD patch.
-    # $1: name of file to create
-    git log -1 --pretty=%B > "$1"
+    # print to stdout
+    git log -1 --pretty=%B 
 }
 
 function git_add_changes {
@@ -656,6 +656,8 @@ function git_amend {
     # simple amend of HEAD revision
     # $1: if not empty, this is the log message
     # $2: if not empty, take log message from this file
+    # $3: if not empty, take log message from file as a template the 
+    #     user has to edit
     local EXTRA
     # a bash array is the correct way to provide several extra arguments to a
     # command:
@@ -665,6 +667,9 @@ function git_amend {
     fi
     if [ -n "$2" ]; then
         EXTRA+=("-F" "$2")
+    fi
+    if [ -n "$3" ]; then
+        EXTRA+=("-t" "$3")
     fi
     git_add_changes
     git commit --amend "${EXTRA[@]}"
@@ -992,7 +997,7 @@ OPTIONS
     push/pop: apply on ALL patches.
 
   -e --edit
-    refresh: edit log message
+    refresh/fold: start editor to edit log message
 
   -m --message MESSAGE
     refresh: use MESSAGE as log message
@@ -1426,7 +1431,7 @@ if [ "$COMMAND" == "refresh" ]; then
         # re-use existing log message and keep this as
         # log message
         git log --format=%B -1 > "$PATCHDIR/LOG"
-        git_amend "" "$PATCHDIR/LOG"
+        git_amend "" "$PATCHDIR/LOG" ""
         rm -f "$PATCHDIR/LOG"
     else
         # if $message and $file are empty, this starts an editor for changing
@@ -1436,7 +1441,7 @@ if [ "$COMMAND" == "refresh" ]; then
             # log message:
             git_mk_changes_files "both"
         fi
-        git_amend "$message" "$file"
+        git_amend "$message" "$file" ""
         if [ -n "$edit" ]; then
             # remove the changes files:
             git_rm_changes_files
@@ -1540,16 +1545,22 @@ if [ "$COMMAND" == "fold" ]; then
         fi
         name_arg="$patchname"
     fi
-    git_head_log "$PATCHDIR/LOG"
+    if [ -n "$edit" ]; then
+        echo "*** Please review and change this log message" > "$PATCHDIR/LOG"
+    else
+        echo "" > "$PATCHDIR/LOG"
+    fi
+    git_head_log >> "$PATCHDIR/LOG"
     echo -e '\n***\n' >> "$PATCHDIR/LOG"
     if ! qpush_specified "$name_arg"; then
         exit 1
     fi
-    git_head_log "$PATCHDIR/LOG2"
-    cat "$PATCHDIR/LOG2" >> "$PATCHDIR/LOG" && rm -f "$PATCHDIR/LOG2"
+    git_head_log >> "$PATCHDIR/LOG"
     qpop_one
     git apply "$PATCHDIR/$name_arg"
-    git_amend "" "$PATCHDIR/LOG"
+    # if $edit is not empty, git_amend will start an editor to edit the
+    # combination of both log messages:
+    git_amend "" "$PATCHDIR/LOG" "$edit"
     rm -f "$PATCHDIR/LOG"
     qdelete "$name_arg"
     echo "Note: Log messages were combined into one"
