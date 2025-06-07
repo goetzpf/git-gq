@@ -615,7 +615,16 @@ function git_add_changes {
     # - unknown files
     # - all files starting with $TOPPATCHDIR
     # - all files ending with '.rej'
-    git status --porcelain | grep -v '^??' | sed -e 's/^.. //' | grep -v "\(^${TOPPATCHDIR}[/-]\|\.rej$\)" |xargs git add
+    # - renames: the old files that are removed, these are already in git stash
+    # sample output from git --porcelain:
+    #  M bin/git-gq
+    #  M test/Makefile
+    #  M test/TESTS
+    # RM test/git_gq_dump.ok -> test/git_gq_show.ok
+    # RM test/git_gq_dump.sh -> test/git_gq_show.sh
+    # ?? .gqpatches-2025-06-07T172509.tgz
+    # ?? .gqpatches/
+    git status --porcelain | grep -v '^??' | sed -e 's/^RM .*-> //' | sed -e 's/^.. //' | grep -v "\(^${TOPPATCHDIR}[/-]\|\.rej$\)" |xargs git add
 }
 
 function git_select_changes {
