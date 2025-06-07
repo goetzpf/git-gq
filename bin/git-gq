@@ -600,6 +600,21 @@ function find_first_applied_patch {
     git log --oneline "$START" | grep "$1" | head -n 1 | sed -e 's/ .*//'
 }
 
+function git_rev_parse {
+    # runs git rev-parse on $1
+    #   0 : no error
+    #   1 : fatal error
+    # in case of an error, the function prints an error message to stderr.
+    local REV
+    REV="$(git rev-parse --short "$1")"
+    rc="$?"
+    if [ "$rc" -ne 0 ]; then
+        # git rev-parse already printed an error message
+        return "$rc"
+    fi
+    echo "$REV"
+}
+
 function git_head_revision {
     # returns revision of HEAD
     git rev-parse --short HEAD
@@ -1582,6 +1597,14 @@ if [ "$COMMAND" == "dump" ]; then
     rc="$?"
     if [ "$rc" -ne 0 ]; then
         exit "$rc"
+    fi
+    if [ -z "$patchname" ]; then
+        # as last resort try if $name_arg is a revision specification:
+        patchname="$(git_rev_parse "$name_arg" 2>&1)"
+        rc="$?"
+        if [ "$rc" -ne 0 ]; then
+            patchname=""
+        fi
     fi
     if [ -n "$patchname" ]; then
         git show "$patchname"

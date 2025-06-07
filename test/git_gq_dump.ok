@@ -43,3 +43,39 @@ index 378dddb..e475c99 100644
 --
 2.49.0
 
+
+# Dump an HEAD commit.
+$ git gq dump 'HEAD'
+commit abcdef0123456789abcdef0123456789
+Author: Homer Simpson <simpson@burns-powerplant.com>
+Date: Sun Dec 31 09:12:34 2001 +0100
+
+initial commit
+
+diff --git a/.gitignore b/.gitignore
+new file mode 100644
+index abcdef0..abcdef1 abcdef3
+--- /dev/null
++++ b/.gitignore
+@@ -0,0 +1,4 @@
++Makefile
++/test*
++*.tst
++*.log
+diff --git a/README.txt b/README.txt
+new file mode 100644
+index abcdef0..abcdef1 abcdef3
+--- /dev/null
++++ b/README.txt
+@@ -0,0 +1 @@
++A readme file
+diff --git a/script.sh b/script.sh
+new file mode 100755
+index abcdef0..abcdef1 abcdef3
+--- /dev/null
++++ b/script.sh
+@@ -0,0 +1,4 @@
++#!/bin/bash
++
++echo HOHO
++
