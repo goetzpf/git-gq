@@ -64,4 +64,5 @@ git_gq_glog.out: git_gq_add_2.out
 git_gq_backup.out: git_gq_new.out
 git_gq_export.out: git_gq_add_2.out
 git_gq_parent.out: git_gq_add_2.out
+git_gq_pop_tracking_err.out: git_gq_add_2.out
 

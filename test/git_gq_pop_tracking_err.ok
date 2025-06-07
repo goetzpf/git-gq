@@ -1,0 +1,83 @@
+* Test git gq pop when git has started tracking .gqpatches
+----------------------------------------------------------
+
+$ git gq pop
+HEAD is now at abcdef0 README was improved.
+
+# Change README.txt again ...
+
+# Now deliberatly add .gqpatches to git stash
+$ git add .gqpatches
+
+# Add README.txt.
+$ git add README.txt
+
+$ git commit -m 'Changes in README.txt'.
+[master abcdef0] Changes in README.txt
+5 files changed, 26 insertions(+)
+create mode 100644 .gqpatches/default/parent
+create mode 100644 .gqpatches/default/script.sh-was-improved.patch
+create mode 100644 .gqpatches/default/series
+create mode 100644 .gqpatches/queue
+
+$ git gq applied
+abcdef0 Changes in README.txt
+abcdef0 README was improved.
+
+$ git gq unapplied
+script.sh-was-improved.patch
+
+# Files in .gqpatches:
+.gqpatches
+.gqpatches/default
+.gqpatches/default/parent
+.gqpatches/default/script.sh-was-improved.patch
+.gqpatches/default/series
+.gqpatches/queue
+$ git gq pop
+FATAL Error, somehow git is tracking .gqpatches.
+'git gq pop' would remove .gqpatches.
+Do the following to fix this:
+git reset HEAD~1 .gqpatches
+git commit -C HEAD --amend
+
+$ git gq applied
+abcdef0 Changes in README.txt
+abcdef0 README was improved.
+
+$ git gq unapplied
+script.sh-was-improved.patch
+
+# Files in .gqpatches:
+.gqpatches
+.gqpatches/default
+.gqpatches/default/parent
+.gqpatches/default/script.sh-was-improved.patch
+.gqpatches/default/series
+.gqpatches/queue
+
+# Fix the problem as described in the error message:
+$ git reset HEAD~1 .gqpatches
+$ git commit -C HEAD --amend
+[master abcdef0] Changes in README.txt
+Date: Sun Dec 31 09:12:34 2001 +0100
+1 file changed, 1 insertion(+)
+# Now run git gq pop again:
+$ git gq pop
+HEAD is now at abcdef0 README was improved.
+
+$ git gq applied
+abcdef0 README was improved.
+
+$ git gq unapplied
+Changes-in-README.txt.patch
+script.sh-was-improved.patch
+
+# Files in .gqpatches:
+.gqpatches
+.gqpatches/default
+.gqpatches/default/Changes-in-README.txt.patch
+.gqpatches/default/parent
+.gqpatches/default/script.sh-was-improved.patch
+.gqpatches/default/series
+.gqpatches/queue

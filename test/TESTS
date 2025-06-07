@@ -21,6 +21,7 @@ git_gq_new                      new
 git_gq_parent                   parent
 git_gq_pop                      pop
 git_gq_pop_all                  pop -a
+git_gq_pop_tracking_err         pop when git has started tracking .gqpatches
 git_gq_push                     push
 git_gq_push_all                 push -a
 git_gq_record                   record

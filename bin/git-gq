@@ -682,9 +682,19 @@ function qpop_check {
     #   0 : no error, qpop is not beyond parent
     #   1 : qpop is not allowed
     #   2 : fatal error
+    #   3 : fatal error, git has started tracking $TOPPATCHDIR
+    #       'git gq pop' would remove the .gqpatches directory itself
     # in case of a fatal error, the function prints an error message to stderr.
     local rev
     local PARENT
+    if git show HEAD --stat | grep -q -F " $TOPPATCHDIR"; then
+        echo "FATAL Error, somehow git is tracking $TOPPATCHDIR." >&2
+        echo "'$MYNAME_GIT pop' would remove $TOPPATCHDIR." >&2
+        echo "Do the following to fix this:" >&2
+        echo "  git reset HEAD~1 $TOPPATCHDIR" >&2
+        echo "  git commit -C HEAD --amend" >&2
+        return 3
+    fi
     PARENT=$(get_parent)
     rc="$?"
     if [ "$rc" -ne 0 ]; then
@@ -1404,7 +1414,7 @@ if [ "$COMMAND" == "pop" ]; then
     while true; do
         qpop_check
         rc="$?"
-        if [ "$rc" -eq 2 ]; then
+        if [ "$rc" -eq 3 ] || [ "$rc" -eq 2 ]; then
             exit "$rc"
         fi
         if [ "$rc" -eq 1 ]; then
