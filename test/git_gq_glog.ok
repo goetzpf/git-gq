@@ -1,7 +1,7 @@
-* Test git gq log
+* Test git gq glog
 ---------------------------------------
 
-$ git gq log
+$ git gq glog
 * commit abcdef0123456789abcdef0123456789 (HEAD -> master)
 | Author: Goetz Pfeiffer <goetzpf@googlemail.com>
 | Date: Sun Dec 31 09:12:34 2001 +0100

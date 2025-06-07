@@ -39,7 +39,7 @@ SERIESFILE="$PATCHDIR/series"
 PARENTFILE="$PATCHDIR/parent"
 QUEUEFILE="$TOPPATCHDIR/queue"
 
-ALL_COMMANDS="abort applied backup bashcompletion change-order commands continue delete doc dump export fold goto help init log man new parent pop push qname record refresh restore unapplied"
+ALL_COMMANDS="abort applied backup bashcompletion change-order commands continue delete doc dump export fold glog goto help init man new parent pop push qname record refresh restore unapplied"
 
 # shellcheck disable=SC2001
 ALL_COMMANDS_RX=$(echo "$ALL_COMMANDS" | sed -e 's/ /|/g')
@@ -393,7 +393,7 @@ You can also combine ('fold') an unapplied patch with::
 
 Inspect the applied patches with::
 
-  $MYNAME_GIT log
+  $MYNAME_GIT glog
 
 When you are finished for all patches you can finalize these changes by setting
 the parent version to the current HEAD version::
@@ -882,7 +882,9 @@ Patch management commands
 +++++++++++++++++++++++++
 
   new [NAME]     
-    Create new patch (commit with log-message NAME).
+    Create new patch (commit) with log-message NAME. NAME is meant as a
+    preliminary commit message, it should be a single line without spaces. If
+    NAME is omitted, you can enter a complete log message interactively.
 
   record [NAME]  
     Interactively select changes for a new patch (commit with log-message NAME)
@@ -929,8 +931,8 @@ Miscellaneous commands
   man            
     Show man page.
 
-  log            
-    Display applied patches (commits) as a tree on the console.
+  glog
+    Graphical log, display all commits and branches as a tree on the console.
 
 OPTIONS
 +++++++
@@ -1162,7 +1164,7 @@ if [ "$COMMAND" == "bashcompletion" ]; then
     exit 0
 fi
 
-if [ "$COMMAND" == "log" ]; then
+if [ "$COMMAND" == "glog" ]; then
     git log --graph --all --decorate
     exit 0
 fi

@@ -14,7 +14,7 @@ git_gq_fold                     fold
 git_gq_goto                     goto
 X                               help
 git_gq_init                     init
-git_gq_log                      log
+git_gq_glog                     glog
 X                               man
 X                               qname
 git_gq_new                      new
