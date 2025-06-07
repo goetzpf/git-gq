@@ -1,6 +1,10 @@
 git-gq
 ======
 
+Note: This branch is only here for publishing the web site.
+
+The actual program is on branch "master".
+
 About
 -----
 

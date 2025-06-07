@@ -1,0 +1,66 @@
+Implementation
+--------------
+
+Patch files
++++++++++++
+
+A *patch file* is basically a file with recipes for changes in files. Each
+recipe is called a *hunk*. A *hunk* contains line numbers, context lines, lines
+to remove and lines to add.
+
+`git gq` uses standard git commands to move patches between the
+repository and the patch queue. In the patch queue, each patch is a file
+created from commits in the repository with `git format-patch`. Among the
+changes between two commits this file also contains all the metadata of the
+second commit.
+
+A patch file is re-applied to the repository with `git am`. 
+
+Here is an example of a patch file::
+
+  From 273c3709f7da0fe0e11369ea0d9a26053f78e3ee Mon Sep 17 00:00:00 2001
+  From: Goetz Pfeiffer <goetzpf@googlemail.com>
+  Date: Tue, 3 Jun 2025 10:45:57 +0200
+  Subject: [PATCH] sample-comment
+  
+  ---
+   sample.c | 2 +-
+   1 file changed, 1 insertion(+), 1 deletion(-)
+  
+  diff --git a/sample.c b/sample.c
+  index e5cf2b0..350c29b 100644
+  --- a/sample.c
+  +++ b/sample.c
+  @@ -4,8 +4,8 @@ int main(int argc, char *argv[])
+     {
+       int i;
+   
+  -    printf("number of arguments: %d\n", argc);
+       printf("program name: %s\n", argv[0]);
+  +    /* iterate over all command line arguments: */
+       for(i=1; i<argc; i++)
+         printf("arg no %2d: %s\n", i, argv[i]);
+       return 0;
+  -- 
+  2.49.0
+
+The series file
++++++++++++++++
+
+The order of patches is kept in a file named 'series' that just contains all
+the filenames of all unapplied patches. This file is maintained by
+`git gq`.
+
+Parent revision
++++++++++++++++
+
+The parent revision is stored in a file 'parent'. This is the latest commit
+that is not allowed to be modified. This file is usually created when you start
+your work with `git gq init`.
+
+Multiple patch queues
++++++++++++++++++++++
+
+Multiple patch queues are maintained in different directories. There is always
+one patch queue active, it's name is stored in the file 'queue'.
+
