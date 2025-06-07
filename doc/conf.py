@@ -9,7 +9,8 @@
 project = 'git-gq'
 copyright = '2025, Goetz Pfeiffer <goetzpf@googlemail.com>'
 author = 'Goetz Pfeiffer <goetzpf@googlemail.com>'
-release = '1.0'
+version = '1.0' #VERSION#
+release = version
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
