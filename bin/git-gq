@@ -42,7 +42,7 @@ QUEUEFILE="$TOPPATCHDIR/queue"
 ALL_COMMANDS="abort applied backup bashcompletion change-order commands continue delete doc dump export fold glog goto help init man new parent pop push qname record refresh restore unapplied"
 
 # shellcheck disable=SC2001
-ALL_COMMANDS_RX=$(echo "$ALL_COMMANDS" | sed -e 's/ /|/g')
+ALL_COMMANDS_RX=$(echo "$ALL_COMMANDS" | sed -e 's/ /|/g;s/^/^(/;s/$/)$/')
 
 # general purpose return code variable:
 rc=""
@@ -1130,7 +1130,7 @@ for arg in "${ARGS[@]}"; do
         COMMAND="$arg"
         continue
     fi
-    echo "unexpeced argument: $arg"
+    echo "Error, unexpected command: '$arg'." >&2
     exit 1
 done
 
