@@ -11,6 +11,11 @@ Author
 
 Goetz Pfeiffer <goetzpf@googlemail.com>
 
+Documentation
+-------------
+
+https://goetzpf.github.io/git-gq
+
 License
 -------
 

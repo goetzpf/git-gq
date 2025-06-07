@@ -53,6 +53,11 @@ Documentation
 - :doc:`examples`
 - :doc:`commandline`
 
+Repository site
+---------------
+
+https://github.com/goetzpf/git-gq
+
 Indices and tables
 ------------------
 
