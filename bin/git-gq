@@ -39,7 +39,7 @@ SERIESFILE="$PATCHDIR/series"
 PARENTFILE="$PATCHDIR/parent"
 QUEUEFILE="$TOPPATCHDIR/queue"
 
-ALL_COMMANDS="abort applied backup bashcompletion change-order commands continue delete doc dump export fold glog goto help init man new parent pop push qname record refresh restore unapplied"
+ALL_COMMANDS="abort applied backup bashcompletion change-order commands continue delete doc export fold glog goto help init man new parent pop push qname record refresh restore show unapplied"
 
 # shellcheck disable=SC2001
 ALL_COMMANDS_RX=$(echo "$ALL_COMMANDS" | sed -e 's/ /|/g;s/^/^(/;s/$/)$/')
@@ -969,8 +969,8 @@ Patch management commands
   delete NAME|REGEXP
     Delete unapplied patch with given name.
 
-  dump NAME|REGEXP
-    Dump an applied or unapplied patch to the console.
+  show NAME|REGEXP
+    Show changes of an applied or unapplied patch on the console.
 
   continue       
     Continue 'push' after you had a conflict and had it fixed manually.
@@ -1173,7 +1173,7 @@ for arg in "${ARGS[@]}"; do
         echo "unexpected: '$arg'" >&2
         exit 1
     fi
-    if [[ "$COMMAND" =~ fold|goto|new|record|delete|dump ]]; then
+    if [[ "$COMMAND" =~ fold|goto|new|record|delete|show ]]; then
         if [ -n "$name_arg" ]; then
             echo "unexpected: '$arg'" >&2
             exit 1
@@ -1582,7 +1582,7 @@ if [ "$COMMAND" == "fold" ]; then
     exit 0
 fi
 
-if [ "$COMMAND" == "dump" ]; then
+if [ "$COMMAND" == "show" ]; then
     patchname="$name_arg"
     if [ -e "$PATCHDIR/$patchname" ]; then
         dump_patch_file "$PATCHDIR/$patchname"

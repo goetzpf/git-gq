@@ -9,7 +9,7 @@ X                               commands
 git_gq_continue                 continue
 git_gq_delete                   delete
 X                               doc
-git_gq_dump                     dump
+git_gq_show                     show
 git_gq_fold                     fold
 git_gq_goto                     goto
 X                               help

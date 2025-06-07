@@ -1,8 +1,8 @@
-* Test git gq dump
+* Test git gq show
 ---------------------------------------
 
 # Dump an applied patch.
-$ git gq dump 'README'
+$ git gq show 'README'
 commit abcdef0123456789abcdef0123456789
 Author: Homer Simpson <simpson@burns-powerplant.com>
 Date: Sun Dec 31 09:12:34 2001 +0100
@@ -23,7 +23,7 @@ HEAD is now at abcdef0 README was improved.
 HEAD is now at abcdef0 initial commit
 
 # Dump an unapplied patch.
-$ git gq dump 'README'
+$ git gq show 'README'
 From abcdef0123456789abcdef0123456789 Mon Sep 17 00:00:00 2001
 From: Homer Simpson <simpson@burns-powerplant.com>
 Date: Sun Dec 31 09:12:34 2001 +0100
@@ -45,7 +45,7 @@ index 378dddb..e475c99 100644
 
 
 # Dump an HEAD commit.
-$ git gq dump 'HEAD'
+$ git gq show 'HEAD'
 commit abcdef0123456789abcdef0123456789
 Author: Homer Simpson <simpson@burns-powerplant.com>
 Date: Sun Dec 31 09:12:34 2001 +0100
