@@ -501,6 +501,26 @@ function git_oneline_log_single {
     GIT_PAGER=cat git log --color=auto --oneline -1 "$1"
 }
 
+function git_mk_changes_files {
+    # $1: if empty create only DIFF.patch
+    #     if non-empty create DIFF.patch and HEAD.patch
+    # create files:
+    # $TOPPATCHDIR/HEAD.patch : all changes of the HEAD patch
+    # $TOPPATCHDIR/DIFF.patch : all changes in the working copy not yet
+    #                           comitted
+    git diff > "$TOPPATCHDIR/DIFF.patch"
+    if [ -n "$1" ]; then
+        git show HEAD > "$TOPPATCHDIR/HEAD.patch"
+    fi
+}
+
+function git_rm_changes_files {
+    # removes the 2 files:
+    # $TOPPATCHDIR/HEAD.patch
+    # $TOPPATCHDIR/DIFF.patch
+    rm -f "$TOPPATCHDIR/HEAD.patch" "$TOPPATCHDIR/DIFF.patch"
+}
+
 function get_parent {
     # returns: 
     #   0 : no error
@@ -1375,9 +1395,17 @@ if [ "$COMMAND" == "new" ]; then
         # shellcheck disable=SC2089
         name_opt=("-m" "$name_arg")
     else
+        # if this case an editor will (probably) be started
         name_opt=()
+        # create .gqpatches/DIFF.patch so the user can review changes while
+        # editing the log message:
+        git_mk_changes_files ""
     fi
     git commit "${name_opt[@]}"
+    if [ -z "$name_arg" ]; then
+        # remove the changes files:
+        git_rm_changes_files
+    fi
     exit 0
 fi
 
@@ -1403,7 +1431,16 @@ if [ "$COMMAND" == "refresh" ]; then
     else
         # if $message and $file are empty, this starts an editor for changing
         # the log message.
+        if [ -n "$edit" ]; then
+            # create two files so the user can review changes while editing the
+            # log message:
+            git_mk_changes_files "both"
+        fi
         git_amend "$message" "$file"
+        if [ -n "$edit" ]; then
+            # remove the changes files:
+            git_rm_changes_files
+        fi
     fi
     exit 0
 fi
