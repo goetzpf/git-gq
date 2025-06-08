@@ -151,7 +151,9 @@ DIRECTORY must exist.</p>
 <h2>Patch management commands<a class="headerlink" href="#patch-management-commands" title="Link to this heading"></a></h2>
 <blockquote>
 <div><dl class="simple">
-<dt>new [NAME]</dt><dd><p>Create new patch (commit with log-message NAME).</p>
+<dt>new [NAME]</dt><dd><p>Create new patch (commit) with log-message NAME. NAME is meant as a
+preliminary commit message, it should be a single line without spaces. If
+NAME is omitted, you can enter a complete log message interactively.</p>
 </dd>
 <dt>record [NAME]</dt><dd><p>Interactively select changes for a new patch (commit with log-message NAME)</p>
 </dd>
@@ -170,7 +172,7 @@ refresh -e</cite>.</p>
 </dd>
 <dt>delete NAME|REGEXP</dt><dd><p>Delete unapplied patch with given name.</p>
 </dd>
-<dt>dump NAME|REGEXP</dt><dd><p>Dump an applied or unapplied patch to the console.</p>
+<dt>show NAME|REGEXP</dt><dd><p>Show changes of an applied or unapplied patch on the console.</p>
 </dd>
 <dt>continue</dt><dd><p>Continue ‘push’ after you had a conflict and had it fixed manually.</p>
 </dd>
@@ -189,7 +191,7 @@ refresh -e</cite>.</p>
 </dd>
 <dt>man</dt><dd><p>Show man page.</p>
 </dd>
-<dt>log</dt><dd><p>Display applied patches (commits) as a tree on the console.</p>
+<dt>glog</dt><dd><p>Graphical log, display all commits and branches as a tree on the console.</p>
 </dd>
 </dl>
 </div></blockquote>
@@ -212,7 +214,7 @@ Run the script with “set -x” which shows what it does.</p>
 <div><dl class="simple">
 <dt>-a –all</dt><dd><p>push/pop: apply on ALL patches.</p>
 </dd>
-<dt>-e –edit</dt><dd><p>refresh: edit log message</p>
+<dt>-e –edit</dt><dd><p>refresh/fold: start editor to edit log message</p>
 </dd>
 <dt>-m –message MESSAGE</dt><dd><p>refresh: use MESSAGE as log message</p>
 </dd>

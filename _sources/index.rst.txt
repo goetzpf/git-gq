@@ -44,6 +44,10 @@ You do not resolve all merge conflicts in one commit, instead you resolve
 conflicts separately for each patch, usually this is easier than the standard
 approach.
 
+.. seealso::
+   `Goetz Pfeiffer's Project site <https://goetzpf.github.io/>`_
+   for other open source projects.
+
 Documentation
 -------------
 

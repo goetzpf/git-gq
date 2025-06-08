@@ -57,7 +57,9 @@ Patch management commands
 +++++++++++++++++++++++++
 
   new [NAME]     
-    Create new patch (commit with log-message NAME).
+    Create new patch (commit) with log-message NAME. NAME is meant as a
+    preliminary commit message, it should be a single line without spaces. If
+    NAME is omitted, you can enter a complete log message interactively.
 
   record [NAME]  
     Interactively select changes for a new patch (commit with log-message NAME)
@@ -83,8 +85,8 @@ Patch management commands
   delete NAME|REGEXP
     Delete unapplied patch with given name.
 
-  dump NAME|REGEXP
-    Dump an applied or unapplied patch to the console.
+  show NAME|REGEXP
+    Show changes of an applied or unapplied patch on the console.
 
   continue       
     Continue 'push' after you had a conflict and had it fixed manually.
@@ -104,8 +106,8 @@ Miscellaneous commands
   man            
     Show man page.
 
-  log            
-    Display applied patches (commits) as a tree on the console.
+  glog
+    Graphical log, display all commits and branches as a tree on the console.
 
 OPTIONS
 +++++++
@@ -126,7 +128,7 @@ OPTIONS
     push/pop: apply on ALL patches.
 
   -e --edit
-    refresh: edit log message
+    refresh/fold: start editor to edit log message
 
   -m --message MESSAGE
     refresh: use MESSAGE as log message
