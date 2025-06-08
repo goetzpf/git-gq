@@ -123,7 +123,10 @@ revision, if it is not givem, ‘HEAD’ is taken as the parent. You must run
 this command once to initialize the patch queue in your repository.</p>
 </dd>
 <dt>qname [QNAME]</dt><dd><p>If QNAME is not given, show current patch queue name. if QNAME is given,
-change to patch queue QNAME.</p>
+change to patch queue QNAME. If the patch queue QNAME is created for the
+first time, the parent revision is set to your ‘HEAD’ revision. If this is
+not intended, you may change this with <cite>git gq parent REVISION</cite> to
+another revision.</p>
 </dd>
 <dt>backup</dt><dd><p>Create backup tar file of patch directory ‘.gqpatches’.</p>
 </dd>
@@ -136,13 +139,19 @@ patches. Note the the patches in the file are applied from top to bottom.</p>
 </dd>
 <dt>unapplied</dt><dd><p>Show all patches of the patch queue.</p>
 </dd>
-<dt>parent [REV}</dt><dd><p>Set REV as patch queue parent revision. Do never go beyond this revision
-with pop. Use ‘HEAD’ to set your repository HEAD as parent revision. If
-HEAD is not given, show the current parent revision.</p>
+<dt>parent [REVISION}</dt><dd><p>Set REVISION as patch queue parent revision. Do never go beyond this
+revision with pop. Use ‘HEAD’ to set your repository HEAD as parent
+revision. If HEAD is not given, show the current parent revision.</p>
 </dd>
 <dt>export DIRECTORY</dt><dd><p>Create numbered patch files from all currently applied patches in
 DIRECTORY. The numbers are in the order of patches from bottom to top.
 DIRECTORY must exist.</p>
+</dd>
+<dt>import PATCHFILE [PATCHFILE…]</dt><dd><p>Import a number of patchfiles to the patch queue. The last patchfile in the
+list will be on the top of the queue. Note that the patch files must have
+been generated with <cite>git format-patch</cite> or <cite>git gq pop</cite>. This
+cannot be used for patches generated with the <cite>patch</cite> program. These you
+have to apply with <cite>git apply PATCHFILE</cite>.</p>
 </dd>
 </dl>
 </div></blockquote>
@@ -206,13 +215,12 @@ refresh -e</cite>.</p>
 </dd>
 <dt>-v –version</dt><dd><p>Show version and exit.</p>
 </dd>
-</dl>
-<p class="attribution">—debug
-Run the script with “set -x” which shows what it does.</p>
-</div></blockquote>
-<blockquote>
-<div><dl class="simple">
+<dt>-D –debug</dt><dd><p>Run the script with “set -x” which shows what it does.</p>
+</dd>
 <dt>-a –all</dt><dd><p>push/pop: apply on ALL patches.</p>
+</dd>
+<dt>-N –no-add</dt><dd><p>new/refresh/fold: DO NOT add all modified changes to patch.
+continue: DO NOT add all modified and unknown changes to patch</p>
 </dd>
 <dt>-e –edit</dt><dd><p>refresh/fold: start editor to edit log message</p>
 </dd>
