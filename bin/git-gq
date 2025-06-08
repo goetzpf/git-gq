@@ -521,6 +521,38 @@ function git_check_exists {
     git cat-file  -e "$1"  2> /dev/null
 }
 
+function log_template {
+    # create a template file for a log message
+    # $1: direct log message
+    # $2: file with log message
+    # $3: if non zero, add preamble
+    # $4: file to create
+    rm -f "$4"
+    touch "$4"
+    if [ -n "$3" ]; then
+        echo "*** Please review and change this log message" >> "$4"
+    fi
+    if [ -n "$1" ]; then
+        echo "$1" >> "$4"
+    fi
+    if [ -n "$2" ]; then
+        cat "$2" >> "$4"
+    fi
+}
+
+function git_head_full_log {
+    # create file with HEAD log message.
+    # $1: filename to create
+    # $2: if non-zero, put preamble in the first line
+    rm -f "$1"
+    touch "$1"
+    if [ -n "$2" ]; then
+        echo "*** Please review and change this log message" >> "$1"
+    else
+        git log --format=%B -1 >> "$1"
+    fi
+}
+
 function git_oneline_log {
     # $1: revision spec
     # prints one-line log, possible with color, to the console
@@ -718,7 +750,7 @@ function git_amend {
     # simple amend of HEAD revision
     # $1: if not empty, this is the log message
     # $2: if not empty, take log message from this file
-    # $3: if not empty, take log message from file as a template the 
+    # $3: if not empty, take log message from $2 as a template the 
     #     user has to edit
     local EXTRA
     # a bash array is the correct way to provide several extra arguments to a
@@ -727,11 +759,10 @@ function git_amend {
     if [ -n "$1" ]; then
         EXTRA+=("-m" "$1")
     fi
-    if [ -n "$2" ]; then
-        EXTRA+=("-F" "$2")
-    fi
     if [ -n "$3" ]; then
-        EXTRA+=("-t" "$3")
+        EXTRA+=("-t" "$2")
+    elif [ -n "$2" ]; then
+        EXTRA+=("-F" "$2")
     fi
     if [ -z "$no_add" ]; then
         # "": do not add unknown files:
@@ -1517,13 +1548,14 @@ if [ "$COMMAND" == "record" ]; then
 fi
 
 if [ "$COMMAND" == "refresh" ]; then
-    if [ -z "$message" ] && [ -z "$file" ] && [ -z "$edit" ]; then
+    if [ -z "$message" ] && [ -z "$file" ]; then
         # re-use existing log message and keep this as
         # log message
-        git log --format=%B -1 > "$PATCHDIR/LOG"
-        git_amend "" "$PATCHDIR/LOG" ""
+        git_head_full_log "$PATCHDIR/LOG" "$edit"
+        git_amend "" "$PATCHDIR/LOG" "$edit"
         rm -f "$PATCHDIR/LOG"
     else
+        log_template "$message" "$file" "$edit" "$PATCHDIR/LOG"
         # if $message and $file are empty, this starts an editor for changing
         # the log message.
         if [ -n "$edit" ]; then
@@ -1531,11 +1563,12 @@ if [ "$COMMAND" == "refresh" ]; then
             # log message:
             git_mk_changes_files "both"
         fi
-        git_amend "$message" "$file" ""
+        git_amend "" "$PATCHDIR/LOG" "$edit"
         if [ -n "$edit" ]; then
             # remove the changes files:
             git_rm_changes_files
         fi
+        rm -f "$PATCHDIR/LOG"
     fi
     exit 0
 fi
@@ -1635,12 +1668,7 @@ if [ "$COMMAND" == "fold" ]; then
         fi
         name_arg="$patchname"
     fi
-    if [ -n "$edit" ]; then
-        echo "*** Please review and change this log message" > "$PATCHDIR/LOG"
-    else
-        echo "" > "$PATCHDIR/LOG"
-    fi
-    git_head_log >> "$PATCHDIR/LOG"
+    git_head_full_log "$PATCHDIR/LOG" "$edit"
     echo -e '\n***\n' >> "$PATCHDIR/LOG"
     if ! qpush_specified "$name_arg"; then
         exit 1
