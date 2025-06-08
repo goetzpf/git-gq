@@ -1046,7 +1046,7 @@ OPTIONS
   -v --version
     Show version and exit.
 
-  --debug
+  -D --debug
     Run the script with "set -x" which shows what it does.
 
   -a --all
@@ -1133,7 +1133,7 @@ while true; do
             file="$2"
             shift 2
             ;;
-        --debug)
+        -D | --debug)
             debug="yes"
             shift
             ;;
