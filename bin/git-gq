@@ -49,6 +49,7 @@ rc=""
 
 debug=""
 all=""
+no_add=""
 edit=""
 message=""
 file=""
@@ -681,8 +682,10 @@ function git_head_log {
 
 function git_add_changes {
     # add only changed files to stash
+    # $1: if not zero, add unknown files, too
+    #
     # Does not add:
-    # - unknown files
+    # - unknown files (depending on $1)
     # - all files starting with $TOPPATCHDIR
     # - all files ending with '.rej'
     # - renames: the old files that are removed, these are already in git stash
@@ -694,7 +697,16 @@ function git_add_changes {
     # RM test/git_gq_dump.sh -> test/git_gq_show.sh
     # ?? .gqpatches-2025-06-07T172509.tgz
     # ?? .gqpatches/
-    git status --porcelain | grep -v '^??' | sed -e 's/^RM .*-> //' | sed -e 's/^.. //' | grep -v "\(^${TOPPATCHDIR}[/-]\|\.rej$\)" |xargs git add
+    local EXTRA
+    # a bash array is the correct way to provide several extra arguments to a
+    # command:
+    EXTRA=()
+    if [ -z "$1" ]; then
+        # do not show unknown files:
+        EXTRA+=("-uno")
+    fi
+    local LINES
+    git status --porcelain "${EXTRA[@]}" | sed -e 's/^RM .*-> //' | sed -e 's/^.. //' | grep -v "\(^${TOPPATCHDIR}[/-]\|\.rej$\)" |xargs git add
 }
 
 function git_select_changes {
@@ -721,7 +733,10 @@ function git_amend {
     if [ -n "$3" ]; then
         EXTRA+=("-t" "$3")
     fi
-    git_add_changes
+    if [ -z "$no_add" ]; then
+        # "": do not add unknown files:
+        git_add_changes ""
+    fi
     git commit --amend "${EXTRA[@]}"
 }
 
@@ -1037,6 +1052,10 @@ OPTIONS
   -a --all
     push/pop: apply on ALL patches.
 
+  -N --no-add
+    new/refresh/fold: DO NOT add all modified changes to patch.
+    continue: DO NOT add all modified and unknown changes to patch
+
   -e --edit
     refresh/fold: start editor to edit log message
 
@@ -1092,6 +1111,10 @@ while true; do
             ;;
         -a | --all)
             all="yes"
+            shift
+            ;;
+        -N | --no-add)
+            no_add="yes"
             shift
             ;;
         -L | --full)
@@ -1341,7 +1364,7 @@ if [ "$COMMAND" == "init" ]; then
 fi
 
 if [ ! -d "$TOPPATCHDIR" ]; then
-    echo "please run '$MYNAME init' first." >&2
+    echo "please run '$MYNAME_GIT init' first." >&2
     exit 1
 fi
 
@@ -1459,7 +1482,10 @@ if [ "$COMMAND" == "parent" ]; then
 fi
 
 if [ "$COMMAND" == "new" ]; then
-    git_add_changes
+    if [ -z "$no_add" ]; then
+        # "": do not add unknown files:
+        git_add_changes ""
+    fi
     if [ -n "$name_arg" ]; then
         # shellcheck disable=SC2089
         name_opt=("-m" "$name_arg")
@@ -1682,13 +1708,16 @@ if [ "$COMMAND" == "unapplied" ]; then
 fi
 
 if [ "$COMMAND" == "continue" ]; then
-    git status --porcelain | sed -e "s/^.. //" | grep -v "\(^$PATCHDIR/\|\.rej$\)"| xargs git add
+    if [ -z "$no_add" ]; then
+        # "": do not add unknown files:
+        git_add_changes "yes"
+    fi
     if ! git am --continue; then
         echo "Fix the change by looking at the *.rej files."
         echo "Then run:"
-        echo "  $MYNAME qcontinue"
+        echo "  $MYNAME_GIT qcontinue"
         echo "To abort the operation without fixing run:"
-        echo "  $MYNAME qabort"
+        echo "  $MYNAME_GIT qabort"
         exit 1
     fi
     if [ -e "$SERIESFILE.new" ]; then
@@ -1705,15 +1734,5 @@ if [ "$COMMAND" == "abort" ]; then
     exit 0
 fi
 
-if [ "$COMMAND" == "continue" ]; then
-    git_add_changes
-    if ! git am --continue; then
-        echo "Fix the change by looking at the *.rej files."
-        echo "Then run:"
-        echo "  $MYNAME qcontinue"
-    fi
-    if [ -e "$SERIESFILE.new" ]; then
-        rm "$SERIESFILE" && mv "$SERIESFILE.new" "$SERIESFILE"
-    fi
-    exit 0
-fi
+echo "Assertion error" >&2
+exit 1
