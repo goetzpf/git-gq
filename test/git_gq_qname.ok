@@ -1,0 +1,89 @@
+* Test git gq qname
+---------------------------------------
+
+$ git gq qname
+Existing queues:
+	default
+
+Currently selected:
+	default
+
+$ git gq applied
+abcdef0 script.sh was improved.
+abcdef0 README was improved.
+
+$ git gq unapplied
+
+# Create another queue.
+$ git gq qname queue2
+queue parent revision set to HEAD (abcdef0)
+
+# Change README.txt again ...
+$ git gq new README-was-extended
+[master abcdef0] README-was-extended
+1 file changed, 1 insertion(+)
+
+$ git log
+commit abcdef0123456789abcdef0123456789
+Author: Homer Simpson <simpson@burns-powerplant.com>
+Date: Sun Dec 31 09:12:34 2001 +0100
+
+README-was-extended
+
+commit abcdef0123456789abcdef0123456789
+Author: Homer Simpson <simpson@burns-powerplant.com>
+Date: Sun Dec 31 09:12:34 2001 +0100
+
+script.sh was improved.
+
+commit abcdef0123456789abcdef0123456789
+Author: Homer Simpson <simpson@burns-powerplant.com>
+Date: Sun Dec 31 09:12:34 2001 +0100
+
+README was improved.
+
+commit abcdef0123456789abcdef0123456789
+Author: Homer Simpson <simpson@burns-powerplant.com>
+Date: Sun Dec 31 09:12:34 2001 +0100
+
+initial commit
+
+$ git gq applied
+abcdef0 README-was-extended
+
+$ git gq unapplied
+
+# Switch back to 'default' queue.
+$ git gq qname default
+
+$ git log
+commit abcdef0123456789abcdef0123456789
+Author: Homer Simpson <simpson@burns-powerplant.com>
+Date: Sun Dec 31 09:12:34 2001 +0100
+
+README-was-extended
+
+commit abcdef0123456789abcdef0123456789
+Author: Homer Simpson <simpson@burns-powerplant.com>
+Date: Sun Dec 31 09:12:34 2001 +0100
+
+script.sh was improved.
+
+commit abcdef0123456789abcdef0123456789
+Author: Homer Simpson <simpson@burns-powerplant.com>
+Date: Sun Dec 31 09:12:34 2001 +0100
+
+README was improved.
+
+commit abcdef0123456789abcdef0123456789
+Author: Homer Simpson <simpson@burns-powerplant.com>
+Date: Sun Dec 31 09:12:34 2001 +0100
+
+initial commit
+
+$ git gq applied
+abcdef0 README-was-extended
+abcdef0 script.sh was improved.
+abcdef0 README was improved.
+
+$ git gq unapplied

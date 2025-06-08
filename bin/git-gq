@@ -966,7 +966,10 @@ Queue management commands
 
   qname [QNAME]   
     If QNAME is not given, show current patch queue name. if QNAME is given,
-    change to patch queue QNAME.
+    change to patch queue QNAME. If the patch queue QNAME is created for the
+    first time, the parent revision is set to your 'HEAD' revision. If this is
+    not intended, you may change this with \`$MYNAME_GIT parent REVISION\` to
+    another revision.
 
   backup         
     Create backup tar file of patch directory '$TOPPATCHDIR'.
@@ -984,10 +987,10 @@ Queue management commands
   unapplied      
     Show all patches of the patch queue.
 
-  parent [REV}   
-    Set REV as patch queue parent revision. Do never go beyond this revision
-    with pop. Use 'HEAD' to set your repository HEAD as parent revision. If
-    HEAD is not given, show the current parent revision.
+  parent [REVISION}   
+    Set REVISION as patch queue parent revision. Do never go beyond this
+    revision with pop. Use 'HEAD' to set your repository HEAD as parent
+    revision. If HEAD is not given, show the current parent revision.
 
   export DIRECTORY
     Create numbered patch files from all currently applied patches in
@@ -1249,7 +1252,7 @@ for arg in "${ARGS[@]}"; do
         echo "unexpected: '$arg'" >&2
         exit 1
     fi
-    if [[ "$COMMAND" =~ fold|goto|new|record|delete|show ]]; then
+    if [[ "$COMMAND" =~ qname|fold|goto|new|record|delete|show ]]; then
         if [ -n "$name_arg" ]; then
             echo "unexpected: '$arg'" >&2
             exit 1
@@ -1401,15 +1404,17 @@ if [ "$COMMAND" == "qname" ]; then
         echo -e "\t$QUEUENAME"
         exit 0
     else
+        QUEUENAME="$name_arg"
         echo "$QUEUENAME" > "$QUEUEFILE"
         select_queue "$QUEUENAME"
-        if [ ! -d "$PATCHDIR/$QUEUENAME" ]; then
-            mkdir -p "$PATCHDIR/$QUEUENAME"
+        if [ ! -d "$TOPPATCHDIR/$QUEUENAME" ]; then
+            mkdir -p "$TOPPATCHDIR/$QUEUENAME"
             if ! create_parentfile HEAD; then
                 exit 1
             fi
         fi
     fi
+    exit 0
 fi
 
 QUEUENAME=$(cat "$QUEUEFILE")
