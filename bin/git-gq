@@ -786,7 +786,7 @@ function qpop_check {
     # in case of a fatal error, the function prints an error message to stderr.
     local rev
     local PARENT
-    if git show HEAD --stat | grep -q -F " $TOPPATCHDIR"; then
+    if git show HEAD --stat | grep -q "^ ${TOPPATCHDIR}[/-]"; then
         echo "FATAL Error, somehow git is tracking $TOPPATCHDIR." >&2
         echo "'$MYNAME_GIT pop' would remove $TOPPATCHDIR." >&2
         echo "Do the following to fix this:" >&2
