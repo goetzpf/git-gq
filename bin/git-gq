@@ -39,7 +39,7 @@ SERIESFILE="$PATCHDIR/series"
 PARENTFILE="$PATCHDIR/parent"
 QUEUEFILE="$TOPPATCHDIR/queue"
 
-ALL_COMMANDS="abort applied backup bashcompletion change-order commands continue delete doc export fold glog goto help init man new parent pop push qname record refresh restore show unapplied"
+ALL_COMMANDS="abort applied backup bashcompletion change-order commands continue delete doc export fold glog goto help import init man new parent pop push qname record refresh restore show unapplied"
 
 # shellcheck disable=SC2001
 ALL_COMMANDS_RX=$(echo "$ALL_COMMANDS" | sed -e 's/ /|/g;s/^/^(/;s/$/)$/')
@@ -59,6 +59,8 @@ name_arg=""
 file_arg=""
 dir_arg=""
 doc_arg=""
+
+list_arg=()
 
 patchname=""
 
@@ -455,6 +457,39 @@ function print_short_help {
     short_help_text | grep -v '^+\+$'
 }
 
+function unique_patch_name {
+    # generate a patchname that doesn't already exist
+    # $1: name of patch file
+    local CNT
+    local TEMP_PATCHNAME
+    local PATCHNAME
+    PATCHNAME="$1"
+    if [ ! -e "$PATCHDIR/$PATCHNAME" ]; then 
+        echo "$PATCHNAME"
+        return
+    fi
+    CNT=1
+    while true; do
+        TEMP_PATCHNAME="$(printf "%04d-%s" "$CNT" "$PATCHNAME")"
+        if [ ! -e "$PATCHDIR/$TEMP_PATCHNAME" ]; then
+            break
+        fi
+        CNT=$((CNT+1))
+    done
+    echo "$TEMP_PATCHNAME"
+}
+
+function prepend_seriesfile {
+    # prepend a filename to the series file
+    # $1: filename
+    if [ ! -s "$SERIESFILE" ]; then
+        echo "$1" > "$SERIESFILE"
+    else
+        # insert at first line
+        sed -i "1i$1" "$SERIESFILE"
+    fi
+}
+
 function git_goto_repo_dir {
     # returns: 
     #   0 : no error
@@ -766,26 +801,10 @@ function qpop_one {
     # remove leading number from patchname:
     # shellcheck disable=SC2001
     PATCHNAME=$(echo "$ORIG_PATCHNAME"  | sed -e 's/^[0-9]\+-//')
-    # if a file with this name already exists:
-    if [ -e "$PATCHDIR/$PATCHNAME" ]; then
-        # generate a filename with a preceeding number
-        CNT=1
-        while true; do
-            TEMP_PATCHNAME="$(printf "%04d-%s" "$CNT" "$PATCHNAME")"
-            if [ ! -e "$PATCHDIR/$TEMP_PATCHNAME" ]; then
-                break
-            fi
-            CNT=$((CNT+1))
-        done
-        PATCHNAME="$TEMP_PATCHNAME"
-    fi
+    # generate a unique name for the file:
+    PATCHNAME="$(unique_patch_name "$PATCHNAME")"
     mv "$TOPPATCHDIR/$ORIG_PATCHNAME" "$PATCHDIR/$PATCHNAME"
-    if [ ! -s "$SERIESFILE" ]; then
-        echo "$PATCHNAME" > "$SERIESFILE"
-    else
-        # insert at first line
-        sed -i "1i$PATCHNAME" "$SERIESFILE"
-    fi
+    prepend_seriesfile "$PATCHNAME"
     git reset --hard HEAD~1
 }
 
@@ -936,6 +955,13 @@ Queue management commands
     Create numbered patch files from all currently applied patches in
     DIRECTORY. The numbers are in the order of patches from bottom to top.
     DIRECTORY must exist.
+
+  import PATCHFILE [PATCHFILE...]
+    Import a number of patchfiles to the patch queue. The last patchfile in the
+    list will be on the top of the queue. Note that the patch files must have
+    been generated with \`git format-patch\` or \`$MYNAME_GIT pop\`. This
+    cannot be used for patches generated with the \`patch\` program. These you
+    have to apply with \`git apply PATCHFILE\`.
 
 Patch management commands
 +++++++++++++++++++++++++
@@ -1129,6 +1155,10 @@ for arg in "${ARGS[@]}"; do
     # if [ "§arg" == "doit" ]; then ...
     #     continue
     # fi
+    if [ "$COMMAND" == "import" ]; then
+        list_arg+=("$arg")
+        continue
+    fi
     if [ "$COMMAND" == "restore" ]; then
         if [ -n "$file_arg" ]; then
             echo "unexpected: '$arg'" >&2
@@ -1386,6 +1416,25 @@ if [ "$COMMAND" == "export" ]; then
     fi
     START="${PARENT}.."
     git format-patch -o "$dir_arg" "$START"
+    exit 0
+fi
+
+if [ "$COMMAND" == "import" ]; then
+    if (( ${#list_arg[@]} == 0 )); then
+        echo "Error, PATCHFILE(s) missing." >&2
+        exit 1
+    fi
+    for file_ in "${list_arg[@]}"; do
+        if [ ! -e "$file_" ]; then
+            echo "Error, file '$file_' not found." >&2
+            exit 1
+        fi
+    done
+    for file_ in "${list_arg[@]}"; do
+        new_="$(unique_patch_name "$(basename "$file_")")"
+        cp -a "$file_" "$PATCHDIR/$new_"
+        prepend_seriesfile "$new_"
+    done
     exit 0
 fi
 

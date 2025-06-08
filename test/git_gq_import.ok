@@ -1,0 +1,54 @@
+* Test git gq import
+---------------------------------------
+
+
+# Change README.txt again ...
+$ git gq new My-README
+[master abcdef0] My-README
+1 file changed, 1 insertion(+)
+$ git gq pop
+HEAD is now at abcdef0 script.sh was improved.
+$ cp .gqpatches/default/My-README.patch p1.patch
+$ git gq delete My-README
+
+# Change script.sh ...
+$ git gq new My-script
+[master abcdef0] My-script
+1 file changed, 1 insertion(+)
+$ git gq pop
+HEAD is now at abcdef0 script.sh was improved.
+$ cp .gqpatches/default/My-script.patch p1.patch
+$ git gq delete My-script
+
+$ git gq applied
+abcdef0 script.sh was improved.
+abcdef0 README was improved.
+
+$ git gq unapplied
+
+# Now import both patch files p1.patch and p2.patch.
+$ /home/goetz/shared/repos/git-gq/test/../bin/git-gq import p1.patch p2.patch
+
+$ git gq applied
+abcdef0 script.sh was improved.
+abcdef0 README was improved.
+
+$ git gq unapplied
+p2.patch
+p1.patch
+
+$ git gq push -a
+Checking patch script.sh...
+Applied patch script.sh cleanly.
+Applying: My-script
+Checking patch README.txt...
+Applied patch README.txt cleanly.
+Applying: My-README
+
+$ git gq applied
+abcdef0 My-README
+abcdef0 My-script
+abcdef0 script.sh was improved.
+abcdef0 README was improved.
+
+$ git gq unapplied
