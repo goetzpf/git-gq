@@ -38,7 +38,7 @@ $ git gq pop
 FATAL Error, somehow git is tracking .gqpatches.
 'git gq pop' would remove .gqpatches.
 Do the following to fix this:
-git reset HEAD~1 .gqpatches
+git reset HEAD~1 .gqpatches*
 git commit -C HEAD --amend
 
 $ git gq applied

@@ -775,7 +775,7 @@ function qpop_check {
         echo "FATAL Error, somehow git is tracking $TOPPATCHDIR." >&2
         echo "'$MYNAME_GIT pop' would remove $TOPPATCHDIR." >&2
         echo "Do the following to fix this:" >&2
-        echo "  git reset HEAD~1 $TOPPATCHDIR" >&2
+        echo "  git reset HEAD~1 ${TOPPATCHDIR}*" >&2
         echo "  git commit -C HEAD --amend" >&2
         return 3
     fi
