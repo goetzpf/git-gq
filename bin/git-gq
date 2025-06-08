@@ -576,7 +576,7 @@ function git_mk_changes_files {
     # $TOPPATCHDIR/HEAD.patch : all changes of the HEAD patch
     # $TOPPATCHDIR/DIFF.patch : all changes in the working copy not yet
     #                           comitted
-    git diff > "$TOPPATCHDIR/DIFF.patch"
+    git diff --cached > "$TOPPATCHDIR/DIFF.patch"
     if [ -n "$1" ]; then
         git show HEAD > "$TOPPATCHDIR/HEAD.patch"
     fi
@@ -748,25 +748,17 @@ function git_select_changes {
 
 function git_amend {
     # simple amend of HEAD revision
-    # $1: if not empty, this is the log message
-    # $2: if not empty, take log message from this file
-    # $3: if not empty, take log message from $2 as a template the 
+    # $1: if not empty, take log message from this file
+    # $2: if not empty, take log message from $1 as a template the 
     #     user has to edit
     local EXTRA
     # a bash array is the correct way to provide several extra arguments to a
     # command:
     EXTRA=()
-    if [ -n "$1" ]; then
-        EXTRA+=("-m" "$1")
-    fi
-    if [ -n "$3" ]; then
-        EXTRA+=("-t" "$2")
-    elif [ -n "$2" ]; then
-        EXTRA+=("-F" "$2")
-    fi
-    if [ -z "$no_add" ]; then
-        # "": do not add unknown files:
-        git_add_changes ""
+    if [ -n "$2" ]; then
+        EXTRA+=("-t" "$1")
+    elif [ -n "$1" ]; then
+        EXTRA+=("-F" "$1")
     fi
     git commit --amend "${EXTRA[@]}"
 }
@@ -1553,12 +1545,16 @@ if [ "$COMMAND" == "refresh" ]; then
     else
         log_template "$message" "$file""$PATCHDIR/LOG" "$edit" 
     fi
+    if [ -z "$no_add" ]; then
+        # "": do not add unknown files:
+        git_add_changes ""
+    fi
     if [ -n "$edit" ]; then
         # create two files so the user can review changes while editing the
         # log message:
         git_mk_changes_files "both"
     fi
-    git_amend "" "$PATCHDIR/LOG" "$edit"
+    git_amend "$PATCHDIR/LOG" "$edit"
     if [ -n "$edit" ]; then
         # remove the changes files:
         git_rm_changes_files
@@ -1670,6 +1666,10 @@ if [ "$COMMAND" == "fold" ]; then
     git_head_log >> "$PATCHDIR/LOG"
     qpop_one
     git apply "$PATCHDIR/$name_arg"
+    if [ -z "$no_add" ]; then
+        # "": do not add unknown files:
+        git_add_changes ""
+    fi
     if [ -n "$edit" ]; then
         # create two files so the user can review changes while editing the
         # log message:
@@ -1677,7 +1677,7 @@ if [ "$COMMAND" == "fold" ]; then
     fi
     # if $edit is not empty, git_amend will start an editor to edit the
     # combination of both log messages:
-    git_amend "" "$PATCHDIR/LOG" "$edit"
+    git_amend "$PATCHDIR/LOG" "$edit"
     if [ -n "$edit" ]; then
         # remove the changes files:
         git_rm_changes_files
