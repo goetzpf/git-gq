@@ -16,6 +16,7 @@ Welcome to git-gq's documentation!
    conflicts
    examples
    commandline
+   install
 
 Patch queues for git
 --------------------
@@ -44,6 +45,12 @@ You do not resolve all merge conflicts in one commit, instead you resolve
 conflicts separately for each patch, usually this is easier than the standard
 approach.
 
+:Author:
+    Goetz Pfeiffer <goetzpf@googlemail.com>
+
+:Version:
+    |version|
+
 .. seealso::
    `Goetz Pfeiffer's Project site <https://goetzpf.github.io/>`_
    for other open source projects.
@@ -56,6 +63,12 @@ Documentation
 - :doc:`conflicts`
 - :doc:`examples`
 - :doc:`commandline`
+- :doc:`install`
+
+Installation
+------------
+
+See :doc:`install`
 
 Repository site
 ---------------
