@@ -10,5 +10,8 @@
 /doc/examples.rst
 /doc/implementation.rst
 /doc/overview.rst
+/doc/install.rst
 
 /administration_tools/git-gq-pages
+
+/dist

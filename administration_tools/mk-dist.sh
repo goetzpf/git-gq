@@ -23,12 +23,25 @@ if [ ! -d "doc/_build" ]; then
     exit 1
 fi
 
-rm -rf dist
+
+DISTDIR="$(bin/git-gq --version | sed -e 's/ /-/')"
+DISTPATH="dist/$DISTDIR"
+
 mkdir -p dist
-cp -a bin dist
-mkdir -p dist/man/man1
-bin/git-gq doc | rst2man > dist/man/man1/git-gq.1
-mkdir -p dist/profile.d
-bin/git-gq bashcompletion > dist/profile.d/git-gq.sh
-cp "$MYDIR/install.sh" dist
-cp -a doc/_build/html dist
+rm -rf "$DISTPATH" "$DISTPATH.tar.gz"
+mkdir -p "$DISTPATH"
+
+cp -a README.rst "$DISTPATH"
+cp -a LICENSE "$DISTPATH"
+sed -n '/^Install from distribution/,$p' INSTALL.rst > "$DISTPATH"/INSTALL.rst
+cp -a bin "$DISTPATH"
+mkdir -p "$DISTPATH"/man/man1
+bin/git-gq doc | rst2man > "$DISTPATH"/man/man1/git-gq.1
+mkdir -p "$DISTPATH"/profile.d
+bin/git-gq bashcompletion > "$DISTPATH"/profile.d/git-gq.sh
+cp "$MYDIR/install.sh" "$DISTPATH"
+cp -a doc/_build/html "$DISTPATH/doc"
+
+(cd dist && tar -czf "$DISTDIR.tar.gz" "$DISTDIR")
+
+rm -rf "$DISTPATH"

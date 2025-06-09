@@ -157,6 +157,8 @@ The patch-queue is much more flexible than traditional commits:
 - Patches can be updated ('refresh')
 - Patches can replace development branches. You can put your local changes on
   the patch queue, run 'git pull' and put your patches back on the repository.
+- Conflicts may occur but are usually easier to resolve than git merge
+  conflicts
 
 Disadvantages of the patch queue
 ++++++++++++++++++++++++++++++++

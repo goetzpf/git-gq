@@ -26,6 +26,7 @@ function mk_rst {
 
 make clean -s
 
+cp ../INSTALL.rst install.rst
 mk_rst "Overview" "overview"
 mk_rst "Implementation" "implementation"
 mk_rst "Conflicts" "conflicts"
