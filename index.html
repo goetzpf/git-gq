@@ -146,6 +146,26 @@ approach.</p>
 for other open source projects.</p>
 </div>
 </section>
+<section id="disclaimer">
+<h2>Disclaimer<a class="headerlink" href="#disclaimer" title="Link to this heading"></a></h2>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>I have tested git-gq and use it myself. However, I cannot <em>guarantee</em> that
+it will <em>never</em> damage your repository. It’s high degree of flexibility also
+means that you may use it in a way I didn’t intend and didn’t test.</p>
+</div>
+<p>When you use this tool you should make regular backups of your repository. This
+can be as simple as:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">cp</span> <span class="o">-</span><span class="n">a</span> <span class="n">MYREPO</span> <span class="n">MYREPO</span><span class="o">-</span><span class="n">BACKUP</span>
+</pre></div>
+</div>
+<p>A simple backup of the patch queue can be done with:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">git</span> <span class="n">gq</span> <span class="n">backup</span>
+</pre></div>
+</div>
+<p>Run this <em>before</em> you reorder or fold patches and before you run <cite>git pull</cite>
+while some patches are unapplied.</p>
+</section>
 <section id="documentation">
 <h2>Documentation<a class="headerlink" href="#documentation" title="Link to this heading"></a></h2>
 <ul class="simple">
