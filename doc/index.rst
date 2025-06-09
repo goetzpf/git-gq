@@ -55,6 +55,27 @@ approach.
    `Goetz Pfeiffer's Project site <https://goetzpf.github.io/>`_
    for other open source projects.
 
+
+Disclaimer
+----------
+
+.. warning::
+   I have tested git-gq and use it myself. However, I cannot *guarantee* that
+   it will *never* damage your repository. It's high degree of flexibility also
+   means that you may use it in a way I didn't intend and didn't test. 
+
+When you use this tool you should make regular backups of your repository. This
+can be as simple as::
+
+  cp -a MYREPO MYREPO-BACKUP
+
+A simple backup of the patch queue can be done with::
+
+  git gq backup
+
+Run this *before* you reorder or fold patches and before you run `git pull`
+while some patches are unapplied.
+
 Documentation
 -------------
 
