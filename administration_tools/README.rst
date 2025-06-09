@@ -17,3 +17,26 @@ Set up a new version like this::
 
   ./new-version.sh VERSION
 
+HTML documentation
+------------------
+
+Rebuild documentation
++++++++++++++++++++++
+
+Run::
+
+  ./doc-rebuild.sh
+
+Upload documentation to github
+++++++++++++++++++++++++++++++
+
+Run::
+
+  github-upload-html.sh
+
+Create distribution tar file
+----------------------------
+
+Run::
+
+  ./mk-dist.sh
