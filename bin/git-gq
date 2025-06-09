@@ -47,13 +47,13 @@ ALL_COMMANDS_RX=$(echo "$ALL_COMMANDS" | sed -e 's/ /|/g;s/^/^(/;s/$/)$/')
 # general purpose return code variable:
 rc=""
 
-debug=""
-all=""
-no_add=""
-edit=""
-message=""
-file=""
-full=""
+debug_opt=""
+all_opt=""
+no_add_opt=""
+edit_opt=""
+message_opt=""
+file_opt=""
+full_opt=""
 
 rev_arg=""
 name_arg=""
@@ -529,8 +529,8 @@ function log_template {
     # create a template file for a log message
     # $1: direct log message
     # $2: file with log message
-    # $4: file to create
-    # $3: if non zero, add preamble
+    # $3: file to create
+    # $4: if non zero, add preamble
     rm -f "$3"
     touch "$3"
     if [ -n "$4" ]; then
@@ -1140,31 +1140,31 @@ while true; do
             exit 0
             ;;
         -a | --all)
-            all="yes"
+            all_opt="yes"
             shift
             ;;
         -N | --no-add)
-            no_add="yes"
+            no_add_opt="yes"
             shift
             ;;
         -L | --full)
-            full="yes"
+            full_opt="yes"
             shift
             ;;
         -e | --edit)
-            edit="yes"
+            edit_opt="yes"
             shift
             ;;
         -m | --message)
-            message="$2"
+            message_opt="$2"
             shift 2
             ;;
         -F | --file)
-            file="$2"
+            file_opt="$2"
             shift 2
             ;;
         -D | --debug)
-            debug="yes"
+            debug_opt="yes"
             shift
             ;;
         -v | --version)
@@ -1276,7 +1276,7 @@ for arg in "${ARGS[@]}"; do
     exit 1
 done
 
-if [ -n "$debug" ]; then
+if [ -n "$debug_opt" ]; then
     set -x
 fi
 
@@ -1352,7 +1352,7 @@ if [ "$COMMAND" == "restore" ]; then
     if [ "$rc" -ne 0 ]; then
         exit "$rc"
     fi
-    if [ -n "$full" ] && [ -d "$APPLIEDDIR" ]; then
+    if [ -n "$full_opt" ] && [ -d "$APPLIEDDIR" ]; then
         echo "Restore originally applied patches in repository ?"
         read -p "Enter 'y' or 'Y' to make changes, everything else skips this " -n 1 -r
         if [[ $REPLY =~ ^[Yy]$ ]]; then
@@ -1514,7 +1514,7 @@ if [ "$COMMAND" == "parent" ]; then
 fi
 
 if [ "$COMMAND" == "new" ]; then
-    if [ -z "$no_add" ]; then
+    if [ -z "$no_add_opt" ]; then
         # "": do not add unknown files:
         git_add_changes ""
     fi
@@ -1549,22 +1549,22 @@ if [ "$COMMAND" == "record" ]; then
 fi
 
 if [ "$COMMAND" == "refresh" ]; then
-    if [ -z "$message" ] && [ -z "$file" ]; then
-        git_head_full_log "$PATCHDIR/LOG" "$edit"
+    if [ -z "$message_opt" ] && [ -z "$file_opt" ]; then
+        git_head_full_log "$PATCHDIR/LOG" "$edit_opt"
     else
-        log_template "$message" "$file""$PATCHDIR/LOG" "$edit" 
+        log_template "$message_opt" "$file_opt" "$PATCHDIR/LOG" "$edit_opt" 
     fi
-    if [ -z "$no_add" ]; then
+    if [ -z "$no_add_opt" ]; then
         # "": do not add unknown files:
         git_add_changes ""
     fi
-    if [ -n "$edit" ]; then
+    if [ -n "$edit_opt" ]; then
         # create two files so the user can review changes while editing the
         # log message:
         git_mk_changes_files "both"
     fi
-    git_amend "$PATCHDIR/LOG" "$edit"
-    if [ -n "$edit" ]; then
+    git_amend "$PATCHDIR/LOG" "$edit_opt"
+    if [ -n "$edit_opt" ]; then
         # remove the changes files:
         git_rm_changes_files
     fi
@@ -1591,14 +1591,14 @@ if [ "$COMMAND" == "pop" ]; then
             exit "$rc"
         fi
         if [ "$rc" -eq 1 ]; then
-            if [ -z "$all" ]; then
+            if [ -z "$all_opt" ]; then
                 echo "Error, 'pop' beyond parent revision not allowed." >&2
                 exit 1
             fi
             break
         fi
         qpop_one
-        if [ -z "$all" ]; then
+        if [ -z "$all_opt" ]; then
             break
         fi
     done
@@ -1610,7 +1610,7 @@ if [ "$COMMAND" == "push" ]; then
         if ! qpush_one; then
             exit 1
         fi
-        if [ -z "$all" ]; then
+        if [ -z "$all_opt" ]; then
             break
         else
             # with "--all", reaching the end is no error:
@@ -1667,7 +1667,7 @@ if [ "$COMMAND" == "fold" ]; then
         fi
         name_arg="$patchname"
     fi
-    git_head_full_log "$PATCHDIR/LOG" "$edit"
+    git_head_full_log "$PATCHDIR/LOG" "$edit_opt"
     echo -e '\n***\n' >> "$PATCHDIR/LOG"
     if ! qpush_specified "$name_arg"; then
         exit 1
@@ -1675,19 +1675,19 @@ if [ "$COMMAND" == "fold" ]; then
     git_head_log >> "$PATCHDIR/LOG"
     qpop_one
     git apply "$PATCHDIR/$name_arg"
-    if [ -z "$no_add" ]; then
+    if [ -z "$no_add_opt" ]; then
         # "": do not add unknown files:
         git_add_changes ""
     fi
-    if [ -n "$edit" ]; then
+    if [ -n "$edit_opt" ]; then
         # create two files so the user can review changes while editing the
         # log message:
         git_mk_changes_files "both"
     fi
-    # if $edit is not empty, git_amend will start an editor to edit the
+    # if $edit_opt is not empty, git_amend will start an editor to edit the
     # combination of both log messages:
-    git_amend "$PATCHDIR/LOG" "$edit"
-    if [ -n "$edit" ]; then
+    git_amend "$PATCHDIR/LOG" "$edit_opt"
+    if [ -n "$edit_opt" ]; then
         # remove the changes files:
         git_rm_changes_files
     fi
@@ -1748,7 +1748,7 @@ if [ "$COMMAND" == "unapplied" ]; then
 fi
 
 if [ "$COMMAND" == "continue" ]; then
-    if [ -z "$no_add" ]; then
+    if [ -z "$no_add_opt" ]; then
         # "": do not add unknown files:
         git_add_changes "yes"
     fi
