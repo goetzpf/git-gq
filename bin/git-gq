@@ -27,7 +27,7 @@ SCRIPT_FULL_NAME=$(readlink -e "$0")
 #MYDIR=$(dirname "$SCRIPT_FULL_NAME")
 MYNAME=$(basename "$SCRIPT_FULL_NAME")
 
-VERSION="1.0" #VERSION#
+VERSION="1.1" #VERSION#
 
 MYNAME_GIT="$(echo "$MYNAME" | sed -s 's/-/ /')"
 
