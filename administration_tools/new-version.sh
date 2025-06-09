@@ -25,6 +25,6 @@ for f in $FILES; do
 done
 
 git add $FILES
-#git commit -m "The version was changed to $VERSION."
+git commit -m "The version was changed to $VERSION."
 git tag -a "$VERSION" -m "The version was changed to $VERSION."
 
