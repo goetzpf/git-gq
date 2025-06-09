@@ -187,9 +187,11 @@ to remove and lines to add.
 
 \`$MYNAME_GIT\` uses standard git commands to move patches between the
 repository and the patch queue. In the patch queue, each patch is a file
-created from commits in the repository with \`git format-patch\`. Among the
-changes between two commits this file also contains all the metadata of the
-second commit.
+created from the difference of a commit and it's predecessor in the repository
+with \`git format-patch\`. Among the changes between two commits this file also
+contains all the metadata of the second commit. The name of the patch file is
+computed from the first line of the log message where spaces are replaced with
+dashes and end with the extension '.patch'.
 
 A patch file is re-applied to the repository with \`git am\`. 
 
@@ -197,7 +199,7 @@ Here is an example of a patch file::
 
   From 273c3709f7da0fe0e11369ea0d9a26053f78e3ee Mon Sep 17 00:00:00 2001
   From: Goetz Pfeiffer <goetzpf@googlemail.com>
-  Date: Tue, 3 Jun 2025 10:45:57 +0200
+  Date: Tue, 3 Jun 2025 18:45:57 +0200
   Subject: [PATCH] sample-comment
   
   ---
@@ -418,7 +420,7 @@ With the patch queue, there is now another way to handle this. Before pulling
 patches from the public repository, put all your local changes on the patch
 queue::
 
-  $MYNAME_GIT pull -a
+  $MYNAME_GIT pop -a
 
 As a safety measure backup your patch queue with::
 
