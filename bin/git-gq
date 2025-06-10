@@ -178,8 +178,41 @@ cat << EOF
 Implementation
 --------------
 
-Patch files
-+++++++++++
+Directory structure
++++++++++++++++++++
+
+Each patch queue has all it's files in a directory with the name of the patch
+queue. All patch queue directories are in directory '$TOPPATCHDIR'. 
+
+A file 'queue' in directory '$TOPPATCHDIR' contains the currently selected
+patch queue.
+
+Backup files
+++++++++++++
+
+Backups are '\*.tar.gz' files in '$TOPPATCHDIR'. All backups have the name
+schema '$TOPPATCHDIR-TIMESTAMP.tar.gz'.
+
+Files in the patch queue directory
+++++++++++++++++++++++++++++++++++
+
+series
+::::::
+
+The order of patches is kept in a file named 'series' that just contains all
+the filenames of all unapplied patches. This file is maintained by
+\`$MYNAME_GIT\`.
+
+parent
+::::::
+
+The parent revision is stored in a file 'parent'. This is the latest commit
+that is not allowed to be modified. This file is usually created when you start
+your work with \`$MYNAME_GIT init\`. It can be changed with \`$MYNAME_GIT
+parent\`.
+
+patch files '\*.patch'
+::::::::::::::::::::::
 
 A *patch file* is basically a file with recipes for changes in files. Each
 recipe is called a *hunk*. A *hunk* contains line numbers, context lines, lines
@@ -222,26 +255,6 @@ Here is an example of a patch file::
        return 0;
   -- 
   2.49.0
-
-The series file
-+++++++++++++++
-
-The order of patches is kept in a file named 'series' that just contains all
-the filenames of all unapplied patches. This file is maintained by
-\`$MYNAME_GIT\`.
-
-Parent revision
-+++++++++++++++
-
-The parent revision is stored in a file 'parent'. This is the latest commit
-that is not allowed to be modified. This file is usually created when you start
-your work with \`$MYNAME_GIT init\`.
-
-Multiple patch queues
-+++++++++++++++++++++
-
-Multiple patch queues are maintained in different directories. There is always
-one patch queue active, it's name is stored in the file 'queue'.
 
 EOF
     fi
