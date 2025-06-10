@@ -52,10 +52,14 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="implementation.html">Implementation</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="implementation.html#patch-files">Patch files</a></li>
-<li class="toctree-l2"><a class="reference internal" href="implementation.html#the-series-file">The series file</a></li>
-<li class="toctree-l2"><a class="reference internal" href="implementation.html#parent-revision">Parent revision</a></li>
-<li class="toctree-l2"><a class="reference internal" href="implementation.html#multiple-patch-queues">Multiple patch queues</a></li>
+<li class="toctree-l2"><a class="reference internal" href="implementation.html#directory-structure">Directory structure</a></li>
+<li class="toctree-l2"><a class="reference internal" href="implementation.html#backup-files">Backup files</a></li>
+<li class="toctree-l2"><a class="reference internal" href="implementation.html#files-in-the-patch-queue-directory">Files in the patch queue directory</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="implementation.html#series">series</a></li>
+<li class="toctree-l3"><a class="reference internal" href="implementation.html#parent">parent</a></li>
+<li class="toctree-l3"><a class="reference internal" href="implementation.html#patch-files-patch">patch files ‘*.patch’</a></li>
+</ul>
+</li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="conflicts.html">Conflicts and conflict resolution</a></li>
@@ -172,7 +176,7 @@ patches from a remote repository, the usual way would be to run
 <p>With the patch queue, there is now another way to handle this. Before pulling
 patches from the public repository, put all your local changes on the patch
 queue:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">git</span> <span class="n">gq</span> <span class="n">pull</span> <span class="o">-</span><span class="n">a</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">git</span> <span class="n">gq</span> <span class="n">pop</span> <span class="o">-</span><span class="n">a</span>
 </pre></div>
 </div>
 <p>As a safety measure backup your patch queue with:</p>

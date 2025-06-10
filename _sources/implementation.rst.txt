@@ -1,8 +1,41 @@
 Implementation
 --------------
 
-Patch files
-+++++++++++
+Directory structure
++++++++++++++++++++
+
+Each patch queue has all it's files in a directory with the name of the patch
+queue. All patch queue directories are in directory '.gqpatches'. 
+
+A file 'queue' in directory '.gqpatches' contains the currently selected
+patch queue.
+
+Backup files
+++++++++++++
+
+Backups are '\*.tar.gz' files in '.gqpatches'. All backups have the name
+schema '.gqpatches-TIMESTAMP.tar.gz'.
+
+Files in the patch queue directory
+++++++++++++++++++++++++++++++++++
+
+series
+::::::
+
+The order of patches is kept in a file named 'series' that just contains all
+the filenames of all unapplied patches. This file is maintained by
+`git gq`.
+
+parent
+::::::
+
+The parent revision is stored in a file 'parent'. This is the latest commit
+that is not allowed to be modified. This file is usually created when you start
+your work with `git gq init`. It can be changed with `git gq
+parent`.
+
+patch files '\*.patch'
+::::::::::::::::::::::
 
 A *patch file* is basically a file with recipes for changes in files. Each
 recipe is called a *hunk*. A *hunk* contains line numbers, context lines, lines
@@ -10,9 +43,11 @@ to remove and lines to add.
 
 `git gq` uses standard git commands to move patches between the
 repository and the patch queue. In the patch queue, each patch is a file
-created from commits in the repository with `git format-patch`. Among the
-changes between two commits this file also contains all the metadata of the
-second commit.
+created from the difference of a commit and it's predecessor in the repository
+with `git format-patch`. Among the changes between two commits this file also
+contains all the metadata of the second commit. The name of the patch file is
+computed from the first line of the log message where spaces are replaced with
+dashes and end with the extension '.patch'.
 
 A patch file is re-applied to the repository with `git am`. 
 
@@ -20,7 +55,7 @@ Here is an example of a patch file::
 
   From 273c3709f7da0fe0e11369ea0d9a26053f78e3ee Mon Sep 17 00:00:00 2001
   From: Goetz Pfeiffer <goetzpf@googlemail.com>
-  Date: Tue, 3 Jun 2025 10:45:57 +0200
+  Date: Tue, 3 Jun 2025 18:45:57 +0200
   Subject: [PATCH] sample-comment
   
   ---
@@ -43,24 +78,4 @@ Here is an example of a patch file::
        return 0;
   -- 
   2.49.0
-
-The series file
-+++++++++++++++
-
-The order of patches is kept in a file named 'series' that just contains all
-the filenames of all unapplied patches. This file is maintained by
-`git gq`.
-
-Parent revision
-+++++++++++++++
-
-The parent revision is stored in a file 'parent'. This is the latest commit
-that is not allowed to be modified. This file is usually created when you start
-your work with `git gq init`.
-
-Multiple patch queues
-+++++++++++++++++++++
-
-Multiple patch queues are maintained in different directories. There is always
-one patch queue active, it's name is stored in the file 'queue'.
 

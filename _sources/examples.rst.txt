@@ -69,7 +69,7 @@ With the patch queue, there is now another way to handle this. Before pulling
 patches from the public repository, put all your local changes on the patch
 queue::
 
-  git gq pull -a
+  git gq pop -a
 
 As a safety measure backup your patch queue with::
 

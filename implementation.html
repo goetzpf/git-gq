@@ -52,10 +52,14 @@
 </ul>
 </li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Implementation</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#patch-files">Patch files</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#the-series-file">The series file</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#parent-revision">Parent revision</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#multiple-patch-queues">Multiple patch queues</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#directory-structure">Directory structure</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#backup-files">Backup files</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#files-in-the-patch-queue-directory">Files in the patch queue directory</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#series">series</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#parent">parent</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#patch-files-patch">patch files ‘*.patch’</a></li>
+</ul>
+</li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="conflicts.html">Conflicts and conflict resolution</a></li>
@@ -110,21 +114,50 @@
              
   <section id="implementation">
 <h1>Implementation<a class="headerlink" href="#implementation" title="Link to this heading"></a></h1>
-<section id="patch-files">
-<h2>Patch files<a class="headerlink" href="#patch-files" title="Link to this heading"></a></h2>
+<section id="directory-structure">
+<h2>Directory structure<a class="headerlink" href="#directory-structure" title="Link to this heading"></a></h2>
+<p>Each patch queue has all it’s files in a directory with the name of the patch
+queue. All patch queue directories are in directory ‘.gqpatches’.</p>
+<p>A file ‘queue’ in directory ‘.gqpatches’ contains the currently selected
+patch queue.</p>
+</section>
+<section id="backup-files">
+<h2>Backup files<a class="headerlink" href="#backup-files" title="Link to this heading"></a></h2>
+<p>Backups are ‘*.tar.gz’ files in ‘.gqpatches’. All backups have the name
+schema ‘.gqpatches-TIMESTAMP.tar.gz’.</p>
+</section>
+<section id="files-in-the-patch-queue-directory">
+<h2>Files in the patch queue directory<a class="headerlink" href="#files-in-the-patch-queue-directory" title="Link to this heading"></a></h2>
+<section id="series">
+<h3>series<a class="headerlink" href="#series" title="Link to this heading"></a></h3>
+<p>The order of patches is kept in a file named ‘series’ that just contains all
+the filenames of all unapplied patches. This file is maintained by
+<cite>git gq</cite>.</p>
+</section>
+<section id="parent">
+<h3>parent<a class="headerlink" href="#parent" title="Link to this heading"></a></h3>
+<p>The parent revision is stored in a file ‘parent’. This is the latest commit
+that is not allowed to be modified. This file is usually created when you start
+your work with <cite>git gq init</cite>. It can be changed with <cite>git gq
+parent</cite>.</p>
+</section>
+<section id="patch-files-patch">
+<h3>patch files ‘*.patch’<a class="headerlink" href="#patch-files-patch" title="Link to this heading"></a></h3>
 <p>A <em>patch file</em> is basically a file with recipes for changes in files. Each
 recipe is called a <em>hunk</em>. A <em>hunk</em> contains line numbers, context lines, lines
 to remove and lines to add.</p>
 <p><cite>git gq</cite> uses standard git commands to move patches between the
 repository and the patch queue. In the patch queue, each patch is a file
-created from commits in the repository with <cite>git format-patch</cite>. Among the
-changes between two commits this file also contains all the metadata of the
-second commit.</p>
+created from the difference of a commit and it’s predecessor in the repository
+with <cite>git format-patch</cite>. Among the changes between two commits this file also
+contains all the metadata of the second commit. The name of the patch file is
+computed from the first line of the log message where spaces are replaced with
+dashes and end with the extension ‘.patch’.</p>
 <p>A patch file is re-applied to the repository with <cite>git am</cite>.</p>
 <p>Here is an example of a patch file:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">From</span> <span class="mi">273</span><span class="n">c3709f7da0fe0e11369ea0d9a26053f78e3ee</span> <span class="n">Mon</span> <span class="n">Sep</span> <span class="mi">17</span> <span class="mi">00</span><span class="p">:</span><span class="mi">00</span><span class="p">:</span><span class="mi">00</span> <span class="mi">2001</span>
 <span class="n">From</span><span class="p">:</span> <span class="n">Goetz</span> <span class="n">Pfeiffer</span> <span class="o">&lt;</span><span class="n">goetzpf</span><span class="nd">@googlemail</span><span class="o">.</span><span class="n">com</span><span class="o">&gt;</span>
-<span class="n">Date</span><span class="p">:</span> <span class="n">Tue</span><span class="p">,</span> <span class="mi">3</span> <span class="n">Jun</span> <span class="mi">2025</span> <span class="mi">10</span><span class="p">:</span><span class="mi">45</span><span class="p">:</span><span class="mi">57</span> <span class="o">+</span><span class="mi">0200</span>
+<span class="n">Date</span><span class="p">:</span> <span class="n">Tue</span><span class="p">,</span> <span class="mi">3</span> <span class="n">Jun</span> <span class="mi">2025</span> <span class="mi">18</span><span class="p">:</span><span class="mi">45</span><span class="p">:</span><span class="mi">57</span> <span class="o">+</span><span class="mi">0200</span>
 <span class="n">Subject</span><span class="p">:</span> <span class="p">[</span><span class="n">PATCH</span><span class="p">]</span> <span class="n">sample</span><span class="o">-</span><span class="n">comment</span>
 
 <span class="o">---</span>
@@ -150,22 +183,6 @@ second commit.</p>
 </pre></div>
 </div>
 </section>
-<section id="the-series-file">
-<h2>The series file<a class="headerlink" href="#the-series-file" title="Link to this heading"></a></h2>
-<p>The order of patches is kept in a file named ‘series’ that just contains all
-the filenames of all unapplied patches. This file is maintained by
-<cite>git gq</cite>.</p>
-</section>
-<section id="parent-revision">
-<h2>Parent revision<a class="headerlink" href="#parent-revision" title="Link to this heading"></a></h2>
-<p>The parent revision is stored in a file ‘parent’. This is the latest commit
-that is not allowed to be modified. This file is usually created when you start
-your work with <cite>git gq init</cite>.</p>
-</section>
-<section id="multiple-patch-queues">
-<h2>Multiple patch queues<a class="headerlink" href="#multiple-patch-queues" title="Link to this heading"></a></h2>
-<p>Multiple patch queues are maintained in different directories. There is always
-one patch queue active, it’s name is stored in the file ‘queue’.</p>
 </section>
 </section>
 
