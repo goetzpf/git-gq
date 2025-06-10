@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Welcome to git-gq’s documentation! &mdash; git-gq 1.1 documentation</title>
+  <title>Prerequisites &mdash; git-gq 1.1 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
 
@@ -19,7 +19,8 @@
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Overview" href="overview.html" /> 
+    <link rel="next" title="Implementation" href="implementation.html" />
+    <link rel="prev" title="Overview" href="overview.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -30,7 +31,7 @@
 
           
           
-          <a href="#" class="icon icon-home">
+          <a href="index.html" class="icon icon-home">
             git-gq
           </a>
 <div role="search">
@@ -42,7 +43,7 @@
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
-<ul>
+<ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="overview.html">Overview</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="overview.html#patches-vs-commits">Patches vs. Commits</a></li>
 <li class="toctree-l2"><a class="reference internal" href="overview.html#the-patch-queue">The patch queue</a></li>
@@ -50,7 +51,7 @@
 <li class="toctree-l2"><a class="reference internal" href="overview.html#disadvantages-of-the-patch-queue">Disadvantages of the patch queue</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="prerequisites.html">Prerequisites</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Prerequisites</a></li>
 <li class="toctree-l1"><a class="reference internal" href="implementation.html">Implementation</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="implementation.html#directory-structure">Directory structure</a></li>
 <li class="toctree-l2"><a class="reference internal" href="implementation.html#backup-files">Backup files</a></li>
@@ -94,17 +95,17 @@
 
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="#">git-gq</a>
+          <a href="index.html">git-gq</a>
       </nav>
 
       <div class="wy-nav-content">
         <div class="rst-content">
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-      <li><a href="#" class="icon icon-home" aria-label="Home"></a></li>
-      <li class="breadcrumb-item active">Welcome to git-gq’s documentation!</li>
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Prerequisites</li>
       <li class="wy-breadcrumbs-aside">
-            <a href="_sources/index.rst.txt" rel="nofollow"> View page source</a>
+            <a href="_sources/prerequisites.rst.txt" rel="nofollow"> View page source</a>
       </li>
   </ul>
   <hr/>
@@ -112,98 +113,26 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <section id="welcome-to-git-gq-s-documentation">
-<h1>Welcome to git-gq’s documentation!<a class="headerlink" href="#welcome-to-git-gq-s-documentation" title="Link to this heading"></a></h1>
-<div class="toctree-wrapper compound">
-</div>
-<section id="patch-queues-for-git">
-<h2>Patch queues for git<a class="headerlink" href="#patch-queues-for-git" title="Link to this heading"></a></h2>
-<p>This program implements patch queues for
-<a class="reference external" href="https://git-scm.com/">git</a>.</p>
-<p>It adds a new command ‘gq’ in git so you can use it like any other built-in git command.</p>
-<p>It also provides
-<a class="reference external" href="https://en.wikipedia.org/wiki/Command-line_completion">command completion</a> so
-you don’t have to type commands in full length.</p>
-<p>Patch queues are a very flexible tool for your <em>local</em> development. You can put
-your git commits aside on the patch queue, re-apply them later, reorder or
-combine them.</p>
-<p>Patch queues can replace the ‘git pull, git rebase’ workflow. Instead you put
-your local commits aside, run ‘git pull’ and re-apply them.</p>
-<p>You do not resolve all merge conflicts at once in one merge commit, instead you
-resolve conflicts separately for each patch. This is usually much easier.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Author<span class="colon">:</span></dt>
-<dd class="field-odd"><p>Goetz Pfeiffer &lt;<a class="reference external" href="mailto:goetzpf&#37;&#52;&#48;googlemail&#46;com">goetzpf<span>&#64;</span>googlemail<span>&#46;</span>com</a>&gt;</p>
-</dd>
-<dt class="field-even">Version<span class="colon">:</span></dt>
-<dd class="field-even"><p>1.1</p>
-</dd>
-</dl>
-<div class="admonition seealso">
-<p class="admonition-title">See also</p>
-<p><a class="reference external" href="https://goetzpf.github.io/">Goetz Pfeiffer’s Project site</a>
-for other open source projects.</p>
-</div>
-</section>
-<section id="disclaimer">
-<h2>Disclaimer<a class="headerlink" href="#disclaimer" title="Link to this heading"></a></h2>
-<div class="admonition warning">
-<p class="admonition-title">Warning</p>
-<p>I have tested git-gq and use it myself. However, I cannot <em>guarantee</em> that
-it will <em>never</em> damage your repository. It’s high degree of flexibility also
-means that you may use it in a way I didn’t intend and didn’t test.</p>
-</div>
-<p>When you first use this tool you should make regular backups of your
-repository. This can be as simple as:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">cp</span> <span class="o">-</span><span class="n">a</span> <span class="n">MYREPO</span> <span class="n">MYREPO</span><span class="o">-</span><span class="n">BACKUP</span>
-</pre></div>
-</div>
-<p>A simple backup of the state of the patch queue can be done with:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">git</span> <span class="n">gq</span> <span class="n">backup</span>
-</pre></div>
-</div>
-<p>Run this <em>before</em> you reorder or fold patches and before you run <cite>git pull</cite>
-while some patches are unapplied.</p>
-</section>
-<section id="documentation">
-<h2>Documentation<a class="headerlink" href="#documentation" title="Link to this heading"></a></h2>
+  <section id="prerequisites">
+<h1>Prerequisites<a class="headerlink" href="#prerequisites" title="Link to this heading"></a></h1>
+<p>In order to run git-gq you need to have installed these programs/packages:</p>
 <ul class="simple">
-<li><p><a class="reference internal" href="overview.html"><span class="doc">Overview</span></a></p></li>
-<li><p><a class="reference internal" href="prerequisites.html"><span class="doc">Prerequisites</span></a></p></li>
-<li><p><a class="reference internal" href="implementation.html"><span class="doc">Implementation</span></a></p></li>
-<li><p><a class="reference internal" href="conflicts.html"><span class="doc">Conflicts and conflict resolution</span></a></p></li>
-<li><p><a class="reference internal" href="examples.html"><span class="doc">Example Workflows</span></a></p></li>
-<li><p><a class="reference internal" href="commandline.html"><span class="doc">Command line interface</span></a></p></li>
-<li><p><a class="reference internal" href="install.html"><span class="doc">How to install git-gq</span></a></p></li>
+<li><p>git</p></li>
+<li><p>bash</p></li>
+<li><p>grep</p></li>
+<li><p>sed</p></li>
+<li><p>vi or some other text editor</p></li>
+<li><p>colordiff</p></li>
+<li><p>standard shell commands like ‘cat’, ‘cp’, ‘printf’ etc.</p></li>
 </ul>
-</section>
-<section id="installation">
-<h2>Installation<a class="headerlink" href="#installation" title="Link to this heading"></a></h2>
-<p>See <a class="reference internal" href="install.html"><span class="doc">How to install git-gq</span></a></p>
-</section>
-<section id="repository-site">
-<h2>Repository site<a class="headerlink" href="#repository-site" title="Link to this heading"></a></h2>
-<p><a class="reference external" href="https://github.com/goetzpf/git-gq">https://github.com/goetzpf/git-gq</a></p>
-</section>
-<section id="indices-and-tables">
-<h2>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Link to this heading"></a></h2>
-<ul class="simple">
-<li><p><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></p></li>
-<li><p><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></p></li>
-</ul>
-</section>
-<section id="license-and-copyright">
-<h2>License and copyright<a class="headerlink" href="#license-and-copyright" title="Link to this heading"></a></h2>
-<p>Copyright (c) 2025 by Goetz Pfeiffer &lt;<a class="reference external" href="mailto:goetzpf&#37;&#52;&#48;googlemail&#46;com">goetzpf<span>&#64;</span>googlemail<span>&#46;</span>com</a>&gt;</p>
-<p>This software of this project can be used under GPL v.3, see <a class="reference internal" href="license.html"><span class="doc">git-gq license</span></a>.</p>
-</section>
 </section>
 
 
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="overview.html" class="btn btn-neutral float-right" title="Overview" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="overview.html" class="btn btn-neutral float-left" title="Overview" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="implementation.html" class="btn btn-neutral float-right" title="Implementation" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>
