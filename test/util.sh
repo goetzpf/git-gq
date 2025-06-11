@@ -86,7 +86,7 @@ function filter_author {
     # 'Author: Homer Simpson <simpson@burns-powerplant.com>"
     local line
     while read -r line ; do
-        echo "$line" | sed -e "s/^\(Author:\).*/\1 $DUMMY_AUTHOR/"
+        echo "$line" | sed -e "s/\(Author:\).*/\1 $DUMMY_AUTHOR/"
     done
 }
 

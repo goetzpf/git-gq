@@ -27,7 +27,7 @@ abcdef0 README was improved.
 $ git gq unapplied
 
 # Now import both patch files p1.patch and p2.patch.
-$ /home/goetz/shared/repos/git-gq/test/../bin/git-gq import p1.patch p2.patch
+$ git gq import p1.patch p2.patch
 
 $ git gq applied
 abcdef0 script.sh was improved.

@@ -3,13 +3,13 @@
 
 $ git gq glog
 * commit abcdef0123456789abcdef0123456789 (HEAD -> master)
-| Author: Goetz Pfeiffer <goetzpf@googlemail.com>
+| Author: Homer Simpson <simpson@burns-powerplant.com>
 | Date: Sun Dec 31 09:12:34 2001 +0100
 |
 |     script.sh was improved.
 |
 * commit abcdef0123456789abcdef0123456789
-| Author: Goetz Pfeiffer <goetzpf@googlemail.com>
+| Author: Homer Simpson <simpson@burns-powerplant.com>
 | Date: Sun Dec 31 09:12:34 2001 +0100
 |
 |     README was improved.
