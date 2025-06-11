@@ -48,8 +48,8 @@ $GIT_GQ unapplied | filter_linestart_hash
 
 echo
 echo "# Now import both patch files p1.patch and p2.patch."
-echo "\$ $GIT_GQ import p1.patch p2.patch"
-$GIT_GQ import p1.patch p2.patch
+echo "\$ git gq import p1.patch p2.patch"
+$GIT_GQ import p1.patch p2.patch | filter_pwd
 
 echo
 echo "\$ git gq applied"
