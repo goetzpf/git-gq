@@ -1762,7 +1762,12 @@ if [ "$COMMAND" == "fold" ]; then
     fi
     rm -f "$PATCHDIR/LOG"
     qdelete "$name_arg"
-    echo "Note: Log messages were combined into one"
+    echo -n "Note: Log messages were combined into one, you should review/edit "
+    echo "the log message with:"
+    echo "      $MYNAME_GIT refresh -e"
+    echo "Note: If new files were added by the folded patch, run:"
+    echo "      git add NEW-FILES"
+    echo "      $MYNAME_GIT refresh -e"
     exit 0
 fi
 
