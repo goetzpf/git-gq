@@ -269,6 +269,20 @@ Here is an example of a patch file::
 EOF
     fi
     if [ -z "$part" ] || [ "$part" == "conflicts" ]; then
+    # Note how this example was created:
+    # mkdir sample && cd sample
+    # cp -a $HOME/devel/c/template.c sample.c
+    # git init
+    # git add sample.c
+    # git commit -m Initial
+    # git gq init
+    # sed -i -e '/number of arg/d' sample.c
+    # sed -i -e '/program name:/a\    \/* iterate over all command line arguments: *\/' sampl  e.c
+    # git gq new sample-comment
+    # git gq pop
+    # sed -i -e 's/number of/My number of/' sample.c
+    # git gq new extra-change
+    # git gq push
 cat << EOF
 Conflicts and conflict resolution
 ---------------------------------
@@ -295,7 +309,6 @@ found. In this case, a reject file is created.
 Here are the messages you see in case of a conflict after you ran \`$MYNAME_GIT
 push\`::
 
-  $ ../../bin/git-gq push
   Applying: sample-comment
   Checking patch sample.c...
   error: while searching for:
@@ -317,12 +330,27 @@ push\`::
   hint: If you prefer to skip this patch, run "git am --skip" instead.
   hint: To restore the original branch and stop patching, run "git am --abort".
   hint: Disable this message with "git config set advice.mergeConflict false"
-  Fix the change by looking at the *.rej files.
-  Then run:
-    git-gq continue
-  To abort the operation without fixing run:
-    git-gq abort
-
+  
+  git gq help on conflicts
+  ------------------------
+  
+  Resolve this conflict by looking at the *.rej files.
+  For files that were not found there is no reject file, then look at the patch with:
+    git am --show-current-patch=diff > PATCH.rej
+    less PATCH.rej
+  
+  To see the state of your repo run:
+    git status
+  
+  Unknown files for git that should be part of the patch have to be added with:
+    git add FILE
+  
+  If you could resolve the conflicts run:
+    git gq continue
+  
+  To abort the operation without resolving run:
+    git gq abort
+  
 And here is the content of the reject file, 'sample.c.rej' in this case::
 
   diff a/sample.c b/sample.c	(rejected hunks)
@@ -483,6 +511,32 @@ short_help_text
 function print_short_help {
     # print short help without reStructuredText underlines:
     short_help_text | grep -v '^+\+$'
+}
+
+function print_reject_message {
+    # print short help what to do when we had conflicts
+cat >&2 << EOF
+
+git gq help on conflicts
+------------------------
+
+Resolve this conflict by looking at the *.rej files.
+For files that were not found there is no reject file, then look at the patch with:
+  git am --show-current-patch=diff > PATCH.rej
+  less PATCH.rej
+
+To see the state of your repo run:
+  git status
+
+Unknown files for git that should be part of the patch have to be added with:
+  git add FILE
+
+If you could resolve the conflicts run:
+  $MYNAME_GIT continue
+
+To abort the operation without resolving run:
+  $MYNAME_GIT abort
+EOF
 }
 
 function unique_patch_name {
@@ -1050,12 +1104,7 @@ function qpush_specified {
     # remove PATCHNAME from SERIESFILE:
     grep -v -F "$PATCHNAME" "$SERIESFILE" > "$SERIESFILE.new"
     if ! git am --reject "$PATCHDIR/$PATCHNAME"; then
-        echo "The patch to be folded could not be applied." >&2
-        echo "Fix the change by looking at the *.rej files." >&2
-        echo "Then run:" >&2
-        echo "  $MYNAME continue" >&2
-        echo "To abort the operation without fixing run:" >&2
-        echo "  $MYNAME abort" >&2
+        print_reject_message
         return 1
     fi
     rm -f "$PATCHDIR/$PATCHNAME" "$PATCHDIR/PUSH" "$SERIESFILE" && mv "$SERIESFILE.new" "$SERIESFILE"
@@ -1079,11 +1128,7 @@ function qpush_one {
     cp -a "$SERIESFILE" "$SERIESFILE.new" && sed -i -e '1d' "$SERIESFILE.new"
     if ! git am --reject "$PATCHDIR/$PATCHNAME"; then
         git_unknown_files "$PATCHDIR/UNKNOWN.2"
-        echo "Fix the change by looking at the *.rej files." >&2
-        echo "Then run:" >&2
-        echo "  $MYNAME continue" >&2
-        echo "To abort the operation without fixing run:" >&2
-        echo "  $MYNAME abort" >&2
+        print_reject_message
         return 1
     fi
     rm -f "$PATCHDIR/UNKNOWN.*"
@@ -2032,11 +2077,7 @@ if [ "$COMMAND" == "continue" ]; then
         add_new_unknown_files "$PATCHDIR/UNKNOWN.1" "$PATCHDIR/UNKNOWN.2"
     fi
     if ! git am --continue; then
-        echo "Fix the change by looking at the *.rej files."
-        echo "Then run:"
-        echo "  $MYNAME_GIT qcontinue"
-        echo "To abort the operation without fixing run:"
-        echo "  $MYNAME_GIT qabort"
+        print_reject_message
         exit 1
     fi
     if [ -e "$SERIESFILE.new" ]; then
