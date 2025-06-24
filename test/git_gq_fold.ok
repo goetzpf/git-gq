@@ -68,7 +68,11 @@ HEAD is now at abcdef0 README was improved.
 [master abcdef0] README was improved.
 Date: Sun Dec 31 09:12:34 2001 +0100
 1 file changed, 2 insertions(+), 1 deletion(-)
-Note: Log messages were combined into one
+Note: Log messages were combined into one, you should review/edit the log message with:
+git gq refresh -e
+Note: If new files were added by the folded patch, run:
+git add NEW-FILES
+git gq refresh -e
 
 $ git show HEAD
 commit abcdef0123456789abcdef0123456789
