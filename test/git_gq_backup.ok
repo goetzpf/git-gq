@@ -28,3 +28,4 @@ Files stored in tar file:
 .gqpatches/default/README-was-extended.patch
 .gqpatches/default/series
 .gqpatches/queue
+.gqpatches/tmp/

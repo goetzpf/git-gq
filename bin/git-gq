@@ -33,6 +33,18 @@ MYNAME_GIT="$(echo "$MYNAME" | sed -s 's/-/ /')"
 
 QUEUENAME="default"
 TOPPATCHDIR=".gqpatches"
+
+TEMP_BASEDIR="tmp"
+TEMPDIR="$TOPPATCHDIR/$TEMP_BASEDIR"
+
+DIFF_FILENAME="$TEMPDIR/DIFF.patch"
+HDIFF_FILENAME="$TEMPDIR/HEAD.patch"
+LOG_FILENAME="$TEMPDIR/LOG"
+DATE_FILENAME="$TEMPDIR/DATE"
+AUTHOR_FILENAME="$TEMPDIR/AUTHOR"
+UNKNOWN1_FILENAME="$TEMPDIR/UNKNOWN.1"
+UNKNOWN2_FILENAME="$TEMPDIR/UNKNOWN.2"
+
 PATCHDIR="$TOPPATCHDIR/$QUEUENAME"
 APPLIEDDIR="$PATCHDIR/applied"
 SERIESFILE="$PATCHDIR/series"
@@ -732,9 +744,9 @@ function git_mk_changes_files {
     # $TOPPATCHDIR/HEAD.patch : all changes of the HEAD patch
     # $TOPPATCHDIR/DIFF.patch : all changes in the working copy not yet
     #                           comitted
-    git diff --cached > "$TOPPATCHDIR/DIFF.patch"
+    git diff --cached > "$DIFF_FILENAME"
     if [ -n "$1" ]; then
-        git show HEAD > "$TOPPATCHDIR/HEAD.patch"
+        git show HEAD > "$HDIFF_FILENAME"
     fi
 }
 
@@ -742,7 +754,7 @@ function git_rm_changes_files {
     # removes the 2 files:
     # $TOPPATCHDIR/HEAD.patch
     # $TOPPATCHDIR/DIFF.patch
-    rm -f "$TOPPATCHDIR/HEAD.patch" "$TOPPATCHDIR/DIFF.patch"
+    rm -f "$HDIFF_FILENAME" "$DIFF_FILENAME"
 }
 
 function get_parent {
@@ -1121,17 +1133,17 @@ function qpush_one {
         echo "Error, all patches in queue are already applied." >&2
         return 1
     fi
-    git_unknown_files "$PATCHDIR/UNKNOWN.1"
+    git_unknown_files "$UNKNOWN1_FILENAME"
     PATCHNAME=$(head -n 1 "$SERIESFILE")
     echo "$PATCHNAME" > "$PATCHDIR/PUSH"
     # remove PATCHNAME from SERIESFILE:
     cp -a "$SERIESFILE" "$SERIESFILE.new" && sed -i -e '1d' "$SERIESFILE.new"
     if ! git am --reject "$PATCHDIR/$PATCHNAME"; then
-        git_unknown_files "$PATCHDIR/UNKNOWN.2"
+        git_unknown_files "$UNKNOWN2_FILENAME"
         print_reject_message
         return 1
     fi
-    rm -f "$PATCHDIR/UNKNOWN.*"
+    rm -f "$UNKNOWN1_FILENAME" "$UNKNOWN2_FILENAME"
     rm -f "$PATCHDIR/$PATCHNAME" "$PATCHDIR/PUSH" "$SERIESFILE" && mv "$SERIESFILE.new" "$SERIESFILE"
 }
 
@@ -1660,6 +1672,7 @@ if [ "$COMMAND" == "init" ]; then
         QUEUENAME="$name_arg"
     fi
     mkdir -p "$TOPPATCHDIR"
+    mkdir -p "$TEMPDIR"
     if [ -d "$TOPPATCHDIR/$QUEUENAME" ]; then
         echo "Error, patch queue $QUEUENAME already exists" >&2
         exit 1
@@ -1685,13 +1698,18 @@ if [ "$COMMAND" == "qname" ]; then
     if [ -z "$name_arg" ]; then
         QUEUENAME=$(cat "$QUEUEFILE")
         echo "Existing queues:"
-        (cd $TOPPATCHDIR && find . -type d | grep -v '^\.$' | sed -e 's#^\./#\t#')
+        # Note: the following line depends on the value of $TEMPDIR:
+        (cd $TOPPATCHDIR && find . -type d | grep -v "^\.$\|/${TEMP_BASEDIR}\$" | sed -e 's#^\./#\t#')
         echo
         echo "Currently selected:"
         echo -e "\t$QUEUENAME"
         exit 0
     else
         QUEUENAME="$name_arg"
+        if echo "$QUEUENAME" | grep -q -w "$TEMP_BASEDIR"; then
+            echo "Error, $TEMP_BASEDIR is a special name anc cannot be used as name for a queue" >&2
+            exit 1
+        fi
         echo "$QUEUENAME" > "$QUEUEFILE"
         select_queue "$QUEUENAME"
         if [ ! -d "$TOPPATCHDIR/$QUEUENAME" ]; then
@@ -1824,9 +1842,9 @@ fi
 
 if [ "$COMMAND" == "refresh" ]; then
     if [ -z "$message_opt" ] && [ -z "$file_opt" ]; then
-        make_head_logfile "$PATCHDIR/LOG" "$edit_opt"
+        make_head_logfile "$LOG_FILENAME" "$edit_opt"
     else
-        log_template "$message_opt" "$file_opt" "$PATCHDIR/LOG" "$edit_opt" 
+        log_template "$message_opt" "$file_opt" "$LOG_FILENAME" "$edit_opt" 
     fi
     if [ -z "$no_add_opt" ]; then
         # "": do not add unknown files:
@@ -1837,12 +1855,12 @@ if [ "$COMMAND" == "refresh" ]; then
         # log message:
         git_mk_changes_files "both"
     fi
-    git_amend "$PATCHDIR/LOG" "$edit_opt" "" ""
+    git_amend "$LOG_FILENAME" "$edit_opt" "" ""
     if [ -n "$edit_opt" ]; then
         # remove the changes files:
         git_rm_changes_files
     fi
-    rm -f "$PATCHDIR/LOG"
+    rm -f "$LOG_FILENAME"
     exit 0
 fi
 
@@ -1902,17 +1920,17 @@ if [ "$COMMAND" == "push" ]; then
         fi
         if [ -n "$null_revision" ]; then
             # must convert 'push' into a 'fold'
-            git_head_log > "$PATCHDIR/LOG"
-            git_head_date > "$PATCHDIR/DATE"
-            git_head_author > "$PATCHDIR/AUTHOR"
+            git_head_log > "$LOG_FILENAME"
+            git_head_date > "$DATE_FILENAME"
+            git_head_author > "$AUTHOR_FILENAME"
             qpop_one
             patchname=$(find_first_unapplied_patch "")
             git apply "$PATCHDIR/$patchname"
             # "yes": do also add unknown files since we are at the NULL
             # revision:
             git_add_changes "yes"
-            git_amend "$PATCHDIR/LOG" "" "$(cat "$PATCHDIR/DATE")" "$(cat "$PATCHDIR/AUTHOR")"
-            #rm -f "$PATCHDIR/LOG" "$PATCHDIR/DATE" "$PATCHDIR/AUTHOR"
+            git_amend "$LOG_FILENAME" "" "$(cat "$DATE_FILENAME")" "$(cat "$AUTHOR_FILENAME")"
+            #rm -f "$LOG_FILENAME" "$DATE_FILENAME" "$AUTHOR_FILENAME"
             qdelete "$patchname"
             null_revision=""
         fi
@@ -1978,12 +1996,12 @@ if [ "$COMMAND" == "fold" ]; then
         echo "Error, cannot fold to 'NULL' revision, use '$MYNAME_GIT push' instead." >&2
         exit 1
     fi
-    make_head_logfile "$PATCHDIR/LOG" "$edit_opt"
-    echo -e '\n***\n' >> "$PATCHDIR/LOG"
+    make_head_logfile "$LOG_FILENAME" "$edit_opt"
+    echo -e '\n***\n' >> "$LOG_FILENAME"
     if ! qpush_specified "$name_arg"; then
         exit 1
     fi
-    git_head_log >> "$PATCHDIR/LOG"
+    git_head_log >> "$LOG_FILENAME"
     qpop_one
     git apply "$PATCHDIR/$name_arg"
     if [ -z "$no_add_opt" ]; then
@@ -2001,12 +2019,12 @@ if [ "$COMMAND" == "fold" ]; then
     fi
     # if $edit_opt is not empty, git_amend will start an editor to edit the
     # combination of both log messages:
-    git_amend "$PATCHDIR/LOG" "$edit_opt" "" ""
+    git_amend "$LOG_FILENAME" "$edit_opt" "" ""
     if [ -n "$edit_opt" ]; then
         # remove the changes files:
         git_rm_changes_files
     fi
-    rm -f "$PATCHDIR/LOG"
+    rm -f "$LOG_FILENAME"
     qdelete "$name_arg"
     echo -n "Note: Log messages were combined into one, you should review/edit "
     echo "the log message with:"
@@ -2074,7 +2092,7 @@ if [ "$COMMAND" == "continue" ]; then
     if [ -z "$no_add_opt" ]; then
         # "": do not add unknown files:
         git_add_changes ""
-        add_new_unknown_files "$PATCHDIR/UNKNOWN.1" "$PATCHDIR/UNKNOWN.2"
+        add_new_unknown_files "$UNKNOWN1_FILENAME" "$UNKNOWN2_FILENAME"
     fi
     if ! git am --continue; then
         print_reject_message
@@ -2091,10 +2109,10 @@ fi
 if [ "$COMMAND" == "abort" ]; then
     git am --abort
     # remove left over added files:
-    rm_new_unknown_files "$PATCHDIR/UNKNOWN.1" "$PATCHDIR/UNKNOWN.2"
+    rm_new_unknown_files "$UNKNOWN1_FILENAME" "$UNKNOWN2_FILENAME"
     # revert left over uncommitted changes:
     git checkout -- .
-    rm -f "$PATCHDIR/UNKNOWN.*"
+    rm -f "$UNKNOWN1_FILENAME" "$UNKNOWN2_FILENAME"
     rm -f "$SERIESFILE.new" "$PATCHDIR/PUSH"
     exit 0
 fi
