@@ -589,6 +589,18 @@ function rm_new_unknown_files {
     diff "$1" "$2" | grep '^>' | sed -e 's/^..//' | xargs rm -f
 }
 
+function add_new_unknown_files {
+    # $1: old file list
+    # $2: new file list
+    local NEW_FILES
+    NEW_FILES="$(diff "$1" "$2" | grep '^>' | grep -v '\.rej$' | sed -e 's/^..//')"
+    if [ -n "$NEW_FILES" ]; then
+        # run git add only when NEW_FILES is not empty:
+        # shellcheck disable=SC2086
+        git add $NEW_FILES
+    fi
+}
+
 function log_template {
     # create a template file for a log message
     # $1: direct log message
@@ -2016,7 +2028,8 @@ fi
 if [ "$COMMAND" == "continue" ]; then
     if [ -z "$no_add_opt" ]; then
         # "": do not add unknown files:
-        git_add_changes "yes"
+        git_add_changes ""
+        add_new_unknown_files "$PATCHDIR/UNKNOWN.1" "$PATCHDIR/UNKNOWN.2"
     fi
     if ! git am --continue; then
         echo "Fix the change by looking at the *.rej files."
