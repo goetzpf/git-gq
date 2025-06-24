@@ -63,6 +63,7 @@ git_gq_qname.out: git_gq_add_2.tst
 git_gq_show.out: git_gq_new.tst
 git_gq_continue.out: git_gq_add_2.tst
 git_gq_abort.out: git_gq_add_2.tst
+git_gq_conflict_err.out: git_gq_add_2.tst
 git_gq_glog.out: git_gq_add_2.tst
 git_gq_backup.out: git_gq_new.tst
 git_gq_export.out: git_gq_add_2.tst

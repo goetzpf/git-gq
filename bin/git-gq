@@ -42,6 +42,7 @@ HDIFF_FILENAME="$TEMPDIR/HEAD.patch"
 LOG_FILENAME="$TEMPDIR/LOG"
 DATE_FILENAME="$TEMPDIR/DATE"
 AUTHOR_FILENAME="$TEMPDIR/AUTHOR"
+CONFLICT_FILENAME="$TEMPDIR/CONFLICT"
 UNKNOWN1_FILENAME="$TEMPDIR/UNKNOWN.1"
 UNKNOWN2_FILENAME="$TEMPDIR/UNKNOWN.2"
 
@@ -737,6 +738,26 @@ function git_oneline_log_single {
     GIT_PAGER=cat git log --color=auto --oneline -1 "$1"
 }
 
+function mark_conflict {
+    # mark that a conflict exists
+    touch "$CONFLICT_FILENAME"
+}
+
+function clear_conflict {
+    # clear conflict
+    rm -f "$CONFLICT_FILENAME"
+}
+
+function conflict_exists {
+    # returns:
+    #   0: no conflict
+    #   1: conflict
+    if [ -e "$CONFLICT_FILENAME" ]; then
+        return 0
+    fi
+    return 1
+}
+
 function git_mk_changes_files {
     # $1: if empty create only DIFF.patch
     #     if non-empty create DIFF.patch and HEAD.patch
@@ -1116,9 +1137,11 @@ function qpush_specified {
     # remove PATCHNAME from SERIESFILE:
     grep -v -F "$PATCHNAME" "$SERIESFILE" > "$SERIESFILE.new"
     if ! git am --reject "$PATCHDIR/$PATCHNAME"; then
+        mark_conflict
         print_reject_message
         return 1
     fi
+    clear_conflict
     rm -f "$PATCHDIR/$PATCHNAME" "$PATCHDIR/PUSH" "$SERIESFILE" && mv "$SERIESFILE.new" "$SERIESFILE"
 }
 
@@ -1139,10 +1162,12 @@ function qpush_one {
     # remove PATCHNAME from SERIESFILE:
     cp -a "$SERIESFILE" "$SERIESFILE.new" && sed -i -e '1d' "$SERIESFILE.new"
     if ! git am --reject "$PATCHDIR/$PATCHNAME"; then
+        mark_conflict
         git_unknown_files "$UNKNOWN2_FILENAME"
         print_reject_message
         return 1
     fi
+    clear_conflict
     rm -f "$UNKNOWN1_FILENAME" "$UNKNOWN2_FILENAME"
     rm -f "$PATCHDIR/$PATCHNAME" "$PATCHDIR/PUSH" "$SERIESFILE" && mv "$SERIESFILE.new" "$SERIESFILE"
 }
@@ -1623,6 +1648,11 @@ if ! git_goto_repo_dir; then
 fi
 
 if [ "$COMMAND" == "restore" ]; then
+    if conflict_exists; then
+        echo "Error, an unresolved conflict exists." 2>&1
+        print_reject_message
+        exit 1
+    fi
     if [ -d "$TOPPATCHDIR" ]; then
         echo "$TOPPATCHDIR already exists, is it okay to rename it to"
         date_=$(date '+%Y-%m-%dT%H%M%S')
@@ -1705,6 +1735,11 @@ if [ "$COMMAND" == "qname" ]; then
         echo -e "\t$QUEUENAME"
         exit 0
     else
+        if conflict_exists; then
+            echo "Error, an unresolved conflict exists." 2>&1
+            print_reject_message
+            exit 1
+        fi
         QUEUENAME="$name_arg"
         if echo "$QUEUENAME" | grep -q -w "$TEMP_BASEDIR"; then
             echo "Error, $TEMP_BASEDIR is a special name anc cannot be used as name for a queue" >&2
@@ -1740,6 +1775,11 @@ if [ "$COMMAND" == "backup" ]; then
 fi
 
 if [ "$COMMAND" == "change-order" ]; then
+    if conflict_exists; then
+        echo "Error, an unresolved conflict exists." 2>&1
+        print_reject_message
+        exit 1
+    fi
     editor=$(editor_dialog)
     if [ -z "$editor" ]; then
         exit 1
@@ -1799,6 +1839,11 @@ if [ "$COMMAND" == "parent" ]; then
         fi
         exit 0
     fi
+    if conflict_exists; then
+        echo "Error, an unresolved conflict exists." 2>&1
+        print_reject_message
+        exit 1
+    fi
     if ! create_parentfile "$rev_arg"; then
         exit 1
     fi
@@ -1806,6 +1851,11 @@ if [ "$COMMAND" == "parent" ]; then
 fi
 
 if [ "$COMMAND" == "new" ]; then
+    if conflict_exists; then
+        echo "Error, an unresolved conflict exists." 2>&1
+        print_reject_message
+        exit 1
+    fi
     if [ -z "$no_add_opt" ]; then
         # "": do not add unknown files:
         git_add_changes ""
@@ -1829,6 +1879,11 @@ if [ "$COMMAND" == "new" ]; then
 fi
 
 if [ "$COMMAND" == "record" ]; then
+    if conflict_exists; then
+        echo "Error, an unresolved conflict exists." 2>&1
+        print_reject_message
+        exit 1
+    fi
     git_select_changes
     # a bash array is the correct way to provide several extra arguments to a
     # command:
@@ -1841,6 +1896,11 @@ if [ "$COMMAND" == "record" ]; then
 fi
 
 if [ "$COMMAND" == "refresh" ]; then
+    if conflict_exists; then
+        echo "Error, an unresolved conflict exists." 2>&1
+        print_reject_message
+        exit 1
+    fi
     if [ -z "$message_opt" ] && [ -z "$file_opt" ]; then
         make_head_logfile "$LOG_FILENAME" "$edit_opt"
     else
@@ -1887,6 +1947,11 @@ if [ "$COMMAND" == "delete" ]; then
 fi
 
 if [ "$COMMAND" == "pop" ]; then
+    if conflict_exists; then
+        echo "Error, an unresolved conflict exists." 2>&1
+        print_reject_message
+        exit 1
+    fi
     while true; do
         qpop_check
         rc="$?"
@@ -1909,6 +1974,11 @@ if [ "$COMMAND" == "pop" ]; then
 fi
 
 if [ "$COMMAND" == "push" ]; then
+    if conflict_exists; then
+        echo "Error, an unresolved conflict exists." 2>&1
+        print_reject_message
+        exit 1
+    fi
     if at_null_revision; then
         null_revision="yes"
     else
@@ -1948,6 +2018,11 @@ if [ "$COMMAND" == "push" ]; then
 fi
 
 if [ "$COMMAND" == "goto" ]; then
+    if conflict_exists; then
+        echo "Error, an unresolved conflict exists." 2>&1
+        print_reject_message
+        exit 1
+    fi
     if [ -z "$name_arg" ]; then
         echo "error, patchname is missing" >&2
         exit 1
@@ -1980,6 +2055,11 @@ if [ "$COMMAND" == "goto" ]; then
 fi
 
 if [ "$COMMAND" == "fold" ]; then
+    if conflict_exists; then
+        echo "Error, an unresolved conflict exists." 2>&1
+        print_reject_message
+        exit 1
+    fi
     if [ -z "$name_arg" ]; then
         echo "error, patchname is missing" >&2
         exit 1
@@ -2095,9 +2175,11 @@ if [ "$COMMAND" == "continue" ]; then
         add_new_unknown_files "$UNKNOWN1_FILENAME" "$UNKNOWN2_FILENAME"
     fi
     if ! git am --continue; then
+        mark_conflict
         print_reject_message
         exit 1
     fi
+    clear_conflict
     if [ -e "$SERIESFILE.new" ]; then
         cp -a "$SERIESFILE.new" "$SERIESFILE"
     fi
@@ -2108,6 +2190,7 @@ fi
 
 if [ "$COMMAND" == "abort" ]; then
     git am --abort
+    clear_conflict
     # remove left over added files:
     rm_new_unknown_files "$UNKNOWN1_FILENAME" "$UNKNOWN2_FILENAME"
     # revert left over uncommitted changes:

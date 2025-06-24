@@ -9,7 +9,7 @@ GIT_GQ="$1"
 source util.sh
 
 SRCDIR="tmp_git_gq_add_2"
-TMPDIR="tmp_git_gq_abort"
+TMPDIR="tmp_git_gq_conflict_err"
 
 cp -a $SRCDIR $TMPDIR
 
@@ -80,35 +80,61 @@ echo "\$ git gq push"
 $GIT_GQ push 2>&1 | filter_git_head_hash
 
 echo
-echo "# Abort the process here."
-echo "\$ git gq abort"
-$GIT_GQ abort 2>&1
+echo "Test if certain commands fail due to an unresolved conflict."
 
 echo
-echo "\$ git gq applied"
-$GIT_GQ applied | filter_linestart_hash
-echo
-echo "\$ git gq unapplied"
-$GIT_GQ unapplied | filter_linestart_hash
+echo "---------------------------------------------"
+touch ABC
+echo "\$git gq restore ABC"
+$GIT_GQ restore ABC 2>&1 
 
 echo
-echo "Content of README.txt now:"
-echo "----------"
-cat README.txt
-echo "----------"
+echo "---------------------------------------------"
+echo "\$git gq qname ABC"
+$GIT_GQ qname ABC 2>&1 
 
+echo
+echo "---------------------------------------------"
+echo "\$git gq change-order"
+$GIT_GQ change-order 2>&1 
 
-#
-#
-#echo
-#echo "# Take change from reject file and apply to file README.txt."
-#grep '^+' README.txt.rej | sed -e 's/^.//' >> README.txt
-#
-#echo
-#echo "\$ git gq continue"
-#$GIT_GQ continue
-#
-#echo
-#echo "\$ git gq push"
-#$GIT_GQ push | filter_git_head_hash
+echo
+echo "---------------------------------------------"
+echo "\$git gq parent ABC"
+$GIT_GQ parent ABC 2>&1 
 
+echo
+echo "---------------------------------------------"
+echo "\$git gq new ABC"
+$GIT_GQ new ABC 2>&1 
+
+echo
+echo "---------------------------------------------"
+echo "\$git gq record ABC"
+$GIT_GQ record ABC 2>&1 
+
+echo
+echo "---------------------------------------------"
+echo "\$git gq refresh"
+$GIT_GQ refresh 2>&1 
+
+echo
+echo "---------------------------------------------"
+echo "\$git gq pop"
+$GIT_GQ pop 2>&1 
+
+echo
+echo "---------------------------------------------"
+echo "\$git gq push"
+$GIT_GQ push 2>&1 
+
+echo
+echo "---------------------------------------------"
+echo "\$git gq goto ABC"
+$GIT_GQ goto ABC 2>&1 
+
+echo
+echo "---------------------------------------------"
+echo "\$git gq fold ABC"
+$GIT_GQ fold ABC 2>&1 
+exit 0
