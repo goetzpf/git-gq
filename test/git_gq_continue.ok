@@ -66,11 +66,26 @@ hint: To restore the original branch and stop patching, run "git am --abort".
 hint: Disable this message with "git config set advice.mergeConflict false"
 Applying: README-append-last-line
 Patch failed at 0001 README-append-last-line
-Fix the change by looking at the *.rej files.
-Then run:
-git-gq continue
-To abort the operation without fixing run:
-git-gq abort
+
+git gq help on conflicts
+------------------------
+
+Resolve this conflict by looking at the *.rej files.
+For files that were not found there is no reject file, then look at the patch with:
+git am --show-current-patch=diff > PATCH.rej
+less PATCH.rej
+
+To see the state of your repo run:
+git status
+
+Unknown files for git that should be part of the patch have to be added with:
+git add FILE
+
+If you could resolve the conflicts run:
+git gq continue
+
+To abort the operation without resolving run:
+git gq abort
 
 # Take change from reject file and apply to file README.txt.
 
