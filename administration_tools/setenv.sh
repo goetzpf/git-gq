@@ -19,3 +19,5 @@ if [ -z "$SCRIPT_IS_SOURCED" ]; then
 fi
 
 PATH="$(readlink -e "$MYDIR/../bin"):$PATH"
+MYPS="$PS1"
+export PS1="gitgq $MYPS"
