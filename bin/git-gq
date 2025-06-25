@@ -66,6 +66,7 @@ no_add_opt=""
 edit_opt=""
 message_opt=""
 file_opt=""
+force_opt=""
 lines_opt=""
 full_opt=""
 
@@ -737,6 +738,32 @@ function git_oneline_log_single {
     GIT_PAGER=cat git log --color=auto --oneline -1 "$1"
 }
 
+function check_uncomitted {
+    # check for uncomitted changes
+    # $1: command, either 'push' or 'pop'
+    local cmd
+    cmd="$1"
+    if [ -n "$force_opt" ]; then
+        return 0
+    fi
+    if ! git status --porcelain=v1 2>/dev/null | grep -q -v '^??'; then
+        return 0
+    fi
+    echo "Error, there are uncomitted changes." >&2
+    echo "You may:" >&2
+    echo "- Run this command with --force" >&2
+    if [ "$cmd" == "push" ]; then
+        echo "  CAUTION: You may get conflicts with this option." >&2
+    elif [ "$cmd" == "pop" ]; then 
+        echo "  CAUTION: all your uncomitted changes will be lost with this option." >&2
+    else
+        echo "ASSERTION in check_uncomitted" >&2
+    fi
+    echo "- Create a new patch with '$MYNAME_GIT new PATCHNAME' and run this command again." >&2
+    return 1
+}
+
+
 function mark_conflict {
     # mark that a conflict exists
     # $1: name of the patch
@@ -1085,6 +1112,9 @@ function qpop_check {
         echo "  git commit -C HEAD --amend" >&2
         return 3
     fi
+    if ! check_uncomitted "pop"; then
+        return 2
+    fi
     PARENT=$(get_parent)
     rc="$?"
     if [ "$rc" -ne 0 ]; then
@@ -1166,6 +1196,9 @@ function qpush_one {
     local PATCHNAME
     if [ ! -s "$SERIESFILE" ]; then
         echo "Error, all patches in queue are already applied." >&2
+        return 1
+    fi
+    if ! check_uncomitted "push"; then
         return 1
     fi
     git_unknown_files "$UNKNOWN1_FILENAME"
@@ -1420,6 +1453,11 @@ OPTIONS
     applied, unapplied: Limit the number of lines printed by the command. Print
     only the first LINECOUNT lines.
 
+  -R --force
+    Allow to run \`$MYNAME_GIT pop\` and \`$MYNAME_GIT push\` even if there are
+    uncommited changes. Note the with 'pop' this will discard uncommited
+    changes. 
+
   -L --full
     restore: do also restore all patches that were applied when the backup was
     created. Caution: This runs \`git checkout PARENT\` and \`git am\` on your
@@ -1494,6 +1532,10 @@ while true; do
                 echo "Error, the --lines argument must be a positive integer." >&2
                 exit 1
             fi
+            shift 2
+            ;;
+        -R | --force)
+            force_opt="$2"
             shift 2
             ;;
         -D | --debug)
