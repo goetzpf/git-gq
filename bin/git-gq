@@ -290,7 +290,7 @@ EOF
     # git commit -m Initial
     # git gq init
     # sed -i -e '/number of arg/d' sample.c
-    # sed -i -e '/program name:/a\    \/* iterate over all command line arguments: *\/' sampl  e.c
+    # sed -i -e '/program name:/a\    \/* iterate over all command line arguments: *\/' sample.c
     # git gq new sample-comment
     # git gq pop
     # sed -i -e 's/number of/My number of/' sample.c
@@ -349,8 +349,7 @@ push\`::
   
   Resolve this conflict by looking at the *.rej files.
   For files that were not found there is no reject file, then look at the patch with:
-    git am --show-current-patch=diff > PATCH.rej
-    less PATCH.rej
+    less .gqpatches/tmp/DIFF.patch
   
   To see the state of your repo run:
     git status
@@ -363,7 +362,7 @@ push\`::
   
   To abort the operation without resolving run:
     git gq abort
-  
+
 And here is the content of the reject file, 'sample.c.rej' in this case::
 
   diff a/sample.c b/sample.c	(rejected hunks)
@@ -535,8 +534,7 @@ git gq help on conflicts
 
 Resolve this conflict by looking at the *.rej files.
 For files that were not found there is no reject file, then look at the patch with:
-  git am --show-current-patch=diff > PATCH.rej
-  less PATCH.rej
+  less $DIFF_FILENAME
 
 To see the state of your repo run:
   git status
@@ -741,11 +739,13 @@ function git_oneline_log_single {
 function mark_conflict {
     # mark that a conflict exists
     touch "$CONFLICT_FILENAME"
+    # creates $DIFF_FILENAME for git 'am' when a conflict was detected.
+    git am --show-current-patch=diff > "$DIFF_FILENAME"
 }
 
 function clear_conflict {
     # clear conflict
-    rm -f "$CONFLICT_FILENAME"
+    rm -f "$CONFLICT_FILENAME" "$DIFF_FILENAME"
 }
 
 function conflict_exists {

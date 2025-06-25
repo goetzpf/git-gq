@@ -80,8 +80,7 @@ git gq help on conflicts
 
 Resolve this conflict by looking at the *.rej files.
 For files that were not found there is no reject file, then look at the patch with:
-git am --show-current-patch=diff > PATCH.rej
-less PATCH.rej
+less .gqpatches/tmp/DIFF.patch
 
 To see the state of your repo run:
 git status
@@ -106,8 +105,7 @@ git gq help on conflicts
 
 Resolve this conflict by looking at the *.rej files.
 For files that were not found there is no reject file, then look at the patch with:
-  git am --show-current-patch=diff > PATCH.rej
-  less PATCH.rej
+  less .gqpatches/tmp/DIFF.patch
 
 To see the state of your repo run:
   git status
@@ -130,8 +128,7 @@ git gq help on conflicts
 
 Resolve this conflict by looking at the *.rej files.
 For files that were not found there is no reject file, then look at the patch with:
-  git am --show-current-patch=diff > PATCH.rej
-  less PATCH.rej
+  less .gqpatches/tmp/DIFF.patch
 
 To see the state of your repo run:
   git status
@@ -154,8 +151,7 @@ git gq help on conflicts
 
 Resolve this conflict by looking at the *.rej files.
 For files that were not found there is no reject file, then look at the patch with:
-  git am --show-current-patch=diff > PATCH.rej
-  less PATCH.rej
+  less .gqpatches/tmp/DIFF.patch
 
 To see the state of your repo run:
   git status
@@ -178,8 +174,7 @@ git gq help on conflicts
 
 Resolve this conflict by looking at the *.rej files.
 For files that were not found there is no reject file, then look at the patch with:
-  git am --show-current-patch=diff > PATCH.rej
-  less PATCH.rej
+  less .gqpatches/tmp/DIFF.patch
 
 To see the state of your repo run:
   git status
@@ -202,8 +197,7 @@ git gq help on conflicts
 
 Resolve this conflict by looking at the *.rej files.
 For files that were not found there is no reject file, then look at the patch with:
-  git am --show-current-patch=diff > PATCH.rej
-  less PATCH.rej
+  less .gqpatches/tmp/DIFF.patch
 
 To see the state of your repo run:
   git status
@@ -226,8 +220,7 @@ git gq help on conflicts
 
 Resolve this conflict by looking at the *.rej files.
 For files that were not found there is no reject file, then look at the patch with:
-  git am --show-current-patch=diff > PATCH.rej
-  less PATCH.rej
+  less .gqpatches/tmp/DIFF.patch
 
 To see the state of your repo run:
   git status
@@ -250,8 +243,7 @@ git gq help on conflicts
 
 Resolve this conflict by looking at the *.rej files.
 For files that were not found there is no reject file, then look at the patch with:
-  git am --show-current-patch=diff > PATCH.rej
-  less PATCH.rej
+  less .gqpatches/tmp/DIFF.patch
 
 To see the state of your repo run:
   git status
@@ -274,8 +266,7 @@ git gq help on conflicts
 
 Resolve this conflict by looking at the *.rej files.
 For files that were not found there is no reject file, then look at the patch with:
-  git am --show-current-patch=diff > PATCH.rej
-  less PATCH.rej
+  less .gqpatches/tmp/DIFF.patch
 
 To see the state of your repo run:
   git status
@@ -298,8 +289,7 @@ git gq help on conflicts
 
 Resolve this conflict by looking at the *.rej files.
 For files that were not found there is no reject file, then look at the patch with:
-  git am --show-current-patch=diff > PATCH.rej
-  less PATCH.rej
+  less .gqpatches/tmp/DIFF.patch
 
 To see the state of your repo run:
   git status
@@ -322,8 +312,7 @@ git gq help on conflicts
 
 Resolve this conflict by looking at the *.rej files.
 For files that were not found there is no reject file, then look at the patch with:
-  git am --show-current-patch=diff > PATCH.rej
-  less PATCH.rej
+  less .gqpatches/tmp/DIFF.patch
 
 To see the state of your repo run:
   git status
@@ -346,8 +335,7 @@ git gq help on conflicts
 
 Resolve this conflict by looking at the *.rej files.
 For files that were not found there is no reject file, then look at the patch with:
-  git am --show-current-patch=diff > PATCH.rej
-  less PATCH.rej
+  less .gqpatches/tmp/DIFF.patch
 
 To see the state of your repo run:
   git status
