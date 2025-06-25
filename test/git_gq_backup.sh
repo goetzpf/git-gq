@@ -16,7 +16,7 @@ cp -a $SRCDIR $TMPDIR
 cd $TMPDIR || exit 1
 
 echo "\$ git gq pop"
-$GIT_GQ pop | filter_git_head_hash
+$GIT_GQ pop 2>&1| filter_git_head_hash
 
 echo
 echo "\$ git gq applied"
