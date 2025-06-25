@@ -1,0 +1,100 @@
+* Test git gq refresh with git mv
+---------------------------------------
+
+$ git log
+commit abcdef0123456789abcdef0123456789
+Author: Homer Simpson <simpson@burns-powerplant.com>
+Date: Sun Dec 31 09:12:34 2001 +0100
+
+script.sh was improved.
+
+commit abcdef0123456789abcdef0123456789
+Author: Homer Simpson <simpson@burns-powerplant.com>
+Date: Sun Dec 31 09:12:34 2001 +0100
+
+README was improved.
+
+commit abcdef0123456789abcdef0123456789
+Author: Homer Simpson <simpson@burns-powerplant.com>
+Date: Sun Dec 31 09:12:34 2001 +0100
+
+initial commit
+
+$ git gq applied
+abcdef0 script.sh was improved.
+abcdef0 README was improved.
+
+$ git gq unapplied
+
+$ git show HEAD
+commit abcdef0123456789abcdef0123456789
+Author: Homer Simpson <simpson@burns-powerplant.com>
+Date: Sun Dec 31 09:12:34 2001 +0100
+
+script.sh was improved.
+
+diff --git a/script.sh b/script.sh
+index abcdef0..abcdef1 abcdef3
+--- a/script.sh
++++ b/script.sh
+@@ -1,4 +1,4 @@
+#!/bin/bash
+
+-echo HOHO
++echo "Script prototype"
+
+
+# Rename README.txt to README.rst ...
+$ git mv README.txt README.rst
+$ git gq refresh
+[master abcdef0] script.sh was improved.
+Date: Sun Dec 31 09:12:34 2001 +0100
+2 files changed, 1 insertion(+), 1 deletion(-)
+rename README.txt => README.rst (100%)
+
+$ git log
+commit abcdef0123456789abcdef0123456789
+Author: Homer Simpson <simpson@burns-powerplant.com>
+Date: Sun Dec 31 09:12:34 2001 +0100
+
+script.sh was improved.
+
+commit abcdef0123456789abcdef0123456789
+Author: Homer Simpson <simpson@burns-powerplant.com>
+Date: Sun Dec 31 09:12:34 2001 +0100
+
+README was improved.
+
+commit abcdef0123456789abcdef0123456789
+Author: Homer Simpson <simpson@burns-powerplant.com>
+Date: Sun Dec 31 09:12:34 2001 +0100
+
+initial commit
+
+$ git gq applied
+abcdef0 script.sh was improved.
+abcdef0 README was improved.
+
+$ git gq unapplied
+
+$ git show HEAD
+commit abcdef0123456789abcdef0123456789
+Author: Homer Simpson <simpson@burns-powerplant.com>
+Date: Sun Dec 31 09:12:34 2001 +0100
+
+script.sh was improved.
+
+diff --git a/README.txt b/README.rst
+similarity index 100%
+rename from README.txt
+rename to README.rst
+diff --git a/script.sh b/script.sh
+index abcdef0..abcdef1 abcdef3
+--- a/script.sh
++++ b/script.sh
+@@ -1,4 +1,4 @@
+#!/bin/bash
+
+-echo HOHO
++echo "Script prototype"
+

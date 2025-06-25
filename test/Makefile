@@ -54,6 +54,7 @@ git_gq_pop_reorder_push.out: git_gq_add_2.out
 git_gq_new.out: git_gq_add_2.out
 git_gq_applied_unapplied.out: git_gq_new.out
 git_gq_refresh.out: git_gq_add_2.out
+git_gq_mv_refresh.out: git_gq_add_2.out
 git_gq_goto.out: git_gq_new.out
 git_gq_fold.out: git_gq_add_2.out
 git_gq_record.out: git_gq_add_2.out

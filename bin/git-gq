@@ -886,7 +886,7 @@ function git_add_changes {
         EXTRA+=("-uno")
     fi
     local LINES
-    git status --porcelain "${EXTRA[@]}" | sed -e 's/^RM .*-> //' | sed -e 's/^.. //' | grep -v "\(^${TOPPATCHDIR}[/-]\|\.rej$\)" |xargs git add
+    git status --porcelain "${EXTRA[@]}" | sed -e 's/^R[M ] .*-> //' | sed -e 's/^.. //' | grep -v "\(^${TOPPATCHDIR}[/-]\|\.rej$\)" |xargs git add
 }
 
 function git_select_changes {
