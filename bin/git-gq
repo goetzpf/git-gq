@@ -966,6 +966,11 @@ function at_null_revision {
     git_head_subject | grep -w -q 'NULL'
 }
 
+function git_rm_reject_files {
+    # remove all files named *.rej that are not tracked by git
+    git ls-files . --exclude-standard --others --exclude "${TOPPATCHDIR}*" | grep '\.rej$' | xargs rm
+}
+
 function git_add_changes {
     # add only changed files to stash
     # $1: if not zero, add unknown files, too
@@ -1353,10 +1358,12 @@ Patch management commands
     Show changes of an applied or unapplied patch on the console.
 
   continue       
-    Continue 'push' after you had a conflict and had it fixed manually.
+    Continue 'push' after you had a conflict and had it fixed manually. This
+    also removes all reject (\*.rej) files that are not tracked by git.
 
   abort          
     Abort (undo) 'push' after you had a conflict and could not fix it manually.
+    This also removes all reject (\*.rej) files that are not tracked by git.
 
 Miscellaneous commands
 ++++++++++++++++++++++
@@ -2203,6 +2210,7 @@ if [ "$COMMAND" == "continue" ]; then
         exit 1
     fi
     clear_conflict
+    git_rm_reject_files
     if [ -e "$SERIESFILE.new" ]; then
         cp -a "$SERIESFILE.new" "$SERIESFILE"
     fi
@@ -2218,6 +2226,7 @@ if [ "$COMMAND" == "abort" ]; then
     fi
     git am --abort
     clear_conflict
+    git_rm_reject_files
     # remove left over added files:
     rm_new_unknown_files "$UNKNOWN1_FILENAME" "$UNKNOWN2_FILENAME"
     # revert left over uncommitted changes:
