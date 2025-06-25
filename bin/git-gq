@@ -2169,6 +2169,10 @@ if [ "$COMMAND" == "unapplied" ]; then
 fi
 
 if [ "$COMMAND" == "continue" ]; then
+    if ! conflict_exists; then
+        echo "Error, there currently is no conflict to resolve." >&2
+        exit 1
+    fi
     if [ -z "$no_add_opt" ]; then
         # "": do not add unknown files:
         git_add_changes ""
@@ -2189,6 +2193,10 @@ if [ "$COMMAND" == "continue" ]; then
 fi
 
 if [ "$COMMAND" == "abort" ]; then
+    if ! conflict_exists; then
+        echo "Error, there currently is no conflict to resolve." >&2
+        exit 1
+    fi
     git am --abort
     clear_conflict
     # remove left over added files:
