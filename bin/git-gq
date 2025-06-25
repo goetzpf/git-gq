@@ -52,7 +52,7 @@ SERIESFILE="$PATCHDIR/series"
 PARENTFILE="$PATCHDIR/parent"
 QUEUEFILE="$TOPPATCHDIR/queue"
 
-ALL_COMMANDS="abort applied backup bashcompletion change-order commands continue delete doc edit export fold glog goto help import init man new parent pop push qname record refresh restore show unapplied"
+ALL_COMMANDS="abort applied backup bashcompletion change-order commands conflict continue delete doc edit export fold glog goto help import init man new parent pop push qname record refresh restore show unapplied"
 
 # shellcheck disable=SC2001
 ALL_COMMANDS_RX=$(echo "$ALL_COMMANDS" | sed -e 's/ /|/g;s/^/^(/;s/$/)$/')
@@ -74,6 +74,7 @@ name_arg=""
 file_arg=""
 dir_arg=""
 doc_arg=""
+cmd_arg=""
 
 list_arg=()
 
@@ -738,9 +739,15 @@ function git_oneline_log_single {
 
 function mark_conflict {
     # mark that a conflict exists
-    touch "$CONFLICT_FILENAME"
+    # $1: name of the patch
+    echo "$1" > "$CONFLICT_FILENAME"
     # creates $DIFF_FILENAME for git 'am' when a conflict was detected.
     git am --show-current-patch=diff > "$DIFF_FILENAME"
+}
+
+function conflict_patch {
+    # return name of conflicting patch
+    cat "$CONFLICT_FILENAME"
 }
 
 function clear_conflict {
@@ -1137,7 +1144,7 @@ function qpush_specified {
     # remove PATCHNAME from SERIESFILE:
     grep -v -F "$PATCHNAME" "$SERIESFILE" > "$SERIESFILE.new"
     if ! git am --reject "$PATCHDIR/$PATCHNAME"; then
-        mark_conflict
+        mark_conflict "$PATCHNAME"
         print_reject_message
         return 1
     fi
@@ -1162,7 +1169,7 @@ function qpush_one {
     # remove PATCHNAME from SERIESFILE:
     cp -a "$SERIESFILE" "$SERIESFILE.new" && sed -i -e '1d' "$SERIESFILE.new"
     if ! git am --reject "$PATCHDIR/$PATCHNAME"; then
-        mark_conflict
+        mark_conflict "$PATCHNAME"
         git_unknown_files "$UNKNOWN2_FILENAME"
         print_reject_message
         return 1
@@ -1356,6 +1363,11 @@ Miscellaneous commands
 
   help           
     Show this help.
+
+  conflict [CMD]
+    Show if the repository is in an unresolved conflict state.
+    CMD is a sub-command, \`files\` shows files changed by the patch,
+    \`show\` shows the patch.
 
   doc            
     Show reStructuredText source of man page.
@@ -1556,6 +1568,14 @@ for arg in "${ARGS[@]}"; do
             exit 1
         fi
         rev_arg="$arg"
+        continue
+    fi
+    if [ "$COMMAND" == "conflict" ]; then
+        if [ -n "$cmd_arg" ]; then
+            echo "unexpected: '$arg'" >&2
+            exit 1
+        fi
+        cmd_arg="$arg"
         continue
     fi
     if [[ "$COMMAND" == "init" ]]; then
@@ -2179,7 +2199,6 @@ if [ "$COMMAND" == "continue" ]; then
         add_new_unknown_files "$UNKNOWN1_FILENAME" "$UNKNOWN2_FILENAME"
     fi
     if ! git am --continue; then
-        mark_conflict
         print_reject_message
         exit 1
     fi
@@ -2205,6 +2224,31 @@ if [ "$COMMAND" == "abort" ]; then
     git checkout -- .
     rm -f "$UNKNOWN1_FILENAME" "$UNKNOWN2_FILENAME"
     rm -f "$SERIESFILE.new" "$PATCHDIR/PUSH"
+    exit 0
+fi
+
+if [ "$COMMAND" == "conflict" ]; then
+    if ! conflict_exists; then
+        echo "There is no conflict state."
+    else
+        if [ -z "$cmd_arg" ]; then
+            echo "The repository is currently in a conflict state."
+            echo
+            echo "Conflicting patch:"
+            conflict_patch
+            echo
+            print_reject_message 2>&1
+        else
+            if [ "$cmd_arg" == "files" ]; then
+                grep '^diff ' "$DIFF_FILENAME" | sed -e 's/ \+/\t/g' | cut -f 3 | sed -e 's#^a/##'
+            elif [ "$cmd_arg" == "show" ]; then
+                less "$DIFF_FILENAME"
+            else
+                echo "Error, unknown sub-command '$cmd_arg'." >&2
+                exit 1
+            fi
+        fi
+    fi
     exit 0
 fi
 
