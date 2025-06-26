@@ -676,13 +676,21 @@ function find_first_applied_patch {
     # in case of an error, the function prints an error message to stderr.
     local START
     local PARENT
+    local RX
+    RX="$1"
     PARENT=$(get_parent)
     rc="$?"
     if [ "$rc" -ne 0 ]; then
         return "$rc"
     fi
     START="${PARENT}.."
-    git log --oneline "$START" | grep "$1" | head -n 1 | sed -e 's/ .*//'
+    if echo "$RX" | grep -q '^[A-Fa-f0-9]\+$'; then
+        # a pure hash key, use log with long hash keys to match
+        git log --pretty=oneline "$START" | grep "^$RX" | head -n 1 | sed -e 's/ .*//'
+    else
+        # common search for strings
+        git log --oneline "$START" | grep "$RX" | head -n 1 | sed -e 's/ .*//'
+    fi
 }
 
 function git_rev_parse {
