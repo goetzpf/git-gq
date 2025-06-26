@@ -1,7 +1,7 @@
 # Test ('X' for non-existent)   comment / tested command
 # -------------------------------------------------------
 git_gq_abort                    abort
-X                               applied: tested during push/pop
+git_gq_applied_unapplied        applied/unapplied
 git_gq_backup                   backup
 X                               bashcompletion
 X                               change-order

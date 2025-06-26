@@ -1,0 +1,24 @@
+* Test git gq applied/unapplied
+---------------------------------------
+
+
+$ git gq applied
+abcdef0 README-was-extended
+abcdef0 script.sh was improved.
+abcdef0 README was improved.
+
+$ git gq applied --lines 1
+abcdef0 README-was-extended
+
+$ git gq pop -a
+HEAD is now at abcdef0 script.sh was improved.
+HEAD is now at abcdef0 README was improved.
+HEAD is now at abcdef0 initial commit
+
+$ git gq unapplied
+README-was-improved.patch
+script.sh-was-improved.patch
+README-was-extended.patch
+
+$ git gq unapplied --lines 1
+README-was-improved.patch
