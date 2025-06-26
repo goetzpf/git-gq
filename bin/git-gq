@@ -562,6 +562,23 @@ function git_check_exists {
     git cat-file  -e "$1"  2> /dev/null
 }
 
+function git_revert {
+    # revert all modified files
+    git checkout -- .
+}
+
+function git_unknown_files {
+    # $1: name of file to create
+    # put a list of unknown files in the created file
+    git status --porcelain | grep '^??' | grep -v "^${TOPPATCHDIR}[/-]" | sed -e 's/^...//' | sort > "$1"
+}
+
+function rm_new_unknown_files {
+    # $1: old file list
+    # $2: new file list
+    diff "$1" "$2" | grep '^>' | sed -e 's/^..//' | xargs rm -f
+}
+
 function log_template {
     # create a template file for a log message
     # $1: direct log message
@@ -933,11 +950,13 @@ function qpush_one {
         echo "Error, all patches in queue are already applied." >&2
         return 1
     fi
+    git_unknown_files "$PATCHDIR/UNKNOWN.1"
     PATCHNAME=$(head -n 1 "$SERIESFILE")
     echo "$PATCHNAME" > "$PATCHDIR/PUSH"
     # remove PATCHNAME from SERIESFILE:
     cp -a "$SERIESFILE" "$SERIESFILE.new" && sed -i -e '1d' "$SERIESFILE.new"
     if ! git am --reject "$PATCHDIR/$PATCHNAME"; then
+        git_unknown_files "$PATCHDIR/UNKNOWN.2"
         echo "Fix the change by looking at the *.rej files." >&2
         echo "Then run:" >&2
         echo "  $MYNAME continue" >&2
@@ -945,6 +964,7 @@ function qpush_one {
         echo "  $MYNAME abort" >&2
         return 1
     fi
+    rm -f "$PATCHDIR/UNKNOWN.*"
     rm -f "$PATCHDIR/$PATCHNAME" "$PATCHDIR/PUSH" "$SERIESFILE" && mv "$SERIESFILE.new" "$SERIESFILE"
 }
 
@@ -1844,6 +1864,11 @@ fi
 
 if [ "$COMMAND" == "abort" ]; then
     git am --abort
+    # remove left over added files:
+    rm_new_unknown_files "$PATCHDIR/UNKNOWN.1" "$PATCHDIR/UNKNOWN.2"
+    # revert left over uncommitted changes:
+    git checkout -- .
+    rm -f "$PATCHDIR/UNKNOWN.*"
     rm -f "$SERIESFILE.new" "$PATCHDIR/PUSH"
     exit 0
 fi

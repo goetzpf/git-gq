@@ -35,3 +35,4 @@ $ git gq unapplied
 .gqpatches/default
 .gqpatches/default/parent
 .gqpatches/default/series
+.gqpatches/default/UNKNOWN.1
