@@ -814,24 +814,44 @@ function git_rm_changes_files {
 }
 
 function get_parent {
-    # returns: 
+    # $1: mode
+    #     ""    : return just the hash
+    #     "full": return hash and log message 
+    # $2: exists-test mode, change message when revision doesn't exist
+    #     ""    : non existing revision: just change return error code
+    #     "err" : non existing revision: print error message and return error
+    #             code
+    # returns:
     #   0 : no error
     #   1 : fatal error
     # in case of an error, the function prints an error message to stderr.
-    local PARENT
+    local PARENT_FULL
+    local PARENT_HASH
+    local FULL="$1"
+    local MODE="$2"
+    local RC
+    RC=0
     if [ ! -s "$PARENTFILE" ]; then
         echo "Error, $PARENTFILE does not exist or is empty" >&2
         return 1
     fi
-    PARENT="$(cat "$PARENTFILE")"
-    if [ "$PARENT" != "NULL" ]; then
-        if ! git_check_exists "$PARENT"; then
-            echo "Error, parent revision $PARENT doesn't exist in repository" >&2
-            return 1
+    PARENT_FULL="$(cat "$PARENTFILE")"
+    PARENT_HASH="$(echo "$PARENT_FULL" | sed -e 's/ .*//')"
+    # take just the HASH from the PARENTFILE:
+    if [ "$PARENT_FULL" != "NULL" ]; then
+        if ! git_check_exists "$PARENT_HASH"; then
+            RC=1
+            if [ -n "$MODE" ]; then
+                echo "Error, parent revision $PARENT_FULL doesn't exist in repository" >&2
+            fi
         fi
     fi
-    echo "$PARENT"
-    return 0
+    if [ -z "$FULL" ]; then
+        echo "$PARENT_HASH"
+    else
+        echo "$PARENT_FULL"
+    fi
+    return $RC
 }
 
 function find_single_unapplied_patch {
@@ -907,7 +927,7 @@ function find_first_applied_patch {
     local EXTRA
     local HASH
     RX="$1"
-    PARENT=$(get_parent)
+    PARENT=$(get_parent "" "err")
     rc="$?"
     if [ "$rc" -ne 0 ]; then
         return "$rc"
@@ -1067,7 +1087,7 @@ function save_applied_patches {
     local PARENT
     local EXTRA
     local rev
-    PARENT=$(get_parent)
+    PARENT=$(get_parent "" "err")
     rc="$?"
     if [ "$rc" -ne 0 ]; then
         return "$rc"
@@ -1116,7 +1136,7 @@ function qpop_check {
     if ! check_uncomitted "pop"; then
         return 2
     fi
-    PARENT=$(get_parent)
+    PARENT=$(get_parent "" "err")
     rc="$?"
     if [ "$rc" -ne 0 ]; then
         return 2
@@ -1282,7 +1302,7 @@ function create_parentfile {
             echo "queue parent revision set to $1 ($rev)"
         fi
     fi
-    echo "$rev" > "$PARENTFILE"
+    git_oneline_log_single "$rev" > "$PARENTFILE"
 }
 
 function short_help_text {
@@ -1737,18 +1757,21 @@ if [ "$COMMAND" == "restore" ]; then
     tar -xzf "$file_arg"
     QUEUENAME=$(cat "$QUEUEFILE")
     select_queue "$QUEUENAME"
-    PARENT=$(get_parent)
-    rc="$?"
-    if [ "$rc" -ne 0 ]; then
-        exit "$rc"
-    fi
+    PARENT=$(get_parent "full" "")
+    PARENT_RC="$?"
     if [ "$PARENT" == "NULL" ]; then
-        echo "Your PARENT revision was NULL."
-        echo "Cannot automatically restore applied patches."
+        echo "Your PARENT revision is NULL."
         echo "Originally applied patches are in $APPLIEDDIR"
-        exit 0
+        # do not try to restore applied patches:
+        PARENT_RC=1
+    elif [ "$PARENT_RC" -ne 0 ]; then
+        # parent hash couldn't be found in repository
+        echo "Warning: this parent:"
+        echo "$PARENT"
+        echo "does not exist in your repository."
+        echo "You have to set a valid parent with '$MYNAME_GIT parent'."
     fi
-    if [ -n "$full_opt" ] && [ -d "$APPLIEDDIR" ]; then
+    if [ "$PARENT_RC" -ne 0 ] && [ -n "$full_opt" ] && [ -d "$APPLIEDDIR" ]; then
         echo "Restore originally applied patches in repository ?"
         read -p "Enter 'y' or 'Y' to make changes, everything else skips this " -n 1 -r
         echo
@@ -1865,7 +1888,7 @@ if [ "$COMMAND" == "export" ]; then
         echo "Error, DIRECTORY missing." >&2
         exit 1
     fi
-    PARENT=$(get_parent)
+    PARENT=$(get_parent "" "err")
     rc="$?"
     if [ "$rc" -ne 0 ]; then
         exit "$rc"
@@ -1898,16 +1921,12 @@ if [ "$COMMAND" == "parent" ]; then
         if [ ! -s "$PARENTFILE" ]; then
             echo "no PARENT revision defined"
         else
-            PARENT=$(get_parent)
+            PARENT_STR=$(get_parent "full" "err")
             rc="$?"
             if [ "$rc" -ne 0 ]; then
                 exit "$rc"
             fi
-            if [ "$PARENT" == "NULL" ]; then
-                echo "NULL"
-            else
-                git_oneline_log_single "$PARENT"
-            fi
+            echo "$PARENT_STR"
         fi
         exit 0
     fi
@@ -2220,7 +2239,7 @@ if [ "$COMMAND" == "show" ]; then
 fi
 
 if [ "$COMMAND" == "applied" ]; then
-    PARENT=$(get_parent)
+    PARENT=$(get_parent "" "err")
     rc="$?"
     if [ "$rc" -ne 0 ]; then
         exit "$rc"
