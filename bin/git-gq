@@ -591,6 +591,7 @@ function editor_dialog {
         echo "Note that you can always abort editing in 'vi' with"
         echo "  <ESC> :qa!"
         read -p "Enter 'y' or 'Y' to continue, everything else aborts " -n 1 -r
+        echo
         if [[ $REPLY =~ ^[Yy]$ ]]; then
             editor="vi"
         fi
@@ -1727,6 +1728,7 @@ if [ "$COMMAND" == "restore" ]; then
         date_=$(date '+%Y-%m-%dT%H%M%S')
         echo "$TOPPATCHDIR-$date_ ?"
         read -p "Enter 'y' or 'Y' to continue, everything else aborts " -n 1 -r
+        echo
         if [[ ! $REPLY =~ ^[Yy]$ ]]; then
             exit 1
         fi
@@ -1749,6 +1751,7 @@ if [ "$COMMAND" == "restore" ]; then
     if [ -n "$full_opt" ] && [ -d "$APPLIEDDIR" ]; then
         echo "Restore originally applied patches in repository ?"
         read -p "Enter 'y' or 'Y' to make changes, everything else skips this " -n 1 -r
+        echo
         if [[ $REPLY =~ ^[Yy]$ ]]; then
             # git reset --hard "$PARENT"
             git checkout "$PARENT"
