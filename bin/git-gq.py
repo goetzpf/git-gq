@@ -1,0 +1,2714 @@
+#! /usr/bin/env python3
+# -*- coding: UTF-8 -*-
+"""git-gq : a patch queue for git
+
+Copyright (C) 2025  Goetz Pfeiffer <goetzpf@googlemail.com>
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
+"""
+
+# pylint: disable= invalid-name
+# pylint: disable= too-many-lines
+
+import argparse
+#import string
+import os.path
+import sys
+import subprocess
+import shutil
+import datetime
+import pydoc
+import re
+
+# pylint: disable=invalid-name
+
+ojoin= os.path.join
+
+MYNAME="git-gq"
+
+MYNAME_GIT= MYNAME.replace("-", " ")
+
+TOPPATCHDIR=".gqpatches"
+TEMP_BASEDIR="tmp"
+
+TEMPDIR=os.path.join(TOPPATCHDIR, TEMP_BASEDIR)
+
+DIFF_FILENAME=ojoin(TEMPDIR, "DIFF.patch")
+HDIFF_FILENAME=ojoin(TEMPDIR, "HEAD.patch")
+LOG_FILENAME=ojoin(TEMPDIR, "LOG")
+DATE_FILENAME=ojoin(TEMPDIR, "DATE")
+AUTHOR_FILENAME=ojoin(TEMPDIR, "AUTHOR")
+CONFLICT_FILENAME=ojoin(TEMPDIR, "CONFLICT")
+UNKNOWN1_FILENAME=ojoin(TEMPDIR, "UNKNOWN.1")
+UNKNOWN2_FILENAME=ojoin(TEMPDIR, "UNKNOWN.2")
+
+VERSION= "2.0"
+
+SUMMARY="A program to implement patch queues for git."
+
+BASHCOMPLETION=r'_git_gq() { __gitcomp "$(git-gq commands)" "" "$cur"; }'
+
+USAGE= "%(prog)s [OPTIONS] COMMAND"
+
+DESC= f'''
+Bash completion commands
+++++++++++++++++++++++++
+
+  commands       
+    List all known commands on the console
+
+  bashcompletion 
+    List the line you have to add to your .bashrc
+    to integrate completion into the 'git' command.
+
+Queue management commands
++++++++++++++++++++++++++
+
+  init [QNAME [REV]]
+    Create/select a patch queue with name 'QNAME'. QNAME is optional, the
+    default patch queue name is 'default'. If 'REV' is given this is the parent
+    revision, if it is not givem, 'HEAD' is taken as the parent. You must run
+    this command once to initialize the patch queue in your repository.
+
+  qname [QNAME]   
+    If QNAME is not given, show current patch queue name. if QNAME is given,
+    change to patch queue QNAME. If the patch queue QNAME is created for the
+    first time, the parent revision is set to your 'HEAD' revision. If this is
+    not intended, you may change this with `{MYNAME_GIT} parent REVISION` to
+    another revision.
+
+  backup         
+    Create backup tar file of patch directory '{TOPPATCHDIR}'.
+
+  restore FILE   
+    Restore patch directory from a backup file. '{TOPPATCHDIR}'.
+
+  change-order   
+    Call an editor to edit the file that contains all currently unapplied
+    patches. Note the the patches in the file are applied from top to bottom.
+
+  applied    
+    Show all applied patches up to parent+1.
+
+  unapplied      
+    Show all patches of the patch queue.
+
+  parent [REVISION]   
+    Set REVISION as patch queue parent revision. Do never go beyond this
+    revision with pop. Use 'HEAD' to set your repository HEAD as parent
+    revision. If REVISION is 'NULL', this means that *all* revisions in
+    the repository can be managed with `{MYNAME_GIT} pop`, you should only
+    use this for unpublished repositories. If REVISION is not given, show the
+    current parent revision.
+
+  export DIRECTORY
+    Create numbered patch files from all currently applied patches in
+    DIRECTORY. The numbers are in the order of patches from bottom to top.
+    DIRECTORY must exist.
+
+  import PATCHFILE [PATCHFILE...]
+    Import a number of patchfiles to the patch queue. The last patchfile in the
+    list will be on the top of the queue. Note that the patch files must have
+    been generated with `git format-patch` or `{MYNAME_GIT} pop`. This
+    cannot be used for patches generated with the `patch` program. These you
+    have to apply with `git apply PATCHFILE`.
+
+Patch management commands
++++++++++++++++++++++++++
+
+  new [NAME]     
+    Create new patch (commit) with log-message NAME. NAME is meant as a
+    preliminary commit message, it should be a single line without spaces. If
+    NAME is omitted, you can enter a complete log message interactively.
+
+  record [NAME]  
+    Interactively select changes for a new patch (commit with log-message NAME)
+
+  refresh        
+    Update the topmost patch.
+
+  pop            
+    Pop the topmost patch.
+
+  push           
+    Apply the top patch from the patch queue.
+
+  goto NAME|REGEXP
+    Do push or pop until the specified patch is the latest applied patch.
+
+  fold NAME|REGEXP
+    Fold patch 'NAME' to the topmost patch. Patch 'NAME' must not be appled
+    already. Note that the log message of the fold-patch is appended to the
+    existing log message. You may change the log message with `{MYNAME_GIT}
+    refresh -e`.
+
+  edit NAME|REGEXP
+    Call an editor to edit an unapplied patch. 
+
+  delete NAME|REGEXP
+    Delete unapplied patch with given name.
+
+  show NAME|REGEXP
+    Show changes of an applied or unapplied patch on the console.
+
+  continue       
+    Continue 'push' after you had a conflict and had it fixed manually. This
+    also removes all reject (\\*.rej) files that are not tracked by git.
+
+  abort          
+    Abort (undo) 'push' after you had a conflict and could not fix it manually.
+    This also removes all reject (\\*.rej) files that are not tracked by git.
+
+Miscellaneous commands
+++++++++++++++++++++++
+
+  help           
+    Show this help.
+
+  conflict [CMD]
+    Show if the repository is in an unresolved conflict state.
+    CMD is a sub-command, `files` shows files changed by the patch,
+    `show` shows the patch.
+
+  doc            
+    Show reStructuredText source of man page.
+
+  man            
+    Show man page.
+
+  glog
+    Graphical log, display all commits and branches as a tree on the console.
+
+OPTIONS
++++++++
+'''
+
+DOC_HEADING=\
+f'''======================================================
+{MYNAME_GIT} - patch queues for git
+======================================================
+'''
+
+DOC_OVERVIEW=\
+'''Overview
+--------
+
+Patches vs. Commits
++++++++++++++++++++
+
+git manages a repository with *commits*. A commit has the following properties:
+
+- A state, this is the directory structure and the files and their contents and
+  permissions.
+- Metadata: log message, author and date
+- A hash key that git uses internally to distinguish commits. Git hashes are
+  calculated based on the contents of the files in the commit, the metadata of
+  the commit (like timestamp and author), and the parent commit's hash.
+- A predecessor commit unless it is the first commit in the repository
+- A successor commit unless it is the head commit of a branch
+
+For simplicity, we only consider a single branch for now. Then each commit has
+exactly one or no predecessor and one or no successor.
+
+All commits then form an ordered sequence like here::
+
+  A --> B --> C --> D
+
+A *patch* is the difference between two commits combined with the metadata of
+the second patch.
+
+So the commits A, B, C and D as shown above could also be represented as patches::
+
+  (A-0) --> (B-A) --> (C-B) --> (D-C)
+
+Here '(B-A)' means the difference of the files and directories of commits 'B'
+and 'A'. '0' is the empty state before the very first commit where no files and
+directories exist.
+
+When you apply a patch to a commit you get the next commit::
+
+  A + (B-A) = B
+
+The patch queue
++++++++++++++++
+
+The *patch queue* is a structure that contains patches outside of git. Patches
+can be moved between the repository and the patch queue. Patches on the patch
+queue are called *unapplied*, patches that are in the repository are called
+*applied*.
+
+In the following examples, the top of the repository and the patch queue is
+always on the right side::
+
+  Repository:  A --> B --> C --> D      Patch-Queue: <empty>
+  applied: (A-0), (B-A), (C-B), (D-C)   unapplied: <none>
+
+Now operation 'pop' moves a patch from the repository to the patch-queue::
+
+  Repository:  A --> B --> C            Patch-Queue: (D-C)
+  applied: (A-0), (B-A), (C-B)          unapplied: (D-C)
+
+Another 'pop' moves the next patch from the repository to the patch-queue::
+
+  Repository:  A --> B                  Patch-Queue: (D-C) --> (C-B)
+  applied: (A-0), (B-A)                 unapplied: (D-C), (C-B)
+
+Operation 'push' moves the top patch from the patch-queue back to the
+repository::
+
+  Repository:  A --> B --> C            Patch-Queue: (D-C)
+  applied: (A-0), (B-A), (C-B)          unapplied: (D-C)
+
+Advantages of the patch queue
++++++++++++++++++++++++++++++
+
+The patch-queue is much more flexible than traditional commits:
+
+- Patches can be reordered easily
+- Patches can be combined ('fold')
+- Patches can be updated ('refresh')
+- Patches can replace development branches. You can put your local changes on
+  the patch queue, run 'git pull' and put your patches back on the repository.
+- Conflicts may occur but are usually easier to resolve than git merge
+  conflicts
+
+Disadvantages of the patch queue
+++++++++++++++++++++++++++++++++
+
+- moving a patch to the patch queue and back changes it's git hash key. This
+  means you shouldn't apply this operation on patches that exist in other
+  repositories. The definition of the *parent revision* ensures that you cannot
+  do this by accident.
+- changing the order of patches may lead to *conflicts*.
+- Applying new commits in the repository while some patches are unapplied may
+  lead to conflicts when the patches are applied later.
+'''
+
+DOC_IMPLEMENTATION=\
+'''Implementation
+--------------
+
+Directory structure
++++++++++++++++++++
+
+Each patch queue has all it's files in a directory with the name of the patch
+queue. All patch queue directories are in directory '{TOPPATCHDIR}'. 
+
+A file 'queue' in directory '{TOPPATCHDIR}' contains the currently selected
+patch queue.
+
+Backup files
+++++++++++++
+
+Backups are '\\*.tar.gz' files in '{TOPPATCHDIR}'. All backups have the name
+schema '{TOPPATCHDIR}-TIMESTAMP.tar.gz'.
+
+Files in the patch queue directory
+++++++++++++++++++++++++++++++++++
+
+series
+::::::
+
+The order of patches is kept in a file named 'series' that just contains all
+the filenames of all unapplied patches. This file is maintained by
+`{MYNAME_GIT}`.
+
+parent
+::::::
+
+The parent revision is stored in a file 'parent'. This is the latest commit
+that is not allowed to be modified. This file is usually created when you start
+your work with `{MYNAME_GIT} init`. It can be changed with `{MYNAME_GIT}
+parent`.
+
+A special revision is `NULL`. This is the very first revision in the
+repository where no files are committed. git doesn't have a concept of a
+`NULL` revision, so this is emulated by `{MYNAME_GIT}` by creating a
+revision with no files in it. When the parent is set to `NULL` this means
+that you can pop the very first revision as a patch and by this have the
+capability to modify the very first revision. Of course, you should never do
+this with a published repository, since `{MYNAME_GIT} pop` and `{MYNAME_GIT}
+push` always modify revision hash keys.
+
+patch files '\\*.patch'
+::::::::::::::::::::::
+
+A *patch file* is basically a file with recipes for changes in files. Each
+recipe is called a *hunk*. A *hunk* contains line numbers, context lines, lines
+to remove and lines to add.
+
+`{MYNAME_GIT}` uses standard git commands to move patches between the
+repository and the patch queue. In the patch queue, each patch is a file
+created from the difference of a commit and it's predecessor in the repository
+with `git format-patch`. Among the changes between two commits this file also
+contains all the metadata of the second commit. The name of the patch file is
+computed from the first line of the log message where spaces are replaced with
+dashes and end with the extension '.patch'.
+
+A patch file is re-applied to the repository with `git am`. 
+
+Here is an example of a patch file::
+
+  From 273c3709f7da0fe0e11369ea0d9a26053f78e3ee Mon Sep 17 00:00:00 2001
+  From: Goetz Pfeiffer <goetzpf@googlemail.com>
+  Date: Tue, 3 Jun 2025 18:45:57 +0200
+  Subject: [PATCH] sample-comment
+  
+  ---
+   sample.c | 2 +-
+   1 file changed, 1 insertion(+), 1 deletion(-)
+  
+  diff --git a/sample.c b/sample.c
+  index e5cf2b0..350c29b 100644
+  --- a/sample.c
+  +++ b/sample.c
+  @@ -4,8 +4,8 @@ int main(int argc, char *argv[])
+     {
+       int i;
+   
+  -    printf("number of arguments: %d\\n", argc);
+       printf("program name: %s\\n", argv[0]);
+  +    /* iterate over all command line arguments: */
+       for(i=1; i<argc; i++)
+         printf("arg no %2d: %s\\n", i, argv[i]);
+       return 0;
+  -- 
+  2.49.0
+'''
+
+# Note how this example was created:
+# mkdir sample && cd sample
+# cp -a $HOME/devel/c/template.c sample.c
+# git init
+# git add sample.c
+# git commit -m Initial
+# git gq init
+# sed -i -e '/number of arg/d' sample.c
+# sed -i -e '/program name:/a\    \/* iterate over all command line arguments: *\/' sample.c
+# git gq new sample-comment
+# git gq pop
+# sed -i -e 's/number of/My number of/' sample.c
+# git gq new extra-change
+# git gq push
+
+DOC_CONFLICTS=\
+'''Conflicts and conflict resolution
+---------------------------------
+
+Conflicts may happen when:
+
+- you change the order of unapplied patches with `{MYNAME_GIT} change-order`
+  and then run `{MYNAME_GIT} push`
+- you unapply patches, make changes in the repository, e.g. `git pull` and
+  then apply the patches again
+- you combine unapplied patches with `{MYNAME_GIT} fold` that are not in
+  consecutive order
+
+In the patch file example above, you see after '@@ -4,8 +4,8 @@' a single
+*hunk*. The numbers are line numbers in the source file, here 'sample.c'.
+
+All following lines that are indented with a single space are *context* lines.
+Lines that start with a '-' character are to be removed, lines that start with
+a '+' character are to be added.
+
+A conflict occurs when the context lines or the lines to be removed couldn't be
+found. In this case, a reject file is created.
+
+Here are the messages you see in case of a conflict after you ran `{MYNAME_GIT}
+push`::
+
+  Applying: sample-comment
+  Checking patch sample.c...
+  error: while searching for:
+    {
+      int i;
+  
+      printf("number of arguments: %d\\n", argc);
+      printf("program name: %s\\n", argv[0]);
+      for(i=1; i<argc; i++)
+        printf("arg no %2d: %s\\n", i, argv[i]);
+      return 0;
+  
+  error: patch failed: sample.c:4
+  Applying patch sample.c with 1 reject...
+  Rejected hunk #1.
+  Patch failed at 0001 sample-comment
+  hint: Use 'git am --show-current-patch=diff' to see the failed patch
+  hint: When you have resolved this problem, run "git am --continue".
+  hint: If you prefer to skip this patch, run "git am --skip" instead.
+  hint: To restore the original branch and stop patching, run "git am --abort".
+  hint: Disable this message with "git config set advice.mergeConflict false"
+  
+  git gq help on conflicts
+  ------------------------
+  
+  Resolve this conflict by looking at the *.rej files.
+  For files that were not found there is no reject file, then look at the patch with:
+    less .gqpatches/tmp/DIFF.patch
+  
+  To see the state of your repo run:
+    git status
+  
+  Unknown files for git that should be part of the patch have to be added with:
+    git add FILE
+  
+  If you could resolve the conflicts run:
+    git gq continue
+  
+  To abort the operation without resolving run:
+    git gq abort
+
+And here is the content of the reject file, 'sample.c.rej' in this case::
+
+  diff a/sample.c b/sample.c	(rejected hunks)
+  @@ -4,8 +4,8 @@ int main(int argc, char *argv[])
+     {
+       int i;
+   
+  -    printf("number of arguments: %d\n", argc);
+       printf("program name: %s\n", argv[0]);
+  +    /* iterate over all command line arguments: */
+       for(i=1; i<argc; i++)
+         printf("arg no %2d: %s\n", i, argv[i]);
+       return 0;
+
+In our example here, while the patch was moved to the patch queue, this line::
+
+  printf("number of arguments: %d\n", argc);
+
+had been changed to::
+
+  printf("My number of arguments: %d\n", argc);
+
+So the line to remove by the patch wasn't found and we had a conflict. If we
+open both, the original file 'sample.c' and the reject file 'sample.c.rej' in
+any text editor, we can easily see what the patch intended to do and apply the
+changes manually.
+
+This is called *resolving a conflict*. You have to go through all reject files,
+there may be more than one and resolve all conflicts.
+
+After you are finished, run::
+
+  {MYNAME_GIT} continue
+
+This finishes the operation and tells git that the conflict was resolved. You
+*must not* run `git am continue` yourself, `{MYNAME_GIT} continue` already
+does this for you.
+
+If you cannot resolve conflicts because the reject files are too long or
+complicated, you can abort the last command with::
+
+  {MYNAME_GIT} abort
+
+In this case you may have to compare two versions of files and apply changes
+directly.
+'''
+
+DOC_EXAMPLES=\
+'''Example Workflows
+-----------------
+
+Local development
++++++++++++++++++
+
+Assuming you have cloned another git repository and want to start development
+here. With `{MYNAME_GIT}` you don't need to create a local branch. Just run::
+
+  {MYNAME_GIT} init
+
+This sets up the `{MYNAME_GIT}` directory and marks the current HEAD revision
+as parent revision.
+
+You can now begin to make changes. You create preliminary commits with::
+
+  {MYNAME_GIT} new NAME
+
+where NAME should be a one line string with no spaces in it. This is a
+preliminary log message that you can later update and extend. Every time you
+make more changes you can either:
+
+- run `{MYNAME_GIT} new` to create a new commit
+- run `{MYNAME_GIT} refresh` to update the topmost commit
+- run the `git add..` and `git commit` as usual to create a new commit
+
+You can see what patches are applied with::
+
+  {MYNAME_GIT} applied
+
+You can see what patches are unapplied with::
+
+  {MYNAME_GIT} unapplied
+
+When you want to finalize your commits and update commit messages, first move
+all of them as patches to the patch queue::
+
+  {MYNAME_GIT} pop -a
+
+Then for each patch, to provide a proper log message, run::
+
+  {MYNAME_GIT} push
+  {MYNAME_GIT} refresh -e
+
+You can also combine ('fold') an unapplied patch with::
+
+  {MYNAME_GIT} fold PATCH
+
+Inspect the applied patches with::
+
+  {MYNAME_GIT} glog
+
+When you are finished for all patches you can finalize these changes by setting
+the parent version to the current HEAD version::
+
+  {MYNAME_GIT} parent HEAD
+
+You are now ready to publish your patches.
+
+Updates from a remote repository
+++++++++++++++++++++++++++++++++
+
+When you have created local patches and want to update your repository with new
+patches from a remote repository, the usual way would be to run
+`git pull` and then `git merge` or `git rebase -i`.
+
+With the patch queue, there is now another way to handle this. Before pulling
+patches from the public repository, put all your local changes on the patch
+queue::
+
+  {MYNAME_GIT} pop -a
+
+As a safety measure backup your patch queue with::
+
+  {MYNAME_GIT} backup
+
+Now pull patches from the remote repository::
+
+  git pull
+
+Reset the parent revision to the new repository HEAD::
+
+  {MYNAME_GIT} parent HEAD
+
+Finally re-apply all your patches::
+
+  {MYNAME_GIT} push -a
+
+If you get messages about conflicts ("rejects") you have to resolve them. See
+further above at "Conflicts and conflict resolution".
+
+This workflow allows to resolve conflicts step by step which is usually easier
+than resolving all conflicts that arise from `git pull` all at once. Also the
+reject files created for each conflict clearly show which change was intended
+at the patch which is usually easier than the common 3-way merge.
+'''
+
+DOC_REJECT_MESSAGE=\
+f'''git gq help on conflicts
+------------------------
+
+Resolve this conflict by looking at the *.rej files.
+For files that were not found there is no reject file, then look at the patch with:
+  less {DIFF_FILENAME}
+
+To see the state of your repo run:
+  git status
+
+Unknown files for git that should be part of the patch have to be added with:
+  git add FILE
+
+If you could resolve the conflicts run:
+  {MYNAME_GIT} continue
+
+To abort the operation without resolving run:
+  {MYNAME_GIT} abort'''
+
+# ---------------------------------------------------------
+# globals
+# ---------------------------------------------------------
+
+gbl_verbose= None
+gbl_dry_run= None
+gbl_parser= None
+
+# ---------------------------------------------------------
+# exceptions
+# ---------------------------------------------------------
+
+class GitGqException(Exception):
+    """Exception raised for errors in git-gq.
+
+    Attributes:
+        message -- explanation of the error
+    """
+
+    def __init__(self, message):
+        self.message = message
+        super().__init__(self.message)
+
+# ---------------------------------------------------------
+# date utilities
+# ---------------------------------------------------------
+
+def portable_isodate():
+    """an ISO date without colons."""
+    return \
+        datetime.datetime.now().isoformat(timespec="seconds").replace(":","")
+
+# ---------------------------------------------------------
+# shell utilities
+# ---------------------------------------------------------
+
+def errprint(*args, **kwargs):
+    """print to stderr."""
+    kwargs["file"]= sys.stderr
+    print(*args, **kwargs)
+
+def sh_file_exists(file):
+    """check if a file exists.
+
+    May raise GitGqException
+    """
+    if not os.path.isfile(file):
+        raise GitGqException(f"Error, file '{file}' doesn't exist")
+
+def sh_dir_exists(dir_):
+    """check if a directory exists.
+
+    May raise GitGqException
+    """
+    if not os.path.isdir(dir_):
+        raise GitGqException(f"Error, directory '{dir_}' doesn't exist")
+
+def sh_directories(dir_):
+    """return all directories in dir_."""
+    return [d for d in os.listdir(dir_) if os.path.isdir(d)]
+
+def sh_rm_f(*arg):
+    """force-remove a file."""
+    for file in arg:
+        if not os.path.exists(file):
+            continue
+        os.remove(file)
+
+def sh_rm_rf(*arg):
+    """force-remove directories, dangerous !!!"""
+    for dir_ in arg:
+        if not os.path.isdir(dir_):
+            continue
+        shutil.rmtree(dir_)
+
+def sh_file_to_file(in_file, out_file, do_append):
+    """append one file to another.
+
+    do_append: True or False
+    """
+    if do_append:
+        mode= "at"
+    else:
+        mode= "wt"
+    with open(out_file, mode, encoding= "utf-8") as fh_w:
+        with open(in_file, "rt", encoding= "utf-8") as fh_r:
+            # note: each read line has an '\n' at the end:
+            for l in fh_r:
+                fh_w.write(l)
+
+def sh_text_to_file(lines, out_file, do_append, add_final_newline= False):
+    """create a text file."""
+    if do_append:
+        mode= "at"
+    else:
+        mode= "wt"
+    if isinstance(lines, str):
+        text= lines
+    else:
+        text="\n".join(lines)
+    with open(out_file, mode, encoding="utf-8") as fh_w:
+        fh_w.write(text)
+        if add_final_newline:
+            fh_w.write("\n")
+
+def sh_file_to_list(file):
+    """read a file, return a list of lines."""
+    with open(file, "rt", encoding="utf-8") as fh:
+        return fh.readlines()
+
+def sh_file_to_list_filter(file, func):
+    """read a file, return a list of lines."""
+    out= []
+    with open(file, "rt", encoding="utf-8") as fh:
+        for line in fh:
+            if func(line):
+                out.append(line)
+    return out
+
+def sh_file_grep(regexp, file):
+    """return matching lines as a list."""
+    rx= re.compile(regexp)
+    lines=[]
+    with open(file, "rt", encoding="utf-8") as fh:
+        for line in fh:
+            if rx.match(line):
+                lines.append(line)
+    return lines
+
+def sh_prepend_line(str_, file):
+    """prepend a line to a file.
+
+    Note: str_ must end with '\n'.
+    """
+    if not os.path.exists(file):
+        with open(file, "wt", encoding="utf-8") as fh:
+            fh.write(str_)
+    else:
+        tempfile= f"{file}.bak"
+        os.rename(file, tempfile)
+        sh_text_to_file(str_, file, do_append= False)
+        sh_file_to_file(tempfile, file, do_append= True)
+        os.remove(tempfile)
+
+def sh_file_filter(str_, file, file_out):
+    """remove all lines that are equal to str_.
+
+    file_out==file is allowed !
+
+    Note: str_ must end with '\n'.
+    """
+    if not os.path.exists(file):
+        raise AssertionError(f"Error, file {file} doesn't exist.")
+    if file_out==file:
+        file_in= f"{file}.bak"
+        os.rename(file, file_in)
+    else:
+        file_in= file
+    with open(file_in, "rt", encoding="utf-8") as fh_r:
+        with open(file_out, "wt", encoding="utf-8") as fh_w:
+            for line in fh_r:
+                if line==str_:
+                    continue
+                fh_w.write(line)
+    if file_out==file:
+        os.remove(file_in)
+
+def sh_file_linenumbers(file):
+    """count line numbers in a file."""
+    cnt=0
+    with open(file, "rt", encoding="utf-8") as fh:
+        for _ in fh:
+            cnt+=1
+    return cnt
+
+def sh_file_head(head_no, invert, file, file_out):
+    """works like 'head -n head_no'.
+
+    With invert, select all lines 'head -n head_no' would no select.
+
+    If file_out is not None, put results in file_out.
+    """
+    # pylint: disable=too-many-branches
+    if not os.path.exists(file):
+        raise AssertionError(f"Error, file {file} doesn't exist.")
+    if file_out==file:
+        file_in= f"{file}.bak"
+        os.rename(file, file_in)
+    else:
+        file_in= file
+    # first line is line 1 per definition
+    line_no=0
+    lines=[]
+    fh_w= None
+    # pylint: disable=consider-using-with
+    if file_out:
+        fh_w= open(file_out, "wt", encoding="utf-8")
+    with open(file_in, "rt", encoding="utf-8") as fh:
+        if not file_out:
+            for line in fh:
+                line_no+= 1
+                if not invert:
+                    if line_no > head_no:
+                        break
+                else:
+                    if line_no <= head_no:
+                        continue
+                lines.append(line)
+        else:
+            for line in fh:
+                line_no+= 1
+                if not invert:
+                    if line_no > head_no:
+                        break
+                else:
+                    if line_no <= head_no:
+                        continue
+                fh_w.write(line)
+    if file_out:
+        fh_w.close()
+        if file_out==file:
+            os.remove(file_in)
+        return None
+    return lines
+
+# ---------------------------------------------------------
+# constants
+# ---------------------------------------------------------
+
+MYNAME_GIT="git gq"
+
+QUEUENAME="default"
+TOPPATCHDIR=".gqpatches"
+
+RX_TOPPPATCHDIR_FILES=re.compile(f'^{TOPPATCHDIR}[{os.sep}-]')
+
+RX_TOPPPATCHDIR=re.compile(f'^{TOPPATCHDIR}{os.sep}')
+
+RX_NUMBER=re.compile(r'^[0-9]+-')
+
+RX_HASH=re.compile(r'^[A-Fa-f0-9]{6,}$')
+RX_GITSTAT_MV=re.compile(r'^R[M ] .*-> (.*)')
+
+RX_RST_PLUS=re.compile(r'\++$')
+
+QUEUENAME="default"
+PATCHDIR=ojoin(TOPPATCHDIR, QUEUENAME)
+APPLIEDDIR=ojoin(PATCHDIR, "applied")
+SERIESFILE=ojoin(PATCHDIR, "series")
+PARENTFILE=ojoin(PATCHDIR, "parent")
+QUEUEFILE=ojoin(TOPPATCHDIR, "queue")
+
+
+ALL_COMMANDS={\
+    "abort", "applied", "backup", "bashcompletion", "change-order", "commands",
+    "conflict", "continue", "delete", "doc", "edit", "export", "fold", "glog",
+    "goto", "help", "import", "init", "man", "new", "parent", "pop", "push",
+    "qname", "record", "refresh", "restore",
+    "show", "unapplied"} # type: ignore
+
+# ---------------------------------------------------------
+# documentation functions
+# ---------------------------------------------------------
+
+def short_help_text(style):
+    """short help text generated by argparse."""
+    if gbl_parser is None:
+        raise AssertionError("gbl_parser not initialized")
+    if style not in ("rst", "txt"):
+        raise AssertionError(f"unknown style: {style}")
+    lines= gbl_parser.format_help().splitlines()
+    new= []
+    for line in lines:
+        if line=="options:":
+            # filter 'options:' always
+            continue
+        if style=="txt":
+            if RX_RST_PLUS.match(line):
+                continue
+        new.append(line)
+    return "\n".join(new)
+
+
+def print_doc(part):
+    """Print documentation."""
+    if part is not None:
+        if part not in ("overview", "implementation", "conflicts",
+                        "examples", "commandline"):
+            raise AssertionError(f"unknown part in print_doc: {part}")
+    if not part:
+        print(DOC_HEADING)
+    if (not part) or (part=="overview"):
+        print(DOC_OVERVIEW)
+    if (not part) or (part=="implementation"):
+        print(DOC_IMPLEMENTATION)
+    if (not part) or (part=="conflicts"):
+        print(DOC_CONFLICTS)
+    if (not part) or (part=="examples"):
+        print(DOC_EXAMPLES)
+    if (not part) or (part=="commandline"):
+        print("Command line interface\n----------------------")
+        print(short_help_text(style="rst"))
+
+def print_short_help():
+    """print short help."""
+    print(short_help_text(style="txt"))
+
+def print_reject_message():
+    """print reject message."""
+    print(DOC_REJECT_MESSAGE, file=sys.stderr)
+
+# ---------------------------------------------------------
+# system calls
+# ---------------------------------------------------------
+
+# standard set of environment variables here:
+_new_env = dict(os.environ)
+
+# Only on Unix-Like systems:
+# Ensure that language settings for called commands are english, keep current
+# character encoding:
+if os.name=="posix" and "LANG" in _new_env:
+    _l= _new_env["LANG"].split(".")
+    if len(_l)==2:
+        _l[0]= "en_US"
+        _new_env["LANG"]= ".".join(_l)
+
+def copy_env():
+    """create a new environment that the user may change."""
+    return dict(_new_env)
+
+# None
+# PIPE
+# filehandle
+
+def system_rc_io(cmd,
+                 stdout_par, stderr_par,
+                 env, verbose, dry_run):
+    """execute a command.
+
+    cmd: either a string or a list of strings
+
+    stdout_par:
+      - None         : do not capture 
+      - "PIPE"       : capture
+      - <filehandle> : write to file
+
+    sterr_par:
+      - None         : do not capture 
+      - "PIPE"       : capture
+      - <filehandle> : write to file
+
+    execute a command and return the programs output
+    may raise:
+    IOError(errcode,stderr)
+    OSError(errno,strerr)
+    ValueError
+
+    returns:
+      (stdout-output, stderr-output, returncode)
+    """
+    # pylint: disable=too-many-arguments
+    # pylint: disable=too-many-positional-arguments
+    def to_str(data):
+        """decode byte stream to unicode string."""
+        if data is None:
+            return None
+        return data.decode()
+    if dry_run or verbose:
+        print(">", cmd)
+        if dry_run:
+            return (None, None, 0)
+    if stdout_par is not None:
+        if isinstance(stdout_par, str):
+            if stdout_par=="PIPE":
+                stdout_par=subprocess.PIPE
+            else:
+                raise ValueError(f"stdout_par has wrong type: {stdout_par!r}")
+        # otherwise assume file-like object
+    if stderr_par is not None:
+        if isinstance(stderr_par, str):
+            if stderr_par=="PIPE":
+                stderr_par=subprocess.PIPE
+            else:
+                raise ValueError(f"stderr_par has wrong type: {stderr_par!r}")
+        # otherwise assume file-like object
+    if env is None:
+        env= _new_env
+
+    # pylint: disable=consider-using-with
+    p= subprocess.Popen(cmd, shell= isinstance(cmd, str),
+                        stdout=stdout_par, stderr=stderr_par,
+                        close_fds=True,
+                        env= env
+                       )
+    (child_stdout, child_stderr) = p.communicate()
+    # pylint: disable=E1101
+    #         "Instance 'Popen'has no 'returncode' member
+    return (to_str(child_stdout), to_str(child_stderr), p.returncode)
+
+def system_rc(cmd, catch_stdout, catch_stderr, env, verbose, dry_run):
+    """execute a command.
+
+    execute a command and return the programs output
+    may raise:
+    IOError(errcode,stderr)
+    OSError(errno,strerr)
+    ValueError
+
+    returns:
+      (stdout-output, stderr-output, returncode)
+    """
+    # pylint: disable=too-many-arguments
+    # pylint: disable=too-many-positional-arguments
+    stdout_par= None
+    if catch_stdout:
+        stdout_par= "PIPE"
+    stderr_par= None
+    if catch_stderr:
+        stderr_par= "PIPE"
+    return system_rc_io(cmd, stdout_par, stderr_par, env, verbose, dry_run)
+
+def system_io(cmd,
+              stdout_par, stderr_par,
+              env, verbose, dry_run):
+    """execute a command.
+
+    cmd: either a string or a list of strings
+
+    stdout_par:
+      - None         : do not capture 
+      - "PIPE"       : capture
+      - <filehandle> : write to file
+
+    sterr_par:
+      - None         : do not capture 
+      - "PIPE"       : capture
+      - <filehandle> : write to file
+
+    execute a command and return the programs output
+    may raise:
+    IOError(errcode,stderr)
+    OSError(errno,strerr)
+    ValueError
+
+    returns:
+      (stdout-output, stderr-output)
+    """
+    # pylint: disable=too-many-arguments
+    # pylint: disable=too-many-positional-arguments
+    (child_stdout, child_stderr, rc)= system_rc_io(cmd,
+                                                   stdout_par, stderr_par,
+                                                   env,
+                                                   verbose, dry_run)
+    if rc!=0:
+        # pylint: disable=no-else-raise
+        if stderr_par=="PIPE":
+            raise IOError(rc,
+                          f"cmd '{cmd}', errmsg '{child_stderr}'")
+        else:
+            raise IOError(rc,
+                          f"cmd '{cmd}', rc '{rc}'")
+    return (child_stdout, child_stderr)
+
+def system(cmd, catch_stdout, catch_stderr, env, verbose, dry_run):
+    """execute a command.
+
+    execute a command and return the programs output
+    may raise:
+    IOError(errcode,stderr) when the command failed
+    OSError(errno,strerr)
+    ValueError
+
+    returns:
+      (stdout-output, stderr-ouzput)
+    """
+    # pylint: disable=too-many-arguments
+    # pylint: disable=too-many-positional-arguments
+    (child_stdout, child_stderr, rc)= system_rc(cmd,
+                                                catch_stdout, catch_stderr,
+                                                env,
+                                                verbose, dry_run)
+    if rc!=0:
+        # pylint: disable=no-else-raise
+        if catch_stderr:
+            raise IOError(rc,
+                          f"cmd '{cmd}', errmsg '{child_stderr}'")
+        else:
+            raise IOError(rc,
+                          f"cmd '{cmd}', rc '{rc}'")
+    return (child_stdout, child_stderr)
+
+def system_simple(cmd):
+    """very simple system call."""
+    (_, _)= system(cmd,
+                   catch_stdout= False, catch_stderr= False,
+                   env= None, verbose= gbl_verbose, dry_run= gbl_dry_run)
+
+# ---------------------------------------------------------
+# utilities
+# ---------------------------------------------------------
+
+def unique_patch_name(patchname):
+    """generate unique filename for a patch.
+
+    May raise:
+    AssertionError
+    """
+    if not os.path.exists(ojoin(PATCHDIR, patchname)):
+        return patchname
+    cnt=0
+    while True:
+        cnt+= 1
+        if cnt > 1000:
+            raise AssertionError("unique_patch_name: loop limit")
+        temp_patchname= f"{cnt : 04d}-{patchname}"
+        if not os.path.exists(ojoin(PATCHDIR, temp_patchname)):
+            return temp_patchname
+
+def editor_dialog():
+    """return the name of the editor to use.
+
+    May raise GitGqException
+    """
+    editor= os.environ.get("EDITOR")
+    if not editor:
+        editor= os.environ.get("VISUAL")
+    if not editor:
+        print("Caution: No default editor is specified in environment ")
+        print("variables 'EDITOR' and 'VISUAL'.")
+        print("Use 'vi' instead ?")
+        print("Note that you can always abort editing in 'vi' with")
+        print("  <ESC> :qa!")
+        reply= input("Enter 'y' or 'Y' to continue, everything else aborts ")
+        if reply in ("y", "Y"):
+            editor= "vi"
+        else:
+            raise GitGqException("no editor selected")
+    return editor
+
+def prepend_seriesfile(patchfile):
+    """prepend a filename to the series file."""
+    sh_prepend_line(f"{patchfile}\n", SERIESFILE)
+
+def git_goto_repo_dir():
+    """change to top of git working copy.
+
+    May raise GitGqException
+    """
+    prev_dir=None
+    this_dir= os.getcwd()
+    while prev_dir != this_dir:
+        if os.path.isdir(".git"):
+            return this_dir
+        prev_dir= this_dir
+        os.chdir("..")
+        this_dir= os.getcwd()
+    raise GitGqException("Error, '.git' not found")
+
+# ---------------------------------------------------------
+# functions that call git
+# ---------------------------------------------------------
+
+def git_checkout(revision_spec):
+    """run git checkout"""
+
+    system_simple(("git", "checkout", revision_spec))
+
+def git_rev_parse(revision_spec):
+    """runs git rev-parse on revision_spec.
+
+    returns:
+    revision 
+
+    May raise IOError
+    """
+    (out, _)= system(("git", "rev-parse", "--short", revision_spec),
+                     catch_stdout= True, catch_stderr= False,
+                     env= None, verbose= gbl_verbose, dry_run= gbl_dry_run)
+    return out.strip()
+
+def git_show(revspec):
+    """git show."""
+    system_simple(("git", "show", revspec))
+
+def git_glog():
+    """git graphlog."""
+    system_simple(("git", "log", "--graph", "--all", "--decorate"))
+
+def git_add(filelist):
+    """add a list of files to git."""
+
+    cmd_lst= ["git", "add"]
+    cmd_lst.extend(filelist)
+    system_simple(cmd_lst)
+
+def git_rm_all():
+    """remove all tracked files."""
+
+    cmd_lst= ["git", "rm", "-r", "*"]
+    system_simple(cmd_lst)
+
+def git_select_changes():
+    """Interactively select files to add to stash."""
+    system_simple(("git", "add", "--patch"))
+
+def git_check_exists(revision):
+    """checks if a revision exists.
+
+    returns:
+    - True: revision exists
+    - False: revision doesn't exist
+    """
+    (_, _, rc)= system_rc(("git", "cat-file", "-e", revision),
+                          catch_stdout= True, catch_stderr= True,
+                          env= None,
+                          verbose= gbl_verbose, dry_run= gbl_dry_run)
+    return rc==0
+
+def git_unknown_files(file):
+    """finds files unknown to git, creates <file>."""
+
+    (out, _)= system(("git", "status", "--porcelain"),
+                     catch_stdout= True, catch_stderr= False,
+                     env= None, verbose= gbl_verbose, dry_run= gbl_dry_run)
+    with open(file, "wt", encoding="utf-8") as fh_w:
+        for l in out.splitlines():
+            if not l.startswith("??"):
+                continue
+            unknown_file= l[2:]
+            if RX_TOPPPATCHDIR_FILES.match(unknown_file):
+                continue
+            fh_w.write(f"{unknown_file}\n")
+
+def git_uncommitted():
+    """returns list uncommited changes."""
+
+    (out, _)= system(("git", "status", "--porcelain=v1"),
+                     catch_stdout= True, catch_stderr= True,
+                     env= None, verbose= gbl_verbose, dry_run= gbl_dry_run)
+    filelist=[]
+    for l in out.splitlines():
+        if l.startswith("??"):
+            # unknown file
+            continue
+        file= l[2:]
+        filelist.append(file)
+    return sorted(filelist)
+
+def git_head_track_error():
+    """check if git is tracking .gqpatches."""
+
+    (out, _)= system(("git", "show", "HEAD", "--stat"),
+                     catch_stdout= True, catch_stderr= False,
+                     env= None, verbose= gbl_verbose, dry_run= gbl_dry_run)
+    for line in out.splitlines():
+        if RX_TOPPPATCHDIR_FILES.match(line):
+            errtext=[f"FATAL Error, somehow git is tracking {TOPPATCHDIR}.",
+                     f"'{MYNAME_GIT} pop' would remove {TOPPATCHDIR}.",
+                      "Do the following to fix this:",
+                     f"  git reset HEAD~1 {TOPPATCHDIR}*",
+                      "  git commit -C HEAD --amend",
+                     ""]
+            raise GitGqException("\n".join(errtext))
+
+
+def git_head_revision():
+    """returns hash of head revision."""
+    (out, _)= system(("git", "rev-parse", "--short", "HEAD"),
+                     catch_stdout= True, catch_stderr= False,
+                     env= None, verbose= gbl_verbose, dry_run= gbl_dry_run)
+    return out.strip()
+
+def git_revision_1():
+    """returns hash of first revision."""
+    (out, _)= system(("git", "rev-list", "--max-parents=0",
+                     "--format='%h'", "HEAD"),
+                     catch_stdout= True, catch_stderr= False,
+                     env= None, verbose= gbl_verbose, dry_run= gbl_dry_run)
+    return out.splitlines()[-1]
+
+def git_head_log():
+    """Get the pure full log message of the HEAD patch."""
+
+    (out, _)= system(("git", "log", "-1", "--pretty=%B"),
+                     catch_stdout= True, catch_stderr= False,
+                     env= None, verbose= gbl_verbose, dry_run= gbl_dry_run)
+    return out.strip()
+
+def git_head_subject():
+    """Get the subject of the HEAD patch."""
+
+    (out, _)= system(("git", "log", "-1", "--pretty=%s"),
+                    catch_stdout= True, catch_stderr= False,
+                    env= None, verbose= gbl_verbose, dry_run= gbl_dry_run)
+    return out.strip()
+
+def git_head_date():
+    """Get the date of the HEAD patch."""
+
+    (out, _)= system(("git", "log", "-1", "--pretty=%aI"),
+                     catch_stdout= True, catch_stderr= False,
+                     env= None, verbose= gbl_verbose, dry_run= gbl_dry_run)
+    return out.strip()
+
+def git_head_author():
+    """Get the author of the HEAD patch."""
+
+    (out, _)= system(("git", "log", "-1", "--pretty='%aN <%aE>'"),
+                     catch_stdout= True, catch_stderr= False,
+                     env= None, verbose= gbl_verbose, dry_run= gbl_dry_run)
+    return out.strip()
+
+def _git_oneline_log(revision_spec, lines,
+                     print_to_console,
+                     use_long_hash):
+    """prints one-line log, possible with color, to the console."""
+
+    cmd_lst=["git", "log"]
+    if print_to_console:
+        cmd_lst.append("--color=auto")
+    if not use_long_hash:
+        cmd_lst.append("--oneline")
+    else:
+        cmd_lst.append("--pretty=oneline")
+    if lines:
+        cmd_lst.append(f"-{lines}")
+    if (revision_spec != "NULL") and revision_spec:
+        cmd_lst.append(revision_spec)
+    if not print_to_console:
+        (out, _)= system(cmd_lst,
+                         catch_stdout= True, catch_stderr= False,
+                         env= None,
+                         verbose= gbl_verbose, dry_run= gbl_dry_run)
+        return out.splitlines()
+    my_env= copy_env()
+    my_env["GIT_PAGER"]="cat"
+    (_, _)= system(cmd_lst,
+                   catch_stdout= False, catch_stderr= False,
+                   env= my_env,
+                   verbose= gbl_verbose, dry_run= gbl_dry_run)
+    return None
+
+def applied_log(parent, lines, print_to_console, use_long_hash):
+    """show all logs for revisions *after* parent."""
+    if parent!="NULL":
+        revspec= f"{parent}.."
+    else:
+        revspec= parent
+    return _git_oneline_log(revspec, lines, print_to_console, use_long_hash)
+
+def repo_log(revspec, lines, print_to_console, use_long_hash):
+    """show all logs for revisions from (including) revspec."""
+    return _git_oneline_log(revspec, lines, print_to_console, use_long_hash)
+
+def _git_format_patch(revision_spec, lines, output_dir):
+    """run git format-patch"""
+    cmd_lst=["git", "format-patch", "-o", output_dir]
+
+    if lines:
+        cmd_lst.append(f"-{lines}")
+    if revision_spec=="NULL":
+        cmd_lst.append("--root")
+    else:
+        cmd_lst.append(revision_spec)
+    (out, _)= system(cmd_lst,
+                     catch_stdout= True, catch_stderr= False,
+                     env= None, verbose= gbl_verbose, dry_run= gbl_dry_run)
+    return out.splitlines()
+
+def git_format_applied(parent, lines, output_dir):
+    """run git format-patch"""
+    if parent!="NULL":
+        revspec= f"{parent}.."
+    else:
+        revspec= parent
+    return _git_format_patch(revspec, lines, output_dir)
+
+def git_format_patches(first_rev, lines, output_dir):
+    """run git format-patch"""
+    if first_rev=="NULL":
+        raise AssertionError
+    return _git_format_patch(first_rev, lines, output_dir)
+
+def git_print_oneline_log_single(revision_spec):
+    """prints one-line log, possible with color, to the console."""
+
+    my_env= copy_env()
+    my_env["GIT_PAGER"]="cat"
+    system_simple(("git", "log", "--color=auto", "--oneline", "-1",
+                   revision_spec))
+
+def git_apply(filename):
+    """git apply."""
+    system_simple(("git", "apply", filename))
+
+def git_am_simple(patch_file_glob):
+    """apply patchfiles from a file-glob.
+
+    May raise IOError
+    """
+    system_simple(f"git am {patch_file_glob}")
+
+def git_am(patchfile):
+    """apply a patch file.
+
+    May raise IOError
+    """
+    system_simple(("git", "am", "--reject", patchfile))
+
+def git_am_continue():
+    """continue to apply a patch file.
+
+    May raise IOError
+    """
+    system_simple(("git", "am", "--continue"))
+
+def git_am_abort():
+    """abort to apply a patch file.
+
+    May raise IOError
+    """
+    system_simple(("git", "am", "--abort"))
+
+def git_revert():
+    """revert all changes."""
+    system_simple(("git", "checkout", "--", "."))
+
+def git_conflict_diff(file):
+    """return conflict diff.
+
+    file: if not None, append to this file
+    may raise IOError
+    """
+
+    cmd_lst= ("git", "am", "--show-current-patch=diff")
+    stdout_par= "PIPE"
+    # pylint: disable=consider-using-with
+    if file is not None:
+        stdout_par= open(file, "wt", encoding= "utf-8")
+    try:
+        (out, _)= system_io(cmd_lst,
+                            stdout_par, None,
+                            env= None,
+                            verbose= gbl_verbose, dry_run= gbl_dry_run)
+    finally:
+        if file is not None:
+            stdout_par.close()
+    if file is not None:
+        return []
+    return out.splitlines()
+
+def git_reset_hard(revspec):
+    """run git reset --hard."""
+
+    system_simple(("git", "reset", "--hard", revspec))
+
+def git_amend_null():
+    """create NULL revision with git commit --amend."""
+
+    cmd_list=["git", "commit", "--amend", "-m", "NULL",
+              "--reset-author", "--allow-empty"]
+    system_simple(cmd_list)
+
+def git_amend(log_message, log_message_file, log_message_template,
+              date, author):
+    """simple amend of HEAD revision."""
+    cmd_list=["git", "commit", "--amend"]
+    if log_message:
+        cmd_list.extend(["-m", log_message])
+    elif log_message_template:
+        cmd_list.extend(["-t", log_message_file])
+    elif log_message_file:
+        cmd_list.extend(["-F", log_message_file])
+    if date:
+        cmd_list.extend(["-date", date])
+    if author:
+        cmd_list.extend(["-author", author])
+    system_simple(cmd_list)
+
+# ---------------------------------------------------------
+# other functions
+# ---------------------------------------------------------
+
+def at_null_revision():
+    """returns if we are at the null revision."""
+    return git_head_subject() == "NULL"
+
+#def git_rm_reject_files():
+#    """remove all files named *.rej that are not tracked by git."""
+#    (out, _)= system(("git", "ls-files", ".", "--exclude-standard",
+#                     "--others", "--exclude", f"{TOPPATCHDIR}*"),
+#                     catch_stdout= True, catch_stderr= False,
+#                     env= None, verbose= gbl_verbose, dry_run= gbl_dry_run)
+#    for line in out.splitlines():
+#        if line.endswith(".rej"):
+#            sh_rm_f(line)
+
+def git_add_changes(add_unknown_files):
+    """add only changed files to stash.
+
+    Does not add:
+    - unknown files (depending on add_unknown_files)
+    - all files starting with $TOPPATCHDIR
+    - all files ending with '.rej'
+    - renames: the old files that are removed, these are already in git stash
+    sample output from git --porcelain:
+     M bin/git-gq
+     M test/Makefile
+     M test/TESTS
+    RM test/git_gq_dump.ok -> test/git_gq_show.ok
+    RM test/git_gq_dump.sh -> test/git_gq_show.sh
+    ?? .gqpatches-2025-06-07T172509.tgz
+    ?? .gqpatches/
+    """
+    cmd_list= ["git", "status", "--porcelain"]
+    if not add_unknown_files:
+        # do not show unknown files:
+        cmd_list.append("-uno")
+
+    (out, _)= system(cmd_list,
+                     catch_stdout= True, catch_stderr= True,
+                     env= None, verbose= gbl_verbose, dry_run= gbl_dry_run)
+    filelist= []
+    for line in out.splitlines():
+        m= RX_GITSTAT_MV.match(line)
+        if m:
+            line= m.group(1)
+        file= line[3:] # remove leading flags
+        m= RX_TOPPPATCHDIR_FILES.match(file)
+        if m:
+            continue
+        filelist.append(file)
+    git_add(filelist)
+
+def _new_unknown_files(oldlist_file, newlist_file):
+    """return list of new unknown files for git."""
+    cmd_list= ('diff', oldlist_file, newlist_file)
+    (out, _, rc)= system_rc(cmd_list,
+                            catch_stdout= True, catch_stderr= False,
+                            env= None,
+                            verbose= gbl_verbose, dry_run= gbl_dry_run)
+    # Note: rc==1 means that the files are different
+    if rc not in (0, 1):
+        raise IOError(rc,
+                      f"cmd '{cmd_list}', rc '{rc}'")
+
+    lst= []
+    for l in out.splitlines():
+        if not l.startswith(">"):
+            continue
+        lst.append(l[1:].lstrip())
+    return lst
+
+def rm_new_unknown_files(file1, file2):
+    """remove new unknown files."""
+
+    for f in _new_unknown_files(file1, file2):
+        os.remove(f)
+
+def add_new_unknown_files(file1, file2):
+    """add new files to git."""
+
+    git_add(_new_unknown_files(file1, file2))
+
+def log_template(logmessage, logmessage_file, outputfile, add_preamble):
+    """create a template file for a log message."""
+
+    sh_rm_f(outputfile)
+    if add_preamble:
+        sh_text_to_file("*** Please review and change this log message\n",
+                        outputfile, do_append= True)
+    if logmessage:
+        sh_text_to_file(logmessage, outputfile, do_append= True)
+    if logmessage_file:
+        sh_file_to_file(logmessage_file, outputfile, do_append= True)
+
+def make_head_logfile(outfile, add_preamble):
+    """create or append file with HEAD log message."""
+
+    if add_preamble:
+        sh_text_to_file("*** Please review and change this log message\n",
+                        outfile, do_append= False)
+    else:
+        sh_text_to_file(git_head_log(), outfile, do_append= False)
+
+def check_uncomitted(commandname, force):
+    """check for uncomitted changes.
+
+    commandname: either 'push' or 'pop'
+
+    May raise:
+    AssertionError
+    GitGqException
+    """
+    if force:
+        return
+    if not git_uncommitted():
+        return
+    errtext=["Error, there are uncomitted changes.",
+             "You may:",
+             "- Run this command with --force"]
+    if commandname == "push":
+        errtext.append("  CAUTION: You may get conflicts with this option.")
+    elif commandname == "pop":
+        errtext.append("  CAUTION: all your uncomitted changes will "
+                       "be lost with this option.")
+    else:
+        raise AssertionError(f"unknown commandname: {commandname}")
+    errtext.append(f"- Create a new patch with '{MYNAME_GIT} new PATCHNAME' "
+                   "and run this command again.")
+    errtext.append("")
+    raise GitGqException("\n".join(errtext))
+
+def mark_conflict(patchname):
+    """mark that a conflict exists."""
+
+    sh_text_to_file(patchname, CONFLICT_FILENAME, do_append= False)
+    git_conflict_diff(DIFF_FILENAME)
+
+def conflict_patch():
+    """return name of conflicting patch."""
+
+    return sh_file_to_list(CONFLICT_FILENAME)[0]
+
+def clear_conflict():
+    """clean conflict."""
+
+    sh_rm_f(CONFLICT_FILENAME, DIFF_FILENAME)
+
+def conflict_exists():
+    """check if a conflict exists."""
+
+    return os.path.exists(CONFLICT_FILENAME)
+
+def conflict_message():
+    """message for a conflict."""
+    #return "Error, an unresolved conflict exists.\n" + DOC_REJECT_MESSAGE
+    return "\n"+DOC_REJECT_MESSAGE
+
+def check_conflict():
+    """raise GitGqException if conflict exists."""
+    if conflict_exists():
+        raise GitGqException(conflict_message())
+
+def git_mk_changes_files(only_diff_patch):
+    """create changes files that help editing a log message.
+
+    create files:
+    TOPPATCHDIR/HEAD.patch : all changes of the HEAD patch
+    TOPPATCHDIR/DIFF.patch : all changes in the working copy not yet
+    """
+    with open(DIFF_FILENAME, "wt", encoding= "utf8") as fh:
+        (_, _)= system_io(("git", "diff", "--cached"),
+                          fh, None,
+                          env= None,
+                          verbose= gbl_verbose, dry_run= gbl_dry_run)
+    if not only_diff_patch:
+        with open(HDIFF_FILENAME, "wt", encoding="utf-8") as fh:
+            (_, _)= system_io(("git", "show", "HEAD"),
+                              fh, None,
+                              env= None,
+                              verbose= gbl_verbose, dry_run= gbl_dry_run)
+
+def git_rm_changes_files():
+    """remove changes files."""
+    sh_rm_f(DIFF_FILENAME, HDIFF_FILENAME)
+
+def get_parent(exist_test, use_exception):
+    """get parent revision.
+
+    May raise:
+    AssertionError
+    GitGqException
+    """
+    if not os.path.exists(PARENTFILE):
+        raise AssertionError(f"Error, {PARENTFILE} does not exist.")
+    lines= sh_file_to_list(PARENTFILE)
+    if len(lines)!=1:
+        raise AssertionError(f"unexpected lineno: {len(lines)}")
+    parent= lines[0]
+    hash_= None
+    if parent!="NULL":
+        hash_= parent.split(maxsplit=1)[0]
+        if exist_test:
+            if not git_check_exists(hash_):
+                if not use_exception:
+                    return (None, parent)
+                raise GitGqException(f"Error, parent revision {hash_} "
+                                     f"doesn't exist in repository")
+    return (hash_, parent)
+
+def find_single_unapplied_patch(regexp):
+    """finds a unique unapplied patch.
+    
+    if regexp is None, take the TOP patch.
+
+    returns: 
+      matching line if found
+    in case of an error, the function prints an error message to stderr.
+
+    May raise:
+    GitGqException
+    """
+    sh_file_exists(SERIESFILE)
+    if os.path.getsize(SERIESFILE)==0:
+        raise GitGqException("Error, there are no unapplied patches.")
+    if not regexp:
+        return sh_file_head(1, False, SERIESFILE, None)[0].strip()
+    matchlines= sh_file_grep(regexp, SERIESFILE)
+    if not matchlines:
+        raise GitGqException(f"Error, no patches match '{regexp}'.")
+    if len(matchlines)!=1:
+        raise GitGqException(f"Error, multiple patches match '{regexp}'.")
+    return matchlines[0].strip()
+
+def find_first_unapplied_patch(regexp):
+    """finds unapplied patch.
+
+    regexp: regular expression or empty string
+
+    returns:
+    the patch if found
+
+    May raise:
+    GitGqException
+    """
+    sh_file_exists(SERIESFILE)
+    if os.path.getsize(SERIESFILE)==0:
+        raise GitGqException("Error, there are no unapplied patches.")
+    if not regexp:
+        return sh_file_head(1, False, SERIESFILE, None)[0]
+    return sh_file_grep(regexp, SERIESFILE)[0]
+
+def find_first_applied_patch(regexp):
+    """Find applied patch, return hash key.
+
+    regexp: regular expression or empty string
+
+    returns:
+    hash if found
+
+    May raise:
+    GitGqException
+    """
+    (parent_hash, _)= get_parent(exist_test= True, use_exception= True)
+    use_long_hash= RX_HASH.match(regexp) is not None
+    logs= applied_log(parent_hash, None,
+                      print_to_console= False,
+                      use_long_hash= use_long_hash)
+    if not use_long_hash:
+        rx_regexp= re.compile(regexp)
+    else:
+        rx_regexp= re.compile('^'+regexp)
+    found= ""
+    for log in logs:
+        if rx_regexp.match(log):
+            found= log
+            break
+    if not found:
+        raise GitGqException(f"Error, patch '{regexp}' not found.")
+    hash_= found.split(maxsplit=1)[0]
+    return git_rev_parse(hash_)
+
+def find_head_patch(regexp):
+    """looks if the HEAD patch matches pattern.
+
+    returns:
+      hash key if found
+      None if not found
+
+    """
+    (out, _)= system(("git", "log", "--oneline", "-1"),
+                     catch_stdout= True, catch_stderr= False,
+                     env= None, verbose= gbl_verbose, dry_run= gbl_dry_run)
+    rx_regexp= re.compile(regexp)
+    line= out.strip()
+    if not rx_regexp.match(line):
+        return None
+    return line.split(maxsplit=1)[0]
+
+def dump_patch_file(file):
+    """print to console."""
+    if sys.stdout.isatty():
+        # We're running in a real terminal
+        system_simple(f"colordiff < {file} | less -R")
+    else:
+        # You're being piped or redirected
+        system_simple(("cat", file))
+
+def save_applied_patches():
+    """save all applied patches."""
+
+    (parent_hash, _)= get_parent(exist_test= True, use_exception= True)
+    head_rev= git_head_revision()
+    sh_rm_rf(APPLIEDDIR)
+    if head_rev != parent_hash:
+        os.mkdir(APPLIEDDIR)
+        # Note: printing the files here is only for compatibility with the old
+        # git-gq bash implementation and should be removed in the future:
+        files= git_format_applied(parent_hash, None, APPLIEDDIR)
+        print("\n".join(files))
+
+def del_applied_patches():
+    """delete applied patches dir created by save_applied_patches()."""
+    shutil.rmtree(APPLIEDDIR)
+
+def select_queue(queue):
+    """modifies global variables for a new queue.
+
+    modified:
+    QUEUENAME, PATCHDIR, SERIESFILE, PARENTFILE
+    """
+    # pylint: disable= global-statement
+    global QUEUENAME
+    global PATCHDIR
+    global APPLIEDDIR
+    global SERIESFILE
+    global PARENTFILE
+    QUEUENAME= queue
+    PATCHDIR= ojoin(TOPPATCHDIR, QUEUENAME)
+    APPLIEDDIR= ojoin(PATCHDIR, "applied")
+    SERIESFILE= ojoin(PATCHDIR, "series")
+    PARENTFILE= ojoin(PATCHDIR, "parent")
+
+def qpop_check(force):
+    """check if qpop is allowed.
+
+    returns: 
+    - True : allowed
+    - False: not allowed
+
+    May raise:
+    GitGqException
+    """
+
+    git_head_track_error()
+    # may raise GitGqException:
+    check_uncomitted("pop", force)
+    # may raise GitGqException:
+    (parent_hash, parent)= get_parent(exist_test= True, use_exception= True)
+    if parent=="NULL":
+        # with PARENT==NULL, qpop is always allowed
+        if at_null_revision():
+            # NULL revision reached
+            return False
+        return True
+    head_rev= git_head_revision()
+    if parent_hash == head_rev:
+        return False
+    return True
+
+def qpop_one():
+    """a single qpop operation."""
+    orig_patchname= \
+        RX_TOPPPATCHDIR.sub("", git_format_patches("HEAD", 1, TOPPATCHDIR)[0])
+    patchname= RX_NUMBER.sub("", orig_patchname)
+    patchname= unique_patch_name(patchname)
+    os.rename(ojoin(TOPPATCHDIR, orig_patchname), ojoin(PATCHDIR, patchname))
+    prepend_seriesfile(patchname)
+    headrev= git_head_revision()
+    rev1= git_revision_1()
+    if headrev == rev1:
+        # special treatment for first revision, create a "zero revision" patch
+        # by deleting all files and amend the first patch accordingly:
+        git_rm_all()
+        git_amend_null()
+    else:
+        git_reset_hard('HEAD~1')
+
+def qpush_specified(patch, force):
+    """push a patch.
+
+    if patch is <None>, push the TOP patch from the patch queue.
+
+    May raise GitGqException
+    """
+    check_uncomitted("push", force)
+    patchname= find_single_unapplied_patch(patch)
+    sh_text_to_file(patchname, ojoin(PATCHDIR, "PUSH"),
+                    do_append= False, add_final_newline= True)
+    sh_file_exists(SERIESFILE)
+    if os.path.getsize(SERIESFILE)==0:
+        raise GitGqException("Error, there are no unapplied patches.")
+    # remove PATCHNAME from SERIESFILE:
+    if patch is None:
+        # remove first patch
+        sh_file_head(1, True, SERIESFILE, f"{SERIESFILE}.new")
+    else:
+        # remove line with the patchname:
+        sh_file_filter(f"{patchname}\n", SERIESFILE, f"{SERIESFILE}.new")
+    git_unknown_files(UNKNOWN1_FILENAME)
+    try:
+        git_am(ojoin(PATCHDIR, patchname))
+    except IOError:
+        mark_conflict(patchname)
+        git_unknown_files(UNKNOWN2_FILENAME)
+        raise GitGqException(conflict_message()) from None
+    clear_conflict()
+    sh_rm_f(ojoin(PATCHDIR, patchname), ojoin(PATCHDIR, "PUSH").
+            ojoin(SERIESFILE))
+    os.rename(f"{SERIESFILE}.new", SERIESFILE)
+
+def qedit(patch):
+    """starts an editor."""
+    editor= editor_dialog()
+    patchname= find_single_unapplied_patch(patch)
+    system_simple((editor, ojoin(PATCHDIR, patchname)))
+
+def qdelete(patch):
+    """deletes a patch."""
+    patchname= find_single_unapplied_patch(patch)
+    os.remove(ojoin(PATCHDIR, patchname))
+    # remove line with the patchname:
+    sh_file_filter(f"{patchname}\n", SERIESFILE, SERIESFILE)
+
+def create_parentfile(revspec):
+    """create a parent file."""
+    if revspec=="NULL":
+        rev= revspec
+    else:
+        rev= git_rev_parse(revspec)
+        if rev == revspec:
+            print(f"queue parent revision set to {revspec}")
+        else:
+            print(f"queue parent revision set to {revspec} ({rev})")
+    log= repo_log(rev, 1, print_to_console= False,
+                  use_long_hash= False)
+    sh_text_to_file(log, PARENTFILE, do_append= False,
+                    add_final_newline= True)
+
+def manpage():
+    """display man page generated with rst2man."""
+    def testrun(cmd_list):
+        """test if prg. exists."""
+        (_, _, rc)= system_rc(cmd_list,
+                              catch_stdout= True, catch_stderr= True,
+                              env= None,
+                              verbose= gbl_verbose, dry_run= gbl_dry_run)
+        return rc==0
+    if not testrun(("rst2man", "--version")):
+        errprint("rst2man not found, display reStructuredText instead.")
+        if not testrun(("less", "-V")):
+            # use less pager for help:
+            system_simple(f"{__file__} doc | less")
+        else:
+            print_doc(None)
+    else:
+        system_simple(f"{__file__} doc | rst2man | man -l -")
+
+def git_gq_restore(restorefile, full):
+    """restore from file."""
+    if conflict_exists():
+        raise GitGqException("Error, an unresolved conflict exists.")
+    sh_file_exists(restorefile) # raises Exception if not
+    if os.path.isdir(TOPPATCHDIR):
+        print(f"{TOPPATCHDIR} already exists, is it okay to rename it to")
+        date_= portable_isodate()
+        new_dirname= f"{TOPPATCHDIR}-{date_}"
+        print(f"{new_dirname} ?")
+        reply= input("Enter 'y' or 'Y' to continue, everything else aborts ")
+        if not reply in ("y", "Y"):
+            raise GitGqException("Operation aborted")
+        os.rename(TOPPATCHDIR, new_dirname)
+    system_simple(("tar", "-xzf", restorefile))
+    queuename= sh_file_to_list(QUEUEFILE)[0].strip()
+    select_queue(queuename)
+    parent_exists= True
+    (parent_hash, parent)= get_parent(exist_test= True, use_exception= False)
+    if parent=="NULL":
+        print("Your PARENT revision is NULL.")
+        print(f"Originally applied patches are in {APPLIEDDIR}.")
+        # do not try to restore applied patches:
+        parent_exists= False
+    if parent_hash is None:
+        # parent hash couldn't be found in repository
+        parent_exists= False
+        print("Warning: this parent:")
+        print(f"{parent}")
+        print("does not exist in your repository.")
+        print("You have to set a valid parent with '{MYNAME_GIT} parent'.")
+    if parent_exists and full and (os.path.isdir(APPLIEDDIR)):
+        print("Restore originally applied patches in repository ?")
+        reply= input("Enter 'y' or 'Y' to continue, everything else skips.")
+        if reply in ("y", "Y"):
+            git_checkout(parent_hash)
+            # all patches here have a preceeding number and should already
+            # have the right order by this.
+            git_am_simple(f"{APPLIEDDIR}/*.patch")
+            del_applied_patches()
+        else:
+            print(f"Originally applied patches are in {APPLIEDDIR}.")
+
+def git_gq_backup():
+    """create a backup."""
+    save_applied_patches()
+    date_= portable_isodate()
+    system_simple(("tar", "-czf", f"{TOPPATCHDIR}-{date_}.tgz", TOPPATCHDIR))
+    del_applied_patches()
+
+
+def git_gq_init(name, rev):
+    """run git gq init."""
+    if name:
+        # pylint: disable= global-statement
+        global QUEUENAME
+        QUEUENAME= name
+    os.mkdir(TOPPATCHDIR)
+    os.mkdir(TEMPDIR)
+    if os.path.isdir(ojoin(TOPPATCHDIR, QUEUENAME)):
+        raise GitGqException(f"Error, patch queue '{QUEUENAME}' "
+                             f"already exists")
+    sh_text_to_file(QUEUENAME, QUEUEFILE, do_append= False,
+                    add_final_newline=True)
+    select_queue(QUEUENAME)
+    os.mkdir(ojoin(TOPPATCHDIR, QUEUENAME))
+    if not rev:
+        rev= "HEAD"
+    create_parentfile(rev)
+
+def git_gq_qname(qname):
+    """qname command."""
+    if qname is None:
+        # pylint: disable= global-statement
+        global QUEUENAME
+        QUEUENAME= sh_file_to_list(QUEUEFILE)[0].strip()
+        print("Existing queues:")
+        dirs_= [d for d in sh_directories(TOPPATCHDIR) if d != TEMP_BASEDIR]
+        print(" ".join(dirs_))
+        print()
+        print("Currently selected:")
+        print(f"\t{QUEUENAME}")
+        return
+    check_conflict()
+    if qname == TEMP_BASEDIR:
+        raise GitGqException(f"Error, '{TEMP_BASEDIR}' is a special name "
+                             f"and cannot be used as name for a queue.")
+    sh_text_to_file(QUEUENAME, QUEUEFILE, do_append= False,
+                    add_final_newline=True)
+    select_queue(QUEUENAME)
+    qdir= ojoin(TOPPATCHDIR, QUEUENAME)
+    if not os.path.isdir(qdir):
+        os.mkdir(qdir)
+        create_parentfile("HEAD")
+
+def git_gq_change_order():
+    """edit series file."""
+    check_conflict()
+    sh_file_exists(SERIESFILE)
+    if os.path.getsize(SERIESFILE)==0:
+        raise GitGqException("Error, there are no unapplied patches.")
+    editor= editor_dialog()
+    system_simple((editor, SERIESFILE))
+
+def git_gq_export(directory):
+    """export command."""
+    sh_dir_exists(directory)
+    (parent_hash, _)= get_parent(exist_test= True, use_exception= True)
+    git_format_applied(parent_hash, None, directory)
+
+def git_gq_import(patchfiles):
+    """import command."""
+    for f in patchfiles:
+        sh_file_exists(f)
+    for f in patchfiles:
+        new_= unique_patch_name(os.path.basename(f))
+        system_simple(("cp", "-a", f, ojoin(PATCHDIR, new_)))
+        prepend_seriesfile(new_)
+
+def git_gq_parent(revspec):
+    """parent command."""
+    if not revspec:
+        (_, parent)= get_parent(exist_test= True, use_exception= True)
+        print(parent)
+        return
+    check_conflict()
+    create_parentfile(revspec)
+
+def git_gq_new(name, no_add):
+    """new command."""
+    check_conflict()
+    if not no_add:
+        git_add_changes(add_unknown_files= False)
+    cmd_list= ["git", "commit"]
+    if not name:
+        # if this case an editor will (probably) be started
+        git_mk_changes_files(only_diff_patch= True)
+    else:
+        cmd_list.extend(["-m", name])
+    system_simple(cmd_list)
+    if not name:
+        git_rm_changes_files()
+
+def git_gq_record(name):
+    """record command."""
+    check_conflict()
+    git_select_changes()
+    cmd_lst= ["git", "commit"]
+    if name:
+        cmd_lst.extend(["-n", name])
+    system_simple(cmd_lst)
+
+def git_gq_refresh(message, file, edit, no_add):
+    """refresh command."""
+    check_conflict()
+    if (not message) and (not file):
+        make_head_logfile(LOG_FILENAME, edit)
+    else:
+        log_template(message, file, LOG_FILENAME, edit)
+    if not no_add:
+        git_add_changes(add_unknown_files= False)
+    if edit:
+        # create two files so the user can review changes while editing the
+        # log message:
+        git_mk_changes_files(only_diff_patch= False)
+    git_amend(None, LOG_FILENAME, edit, None, None)
+    if edit:
+        # remove the changes files:
+        git_rm_changes_files()
+    sh_rm_f(LOG_FILENAME)
+
+def git_gq_edit(name_regexp):
+    """edit command."""
+    qedit(name_regexp)
+
+def git_gq_delete(name_regexp):
+    """delete command."""
+    qdelete(name_regexp)
+
+def git_gq_pop(all_, force):
+    """pop command."""
+    check_conflict()
+    while True:
+        if not qpop_check(force):
+            if all_:
+                return
+            raise GitGqException("Error, 'pop' beyond parent revision "
+                                 "not allowed.")
+        qpop_one()
+        if not all_:
+            break
+
+def git_gq_push(all_, force):
+    """push command."""
+    check_conflict()
+    null_revision= at_null_revision()
+    while True:
+        qpush_specified(None, force)
+        if null_revision:
+            # must convert 'push' into a 'fold'
+            sh_text_to_file(git_head_log(), LOG_FILENAME, do_append= False)
+            sh_text_to_file(git_head_date(), DATE_FILENAME, do_append= False)
+            sh_text_to_file(git_head_author(), AUTHOR_FILENAME,
+                            do_append= False)
+            qpop_one()
+            patchname= find_first_unapplied_patch(None)
+            git_apply(ojoin(PATCHDIR, patchname))
+            # add changes because we are at the NULL revision:
+            date= sh_file_to_list(DATE_FILENAME)[0].strip()
+            author= sh_file_to_list(AUTHOR_FILENAME)[0].strip()
+            git_add_changes(add_unknown_files= True)
+            git_amend(None, LOG_FILENAME, False, date, author)
+            qdelete(patchname)
+            null_revision= False
+        if not all_:
+            break
+        sh_file_exists(SERIESFILE)
+        # with "--all", reaching the end is no error:
+        if os.path.getsize(SERIESFILE)==0:
+            break
+        null_revision= False
+
+def git_gq_goto(name_regexp, force):
+    """goto command."""
+    check_conflict()
+    patchname= None
+    try:
+        patchname= find_first_unapplied_patch(name_regexp)
+    except GitGqException:
+        pass
+    if patchname is not None:
+        while True:
+            qpush_specified(None, force)
+            try:
+                find_first_unapplied_patch(patchname)
+            except GitGqException:
+                break
+        return
+    patchname= find_first_applied_patch(name_regexp)
+    while True:
+        if find_head_patch(patchname) is not None:
+            break
+        qpop_one()
+
+def git_gq_fold(name_regexp, edit, force, no_add):
+    """fold command."""
+    check_conflict()
+    if os.path.isfile(ojoin(PATCHDIR, name_regexp)):
+        patchname= name_regexp
+    else:
+        patchname= find_single_unapplied_patch(name_regexp)
+    if at_null_revision():
+        raise GitGqException(f"Error, cannot fold to 'NULL' revision, "
+                             f"use '{MYNAME_GIT} push' instead.")
+    make_head_logfile(LOG_FILENAME, edit)
+    sh_text_to_file("\n***\n", LOG_FILENAME, do_append= True)
+    qpush_specified(patchname, force)
+    sh_text_to_file(git_head_log(), LOG_FILENAME, do_append= True,
+                    add_final_newline= True)
+    qpop_one()
+    git_apply(ojoin(PATCHDIR, patchname))
+    if not no_add:
+        if at_null_revision():
+            git_add_changes(add_unknown_files= True)
+        else:
+            git_add_changes(add_unknown_files= False)
+    if edit:
+        git_mk_changes_files(only_diff_patch= False)
+    # if edit is True, git_amend will start an editor to edit the combination
+    # of both log messages:
+    git_amend(None, LOG_FILENAME, edit, None, None)
+    if edit:
+        # remove the changes files:
+        git_rm_changes_files()
+    sh_rm_f(LOG_FILENAME)
+    qdelete(patchname)
+    print("Note: Log messages were combined into one, you should review/edit "
+          "the log message with:")
+    print("      $MYNAME_GIT refresh -e")
+    print("Note: If new files were added by the folded patch, run:")
+    print("      git add NEW-FILES")
+    print("      $MYNAME_GIT refresh -e")
+
+def git_gq_show(name_regexp):
+    """fold command."""
+    patchname= name_regexp
+    if os.path.isfile(ojoin(PATCHDIR, patchname)):
+        dump_patch_file(ojoin(PATCHDIR, patchname))
+        return
+    try:
+        patchname= find_first_unapplied_patch(name_regexp)
+        dump_patch_file(ojoin(PATCHDIR, patchname))
+        return
+    except GitGqException:
+        pass
+    try:
+        patchname= find_first_applied_patch(name_regexp)
+        git_show(patchname)
+        return
+    except GitGqException:
+        pass
+    try:
+        # as last resort try if $name_arg is a revision specification:
+        patchname= git_rev_parse(name_regexp)
+        git_show(patchname)
+        return
+    except GitGqException:
+        raise GitGqException(f"Error, patch '{name_regexp}' not found.") from None
+
+def git_gq_applied(lines):
+    """applied command."""
+    (parent_hash, _)= get_parent(exist_test= True, use_exception= True)
+    applied_log(parent_hash, lines, print_to_console= True,
+                use_long_hash= False)
+
+def git_gq_unapplied(lines):
+    """unapplied command."""
+    try:
+        sh_file_exists(SERIESFILE)
+    except GitGqException:
+        # print("no unapplied patches")
+        return
+    if os.path.getsize(SERIESFILE)==0:
+        # print("no unapplied patches")
+        return
+    if not lines:
+        system_simple(("cat", SERIESFILE))
+    else:
+        print("\n".join(sh_file_head(lines, False, SERIESFILE, None)),
+              end="")
+
+def git_gq_continue(no_add):
+    """continue command."""
+    check_conflict()
+    if not no_add:
+        git_add_changes(add_unknown_files= False)
+        add_new_unknown_files(UNKNOWN1_FILENAME, UNKNOWN2_FILENAME)
+    try:
+        git_am_continue()
+    except IOError:
+        print_reject_message()
+        return
+    clear_conflict()
+    #git_rm_reject_files()
+    if os.path.isfile(f"{SERIESFILE}.new"):
+        system_simple(("cp", "-a", f"{SERIESFILE}.new", SERIESFILE))
+    patchname= sh_file_to_list(ojoin(PATCHDIR, "PUSH"))[0].strip()
+    sh_rm_f(f"{SERIESFILE}.new", ojoin(PATCHDIR, patchname),
+            ojoin(PATCHDIR, "PUSH"))
+
+def git_gq_abort():
+    """abort command."""
+    if not conflict_exists():
+        raise GitGqException("Error, there currently is no conflict "
+                             "to resolve.")
+    git_am_abort()
+    clear_conflict()
+    #git_rm_reject_files()
+    # remove left over added files:
+    rm_new_unknown_files(UNKNOWN1_FILENAME, UNKNOWN2_FILENAME)
+    git_revert()
+    sh_rm_f(UNKNOWN1_FILENAME, UNKNOWN2_FILENAME,
+            f"{SERIESFILE}.new", ojoin(PATCHDIR, "PUSH"))
+
+def git_gq_conflict(cmd):
+    """conflict command."""
+    if not conflict_exists():
+        raise GitGqException("Error, there currently is no conflict state.")
+    if not cmd:
+        print("The repository is currently in a conflict state.")
+        print()
+        print("Conflicting patch:")
+        conflict_patch()
+        print()
+        print_reject_message()
+    elif cmd=="files":
+        lines= sh_file_to_list_filter(DIFF_FILENAME,
+                                      lambda x: x.startswith("diff "))
+        for l in lines:
+            print(l.split()[3][2:])
+    elif cmd=="show":
+        system_simple(("less", DIFF_FILENAME))
+    else:
+        raise GitGqException(f"Error, unknown sub-command '{cmd}'")
+
+# ---------------------------------------------------------
+# process
+# ---------------------------------------------------------
+
+def unpack_list(lst, elms):
+    """unpack 'elm' elements from list."""
+    new= []
+    l_lst= len(lst)
+    for i in range(elms):
+        # 0 .. (elms-1)
+        if i<l_lst:
+            new.append(lst[i])
+        else:
+            new.append(None)
+    return new
+
+def unpack_one(lst):
+    """unpack one element from list."""
+    if not lst:
+        return None
+    return lst[0]
+
+def check_command_args(command, command_args, min_, max_):
+    """Check number of args."""
+    if min_ is not None:
+        if min_>0:
+            if (not command_args) or (len(command_args)<min_):
+                raise GitGqException(f"Error, at least {min_} arguments "
+                                     f"required for command '{command}'")
+    if max_ is not None:
+        if (command_args) and (len(command_args)>max_):
+            raise GitGqException(f"Error, too many arguments for "
+                                 f"command '{command}'")
+
+def process(args, rest):
+    """do all the work.
+    """
+    # pylint: disable=too-many-branches
+    # pylint: disable=too-many-statements
+    # pylint: disable=too-many-return-statements
+    #print("args:",args)
+    #print("rest:",rest)
+    try:
+        if args.verbose:
+            # pylint: disable= global-statement
+            global gbl_verbose
+            gbl_verbose= args.verbose
+        if args.dry_run:
+            # pylint: disable= global-statement
+            global gbl_dry_run
+            gbl_dry_run= args.dry_run
+
+        if args.summary:
+            print_summary()
+            sys.exit(0)
+        if args.help: # --help
+            pydoc.pager(short_help_text("txt"))
+            return
+        if not rest:
+            manpage()
+            return
+
+        command= rest[0]
+        command_args= rest[1:]
+
+        if command in ("help", "man"):
+            manpage()
+            return
+
+        if command=="commands":
+            check_command_args(command, command_args, None, 0)
+            print("\n".join(sorted(ALL_COMMANDS)))
+            return
+
+        if command=="bashcompletion":
+            check_command_args(command, command_args, None, 0)
+            print(BASHCOMPLETION)
+            return
+
+        if command=="doc":
+            check_command_args(command, command_args, None, 1)
+            print_doc(unpack_one(command_args))
+
+        git_goto_repo_dir()
+
+        if command=="glog":
+            check_command_args(command, command_args, None, 0)
+            git_glog()
+            return
+
+        if command=="restore":
+            check_command_args(command, command_args, 1, 1)
+            git_gq_restore(command_args[0], args.full)
+            return
+
+        if command=="init":
+            check_command_args(command, command_args, None, 2)
+            #pylint: disable = no-value-for-parameter
+            git_gq_init(*unpack_list(command_args, 2))
+            return
+
+        if not os.path.isdir(TOPPATCHDIR):
+            raise GitGqException(f"please run '{MYNAME_GIT} init' first.")
+
+        if command=="qname":
+            check_command_args(command, command_args, None, 1)
+            git_gq_qname(unpack_one(command_args))
+            return
+
+        # pylint: disable= global-statement
+        global QUEUENAME
+        QUEUENAME= sh_file_to_list(QUEUEFILE)[0].strip()
+        select_queue(QUEUENAME)
+        # ensure PATCHDIR exists:
+        sh_dir_exists(PATCHDIR)
+
+        if command=="backup":
+            check_command_args(command, command_args, None, 0)
+            git_gq_backup()
+            return
+
+        if command=="change-order":
+            check_command_args(command, command_args, None, 0)
+            git_gq_change_order()
+            return
+
+        if command=="export":
+            check_command_args(command, command_args, 1, 1)
+            git_gq_export(command_args[0])
+            return
+
+        if command=="import":
+            check_command_args(command, command_args, 1, None)
+            git_gq_import(command_args)
+            return
+
+        if command=="parent":
+            check_command_args(command, command_args, None, 1)
+            git_gq_parent(unpack_one(command_args))
+            return
+
+        if command=="new":
+            check_command_args(command, command_args, None, 1)
+            git_gq_new(unpack_one(command_args), args.no_add)
+            return
+
+        if command=="record":
+            check_command_args(command, command_args, None, 1)
+            git_gq_record(unpack_one(command_args))
+            return
+
+        if command=="refresh":
+            check_command_args(command, command_args, 0, 0)
+            git_gq_refresh(args.message, args.file, args.edit, args.no_add)
+            return
+
+        if command=="edit":
+            check_command_args(command, command_args, 1, 1)
+            git_gq_edit(command_args[0])
+            return
+
+        if command=="delete":
+            check_command_args(command, command_args, 1, 1)
+            git_gq_delete(command_args[0])
+            return
+
+        if command=="pop":
+            check_command_args(command, command_args, 0, 0)
+            git_gq_pop(args.all, args.force)
+            return
+
+        if command=="push":
+            check_command_args(command, command_args, 0, 0)
+            git_gq_push(args.all, args.force)
+            return
+
+        if command=="goto":
+            check_command_args(command, command_args, 1, 1)
+            git_gq_goto(unpack_one(command_args), args.force)
+            return
+
+        if command=="fold":
+            check_command_args(command, command_args, 1, 1)
+            git_gq_fold(unpack_one(command_args),
+                        args.edit, args.force, args.no_add)
+            return
+
+        if command=="show":
+            check_command_args(command, command_args, 1, 1)
+            git_gq_show(unpack_one(command_args))
+            return
+
+        if command=="applied":
+            check_command_args(command, command_args, None, 0)
+            git_gq_applied(args.lines)
+            return
+
+        if command=="unapplied":
+            check_command_args(command, command_args, None, 0)
+            git_gq_unapplied(args.lines)
+            return
+
+        if command=="continue":
+            check_command_args(command, command_args, None, 0)
+            git_gq_continue(args.no_add)
+            return
+
+        if command=="abort":
+            check_command_args(command, command_args, None, 0)
+            git_gq_abort()
+            return
+
+        if command=="conflict":
+            check_command_args(command, command_args, 0, 1)
+            git_gq_conflict(unpack_one(command_args))
+            return
+
+        raise GitGqException(f"Error, unknown command '{command}'")
+    except GitGqException as e:
+        if args.exception:
+            raise
+        sys.exit(str(e))
+
+
+
+def script_shortname():
+    """return the name of this script without a path component."""
+    return os.path.basename(sys.argv[0])
+
+def print_summary():
+    """print a short summary of the scripts function."""
+    print(f"{script_shortname():<20}: {SUMMARY}\n")
+
+
+def main():
+    """The main function.
+
+    parse the command-line options and perform the command
+    """
+    parser = argparse.ArgumentParser(\
+                 usage= USAGE,
+                 description= DESC,
+                 add_help= False,
+                 formatter_class=argparse.RawDescriptionHelpFormatter,
+                                    )
+    parser.add_argument('--version', action='version',
+                        version=f"{MYNAME_GIT} {VERSION}")
+
+    parser.add_argument("--summary",
+                        action="store_true",
+                        help="print a summary of the function of the program",
+                       )
+    parser.add_argument("-h", "--help",
+                        action="store_true",
+                        help="Show help."""
+                       )
+    parser.add_argument("--verbose",
+                        action="store_true",
+                        help="show called commands"
+                       )
+    parser.add_argument("--dry-run",
+                        action="store_true",
+                        help="do not actually call commands"
+                       )
+    parser.add_argument("-D", "--debug",
+                        action="store_true",
+                        help="Show debug information."
+                       )
+    parser.add_argument("-a", "--all",
+                        action="store_true",
+                        help="push/pop: apply on ALL patches.",
+                       )
+    parser.add_argument("-N", "--no-add",
+                        action="store_true",
+                        help="new/refresh/fold: DO NOT add all modified "
+                             "changes to patch, continue: DO NOT add all "
+                             "modified and unknown changes to patch."
+                       )
+    parser.add_argument("-e", "--edit",
+                        action="store_true",
+                        help="refresh/fold: start editor to edit log message"
+                       )
+    parser.add_argument("-m", "--message",
+                        help="refresh: use MESSAGE as log message.",
+                        metavar="MESSAGE"
+                       )
+    parser.add_argument("-F", "--file",
+                        help="refresh: take log message from FILE.",
+                        metavar="FILE"
+                       )
+    parser.add_argument("-l", "--lines",
+                        help="applied, unapplied: Limit the number of "
+                             "lines printed by the command. Print only "
+                             "the first LINECOUNT lines.",
+                        type= int,
+                        metavar="LINECOUNT"
+                       )
+    parser.add_argument("-R", "--force",
+                        action="store_true",
+                        help="Allow to run `$MYNAME_GIT pop` and "
+                             "`$MYNAME_GIT push` even if there are "
+                             "uncommited changes. Note the with 'pop' this "
+                             "will discard uncommited changes."
+                       )
+    parser.add_argument("-L", "--full",
+                        action="store_true",
+                        help="restore: do also restore all patches that "
+                             "were applied when the backup was created. "
+                             "Caution: This runs `git checkout PARENT` "
+                             "and `git am` on your repository."
+                       )
+    parser.add_argument("--exception",
+                        action="store_true",
+                        help="do not catch exceptions (for debugging)."
+                       )
+
+
+    (args, remains) = parser.parse_known_args()
+    rest= []
+    check= True
+    for r in remains:
+        if (not check) or (not r.startswith("-")) or (r=="-"):
+            rest.append(r)
+            continue
+        if r=="--": # do not check further
+            check= False
+            continue
+        sys.exit(f"unknown option: {r!r}")
+
+    if args.summary:
+        print_summary()
+        sys.exit(0)
+
+    # pylint: disable= global-statement
+    global gbl_parser
+    gbl_parser= parser
+    # pylint: enable= global-statement
+
+    process(args, rest)
+    sys.exit(0)
+
+if __name__ == "__main__":
+    main()
