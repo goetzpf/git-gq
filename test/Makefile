@@ -34,6 +34,12 @@ clean:
 	rm -rf tmp_*
 	rm -rf *.out *.tst
 
+# make TESTNAME.clean removes created data for a single test,
+# example: make git_gq_continue.clean
+%.clean:
+	rm -rf tmp_$*
+	rm -f $*.tst $*.out
+
 # how to generate an out file:
 %.out: %.sh repo.stamp
 	@bash ./$< $(GIT_GQ) > $@
