@@ -40,6 +40,10 @@ clean:
 	rm -rf tmp_$*
 	rm -f $*.tst $*.out
 
+# run a test directly on the console
+%.run: %.clean
+	@bash ./$*.sh $(GIT_GQ)
+
 # how to generate an out file:
 %.out: %.sh repo.stamp
 	@bash ./$< $(GIT_GQ) > $@
