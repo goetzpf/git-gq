@@ -1,5 +1,6 @@
 TOP:=$(shell pwd)
-GIT_GQ=$(TOP)/../bin/git-gq
+#GIT_GQ=$(TOP)/../bin/git-gq
+GIT_GQ=$(TOP)/../bin/git-gq.py
 
 HASH=\#
 
