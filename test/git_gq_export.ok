@@ -2,8 +2,8 @@
 ---------------------------------------
 
 $ git gq export patchdir
-/patchdir/0001-README-was-improved.patch
-/patchdir/0002-script.sh-was-improved.patch
+patchdir/0001-README-was-improved.patch
+patchdir/0002-script.sh-was-improved.patch
 
 $ ls patchdir
 0001-README-was-improved.patch
@@ -29,7 +29,7 @@ index abcdef0..abcdef1 abcdef3
 -A readme file
 +This is an improved README file.
 --
-2.49.0
+1.2.3
 
 ---------------------
 File: patchdir/0002-script.sh-was-improved.patch
@@ -53,5 +53,5 @@ index abcdef0..abcdef1 abcdef3
 +echo "Script prototype"
 
 --
-2.49.0
+1.2.3
 

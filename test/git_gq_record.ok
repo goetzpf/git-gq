@@ -8,7 +8,7 @@ abcdef0 README was improved.
 $ git gq unapplied
 
 # Change README.txt again ...
-$ git gq new README-fold
+$ git gq record README-fold
 diff --git a/README.txt b/README.txt
 index abcdef0..abcdef1 abcdef3
 --- a/README.txt

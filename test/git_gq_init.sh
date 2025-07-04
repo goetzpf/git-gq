@@ -18,7 +18,7 @@ echo "\$ git gq init"
 $GIT_GQ init 2>&1 | filter_parenthesis_hash
 echo
 echo "# Files in directory .gqpatches:"
-find .gqpatches
+find .gqpatches | sort
 echo
 echo "\$ git gq applied"
 $GIT_GQ applied

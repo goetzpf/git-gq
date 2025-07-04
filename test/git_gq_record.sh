@@ -24,7 +24,7 @@ $GIT_GQ unapplied | filter_linestart_hash
 echo
 echo "# Change README.txt again ..."
 echo "This file will describe my project." >> README.txt
-echo "\$ git gq new README-fold"
+echo "\$ git gq record README-fold"
 echo "y" | $GIT_GQ record README-second-change | filter_squarebracket_hash | filter_git_index_hash
 
 echo

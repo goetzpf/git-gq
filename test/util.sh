@@ -17,6 +17,14 @@ function filter_pwd {
     done
 }
 
+function filter_patch_version_number {
+    # remove : 2.50.0 --> ''
+    local line
+    while read -r line ; do
+        echo "$line" | sed -e "s/^[0-9]\+\.[0-9]\+\.[0-9]\+ *$/1.2.3/"
+    done
+}
+
 function filter_tar_isodate {
     # .gqpatches-2025-06-04T144559.tgz --> .gqpatches-2001-12-31T091234.tgz
     local line

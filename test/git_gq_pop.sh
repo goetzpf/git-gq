@@ -34,4 +34,4 @@ echo "# Files in .gqpatches:"
 find .gqpatches/default | sort
 echo
 echo "# Content of patch file:"
-cat .gqpatches/default/script.sh-was-improved.patch | filter_from_hash | filter_mail_from | filter_mail_date | filter_git_index_hash
+cat .gqpatches/default/script.sh-was-improved.patch | filter_from_hash | filter_mail_from | filter_mail_date | filter_git_index_hash | filter_patch_version_number

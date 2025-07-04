@@ -675,6 +675,24 @@ def errprint(*args, **kwargs):
     kwargs["file"]= sys.stderr
     print(*args, **kwargs)
 
+def sh_file_add_extension(file, ext):
+    """add an extension to a filename."""
+    return f"{file}.{ext}"
+
+def sh_file_bak(file):
+    """add .bak to filename."""
+    return sh_file_add_extension(file, "bak")
+
+def sh_file_new(file):
+    """add .new to filename."""
+    return sh_file_add_extension(file, "new")
+
+def sh_file_rename(old, new):
+    """rename, remove new if it already exists."""
+    if os.path.isfile(new):
+        os.remove(new)
+    os.rename(old, new)
+
 def sh_file_exists(file):
     """check if a file exists.
 
@@ -693,7 +711,7 @@ def sh_dir_exists(dir_):
 
 def sh_directories(dir_):
     """return all directories in dir_."""
-    return [d for d in os.listdir(dir_) if os.path.isdir(d)]
+    return [d for d in os.listdir(dir_) if os.path.isdir(ojoin(dir_,d))]
 
 def sh_rm_f(*arg):
     """force-remove a file."""
@@ -742,13 +760,15 @@ def sh_text_to_file(lines, out_file, do_append, add_final_newline= False):
 def sh_file_to_list(file):
     """read a file, return a list of lines."""
     with open(file, "rt", encoding="utf-8") as fh:
-        return fh.readlines()
+        return [l.rstrip() for l in fh.readlines()]
 
 def sh_file_to_list_filter(file, func):
     """read a file, return a list of lines."""
     out= []
     with open(file, "rt", encoding="utf-8") as fh:
+        # note: each read line has an '\n' at the end:
         for line in fh:
+            line= line.rstrip()
             if func(line):
                 out.append(line)
     return out
@@ -758,8 +778,10 @@ def sh_file_grep(regexp, file):
     rx= re.compile(regexp)
     lines=[]
     with open(file, "rt", encoding="utf-8") as fh:
+        # note: each read line has an '\n' at the end:
         for line in fh:
-            if rx.match(line):
+            line= line.rstrip()
+            if rx.search(line):
                 lines.append(line)
     return lines
 
@@ -772,13 +794,13 @@ def sh_prepend_line(str_, file):
         with open(file, "wt", encoding="utf-8") as fh:
             fh.write(str_)
     else:
-        tempfile= f"{file}.bak"
-        os.rename(file, tempfile)
+        tempfile= sh_file_bak(file)
+        sh_file_rename(file, tempfile)
         sh_text_to_file(str_, file, do_append= False)
         sh_file_to_file(tempfile, file, do_append= True)
         os.remove(tempfile)
 
-def sh_file_filter(str_, file, file_out):
+def sh_file_filter(str_, file, file_out, cleanup= True):
     """remove all lines that are equal to str_.
 
     file_out==file is allowed !
@@ -788,18 +810,21 @@ def sh_file_filter(str_, file, file_out):
     if not os.path.exists(file):
         raise AssertionError(f"Error, file {file} doesn't exist.")
     if file_out==file:
-        file_in= f"{file}.bak"
-        os.rename(file, file_in)
+        file_in= sh_file_bak(file)
+        sh_file_rename(file, file_in)
     else:
         file_in= file
     with open(file_in, "rt", encoding="utf-8") as fh_r:
         with open(file_out, "wt", encoding="utf-8") as fh_w:
+            # note: each read line has an '\n' at the end:
             for line in fh_r:
                 if line==str_:
                     continue
                 fh_w.write(line)
-    if file_out==file:
-        os.remove(file_in)
+    if cleanup:
+        # remove *.bak file:
+        if file_out==file:
+            os.remove(file_in)
 
 def sh_file_linenumbers(file):
     """count line numbers in a file."""
@@ -820,8 +845,8 @@ def sh_file_head(head_no, invert, file, file_out):
     if not os.path.exists(file):
         raise AssertionError(f"Error, file {file} doesn't exist.")
     if file_out==file:
-        file_in= f"{file}.bak"
-        os.rename(file, file_in)
+        file_in= sh_file_bak(file)
+        sh_file_rename(file, file_in)
     else:
         file_in= file
     # first line is line 1 per definition
@@ -833,7 +858,9 @@ def sh_file_head(head_no, invert, file, file_out):
         fh_w= open(file_out, "wt", encoding="utf-8")
     with open(file_in, "rt", encoding="utf-8") as fh:
         if not file_out:
+            # note: each read line has an '\n' at the end:
             for line in fh:
+                line= line.rstrip()
                 line_no+= 1
                 if not invert:
                     if line_no > head_no:
@@ -843,6 +870,7 @@ def sh_file_head(head_no, invert, file, file_out):
                         continue
                 lines.append(line)
         else:
+            # note: each read line has an '\n' at the end:
             for line in fh:
                 line_no+= 1
                 if not invert:
@@ -868,7 +896,7 @@ MYNAME_GIT="git gq"
 QUEUENAME="default"
 TOPPATCHDIR=".gqpatches"
 
-RX_TOPPPATCHDIR_FILES=re.compile(f'^{TOPPATCHDIR}[{os.sep}-]')
+RX_TOPPPATCHDIR_FILES=re.compile(f'^ {TOPPATCHDIR}[{os.sep}-]')
 
 RX_TOPPPATCHDIR=re.compile(f'^{TOPPATCHDIR}{os.sep}')
 
@@ -911,7 +939,7 @@ def short_help_text(style):
             # filter 'options:' always
             continue
         if style=="txt":
-            if RX_RST_PLUS.match(line):
+            if RX_RST_PLUS.search(line):
                 continue
         new.append(line)
     return "\n".join(new)
@@ -1264,7 +1292,7 @@ def git_unknown_files(file):
             if not l.startswith("??"):
                 continue
             unknown_file= l[2:]
-            if RX_TOPPPATCHDIR_FILES.match(unknown_file):
+            if RX_TOPPPATCHDIR_FILES.search(unknown_file):
                 continue
             fh_w.write(f"{unknown_file}\n")
 
@@ -1290,13 +1318,12 @@ def git_head_track_error():
                      catch_stdout= True, catch_stderr= False,
                      env= None, verbose= gbl_verbose, dry_run= gbl_dry_run)
     for line in out.splitlines():
-        if RX_TOPPPATCHDIR_FILES.match(line):
+        if RX_TOPPPATCHDIR_FILES.search(line):
             errtext=[f"FATAL Error, somehow git is tracking {TOPPATCHDIR}.",
                      f"'{MYNAME_GIT} pop' would remove {TOPPATCHDIR}.",
                       "Do the following to fix this:",
                      f"  git reset HEAD~1 {TOPPATCHDIR}*",
-                      "  git commit -C HEAD --amend",
-                     ""]
+                      "  git commit -C HEAD --amend"]
             raise GitGqException("\n".join(errtext))
 
 
@@ -1559,11 +1586,14 @@ def git_add_changes(add_unknown_files):
                      env= None, verbose= gbl_verbose, dry_run= gbl_dry_run)
     filelist= []
     for line in out.splitlines():
-        m= RX_GITSTAT_MV.match(line)
+        m= RX_GITSTAT_MV.search(line)
         if m:
-            line= m.group(1)
-        file= line[3:] # remove leading flags
-        m= RX_TOPPPATCHDIR_FILES.match(file)
+            # a line in the form 'R  README.txt -> README.rst'
+            file= m.group(1)
+        else:
+            # a line in the form ';  README.txt
+            file= line[3:] # remove leading flags
+        m= RX_TOPPPATCHDIR_FILES.search(file)
         if m:
             continue
         filelist.append(file)
@@ -1669,15 +1699,16 @@ def conflict_exists():
 
     return os.path.exists(CONFLICT_FILENAME)
 
-def conflict_message():
+def conflict_message(print_err):
     """message for a conflict."""
-    #return "Error, an unresolved conflict exists.\n" + DOC_REJECT_MESSAGE
+    if print_err:
+        return "Error, an unresolved conflict exists.\n\n" + DOC_REJECT_MESSAGE
     return "\n"+DOC_REJECT_MESSAGE
 
-def check_conflict():
+def check_conflict(print_err):
     """raise GitGqException if conflict exists."""
     if conflict_exists():
-        raise GitGqException(conflict_message())
+        raise GitGqException(conflict_message(print_err))
 
 def git_mk_changes_files(only_diff_patch):
     """create changes files that help editing a log message.
@@ -1766,7 +1797,10 @@ def find_first_unapplied_patch(regexp):
         raise GitGqException("Error, there are no unapplied patches.")
     if not regexp:
         return sh_file_head(1, False, SERIESFILE, None)[0]
-    return sh_file_grep(regexp, SERIESFILE)[0]
+    match_lines= sh_file_grep(regexp, SERIESFILE)
+    if not match_lines:
+        raise GitGqException("Error, no matching unapplied patches found.")
+    return match_lines[0]
 
 def find_first_applied_patch(regexp):
     """Find applied patch, return hash key.
@@ -1780,7 +1814,7 @@ def find_first_applied_patch(regexp):
     GitGqException
     """
     (parent_hash, _)= get_parent(exist_test= True, use_exception= True)
-    use_long_hash= RX_HASH.match(regexp) is not None
+    use_long_hash= RX_HASH.search(regexp) is not None
     logs= applied_log(parent_hash, None,
                       print_to_console= False,
                       use_long_hash= use_long_hash)
@@ -1790,7 +1824,7 @@ def find_first_applied_patch(regexp):
         rx_regexp= re.compile('^'+regexp)
     found= ""
     for log in logs:
-        if rx_regexp.match(log):
+        if rx_regexp.search(log):
             found= log
             break
     if not found:
@@ -1811,7 +1845,7 @@ def find_head_patch(regexp):
                      env= None, verbose= gbl_verbose, dry_run= gbl_dry_run)
     rx_regexp= re.compile(regexp)
     line= out.strip()
-    if not rx_regexp.match(line):
+    if not rx_regexp.search(line):
         return None
     return line.split(maxsplit=1)[0]
 
@@ -1892,7 +1926,7 @@ def qpop_one():
         RX_TOPPPATCHDIR.sub("", git_format_patches("HEAD", 1, TOPPATCHDIR)[0])
     patchname= RX_NUMBER.sub("", orig_patchname)
     patchname= unique_patch_name(patchname)
-    os.rename(ojoin(TOPPATCHDIR, orig_patchname), ojoin(PATCHDIR, patchname))
+    sh_file_rename(ojoin(TOPPATCHDIR, orig_patchname), ojoin(PATCHDIR, patchname))
     prepend_seriesfile(patchname)
     headrev= git_head_revision()
     rev1= git_revision_1()
@@ -1919,23 +1953,24 @@ def qpush_specified(patch, force):
     if os.path.getsize(SERIESFILE)==0:
         raise GitGqException("Error, there are no unapplied patches.")
     # remove PATCHNAME from SERIESFILE:
+    seriesfile_new= sh_file_new(SERIESFILE)
     if patch is None:
         # remove first patch
-        sh_file_head(1, True, SERIESFILE, f"{SERIESFILE}.new")
+        sh_file_head(1, True, SERIESFILE, seriesfile_new)
     else:
         # remove line with the patchname:
-        sh_file_filter(f"{patchname}\n", SERIESFILE, f"{SERIESFILE}.new")
+        sh_file_filter(f"{patchname}\n", SERIESFILE, seriesfile_new)
     git_unknown_files(UNKNOWN1_FILENAME)
     try:
         git_am(ojoin(PATCHDIR, patchname))
     except IOError:
         mark_conflict(patchname)
         git_unknown_files(UNKNOWN2_FILENAME)
-        raise GitGqException(conflict_message()) from None
+        raise GitGqException(conflict_message(False)) from None
     clear_conflict()
-    sh_rm_f(ojoin(PATCHDIR, patchname), ojoin(PATCHDIR, "PUSH").
-            ojoin(SERIESFILE))
-    os.rename(f"{SERIESFILE}.new", SERIESFILE)
+    sh_rm_f(ojoin(PATCHDIR, patchname), ojoin(PATCHDIR, "PUSH"),
+            SERIESFILE)
+    sh_file_rename(seriesfile_new, SERIESFILE)
 
 def qedit(patch):
     """starts an editor."""
@@ -1948,7 +1983,7 @@ def qdelete(patch):
     patchname= find_single_unapplied_patch(patch)
     os.remove(ojoin(PATCHDIR, patchname))
     # remove line with the patchname:
-    sh_file_filter(f"{patchname}\n", SERIESFILE, SERIESFILE)
+    sh_file_filter(f"{patchname}\n", SERIESFILE, SERIESFILE, cleanup= False)
 
 def create_parentfile(revspec):
     """create a parent file."""
@@ -1986,8 +2021,7 @@ def manpage():
 
 def git_gq_restore(restorefile, full):
     """restore from file."""
-    if conflict_exists():
-        raise GitGqException("Error, an unresolved conflict exists.")
+    check_conflict(True)
     sh_file_exists(restorefile) # raises Exception if not
     if os.path.isdir(TOPPATCHDIR):
         print(f"{TOPPATCHDIR} already exists, is it okay to rename it to")
@@ -2062,15 +2096,17 @@ def git_gq_qname(qname):
         QUEUENAME= sh_file_to_list(QUEUEFILE)[0].strip()
         print("Existing queues:")
         dirs_= [d for d in sh_directories(TOPPATCHDIR) if d != TEMP_BASEDIR]
-        print(" ".join(dirs_))
+        for d in dirs_:
+            print(f"\t{d}")
         print()
         print("Currently selected:")
         print(f"\t{QUEUENAME}")
         return
-    check_conflict()
+    check_conflict(True)
     if qname == TEMP_BASEDIR:
         raise GitGqException(f"Error, '{TEMP_BASEDIR}' is a special name "
                              f"and cannot be used as name for a queue.")
+    QUEUENAME= qname
     sh_text_to_file(QUEUENAME, QUEUEFILE, do_append= False,
                     add_final_newline=True)
     select_queue(QUEUENAME)
@@ -2081,7 +2117,7 @@ def git_gq_qname(qname):
 
 def git_gq_change_order():
     """edit series file."""
-    check_conflict()
+    check_conflict(True)
     sh_file_exists(SERIESFILE)
     if os.path.getsize(SERIESFILE)==0:
         raise GitGqException("Error, there are no unapplied patches.")
@@ -2092,7 +2128,8 @@ def git_gq_export(directory):
     """export command."""
     sh_dir_exists(directory)
     (parent_hash, _)= get_parent(exist_test= True, use_exception= True)
-    git_format_applied(parent_hash, None, directory)
+    out= git_format_applied(parent_hash, None, directory)
+    print("\n".join(out))
 
 def git_gq_import(patchfiles):
     """import command."""
@@ -2109,12 +2146,12 @@ def git_gq_parent(revspec):
         (_, parent)= get_parent(exist_test= True, use_exception= True)
         print(parent)
         return
-    check_conflict()
+    check_conflict(True)
     create_parentfile(revspec)
 
 def git_gq_new(name, no_add):
     """new command."""
-    check_conflict()
+    check_conflict(True)
     if not no_add:
         git_add_changes(add_unknown_files= False)
     cmd_list= ["git", "commit"]
@@ -2129,16 +2166,16 @@ def git_gq_new(name, no_add):
 
 def git_gq_record(name):
     """record command."""
-    check_conflict()
+    check_conflict(True)
     git_select_changes()
     cmd_lst= ["git", "commit"]
     if name:
-        cmd_lst.extend(["-n", name])
+        cmd_lst.extend(["-m", name])
     system_simple(cmd_lst)
 
 def git_gq_refresh(message, file, edit, no_add):
     """refresh command."""
-    check_conflict()
+    check_conflict(True)
     if (not message) and (not file):
         make_head_logfile(LOG_FILENAME, edit)
     else:
@@ -2165,7 +2202,7 @@ def git_gq_delete(name_regexp):
 
 def git_gq_pop(all_, force):
     """pop command."""
-    check_conflict()
+    check_conflict(True)
     while True:
         if not qpop_check(force):
             if all_:
@@ -2178,7 +2215,7 @@ def git_gq_pop(all_, force):
 
 def git_gq_push(all_, force):
     """push command."""
-    check_conflict()
+    check_conflict(True)
     null_revision= at_null_revision()
     while True:
         qpush_specified(None, force)
@@ -2208,7 +2245,7 @@ def git_gq_push(all_, force):
 
 def git_gq_goto(name_regexp, force):
     """goto command."""
-    check_conflict()
+    check_conflict(True)
     patchname= None
     try:
         patchname= find_first_unapplied_patch(name_regexp)
@@ -2230,7 +2267,7 @@ def git_gq_goto(name_regexp, force):
 
 def git_gq_fold(name_regexp, edit, force, no_add):
     """fold command."""
-    check_conflict()
+    check_conflict(True)
     if os.path.isfile(ojoin(PATCHDIR, name_regexp)):
         patchname= name_regexp
     else:
@@ -2239,7 +2276,7 @@ def git_gq_fold(name_regexp, edit, force, no_add):
         raise GitGqException(f"Error, cannot fold to 'NULL' revision, "
                              f"use '{MYNAME_GIT} push' instead.")
     make_head_logfile(LOG_FILENAME, edit)
-    sh_text_to_file("\n***\n", LOG_FILENAME, do_append= True)
+    sh_text_to_file("\n\n***\n\n", LOG_FILENAME, do_append= True)
     qpush_specified(patchname, force)
     sh_text_to_file(git_head_log(), LOG_FILENAME, do_append= True,
                     add_final_newline= True)
@@ -2262,10 +2299,10 @@ def git_gq_fold(name_regexp, edit, force, no_add):
     qdelete(patchname)
     print("Note: Log messages were combined into one, you should review/edit "
           "the log message with:")
-    print("      $MYNAME_GIT refresh -e")
+    print(f"      {MYNAME_GIT} refresh -e")
     print("Note: If new files were added by the folded patch, run:")
     print("      git add NEW-FILES")
-    print("      $MYNAME_GIT refresh -e")
+    print(f"      {MYNAME_GIT} refresh -e")
 
 def git_gq_show(name_regexp):
     """fold command."""
@@ -2312,12 +2349,13 @@ def git_gq_unapplied(lines):
     if not lines:
         system_simple(("cat", SERIESFILE))
     else:
-        print("\n".join(sh_file_head(lines, False, SERIESFILE, None)),
-              end="")
+        print("\n".join(sh_file_head(lines, False, SERIESFILE, None)))
 
 def git_gq_continue(no_add):
     """continue command."""
-    check_conflict()
+    if not conflict_exists():
+        raise GitGqException("Error, there currently is no conflict "
+                             "to resolve.")
     if not no_add:
         git_add_changes(add_unknown_files= False)
         add_new_unknown_files(UNKNOWN1_FILENAME, UNKNOWN2_FILENAME)
@@ -2328,10 +2366,11 @@ def git_gq_continue(no_add):
         return
     clear_conflict()
     #git_rm_reject_files()
-    if os.path.isfile(f"{SERIESFILE}.new"):
-        system_simple(("cp", "-a", f"{SERIESFILE}.new", SERIESFILE))
+    seriesfile_new= sh_file_new(SERIESFILE)
+    if os.path.isfile(seriesfile_new):
+        system_simple(("cp", "-a", seriesfile_new, SERIESFILE))
     patchname= sh_file_to_list(ojoin(PATCHDIR, "PUSH"))[0].strip()
-    sh_rm_f(f"{SERIESFILE}.new", ojoin(PATCHDIR, patchname),
+    sh_rm_f(seriesfile_new, ojoin(PATCHDIR, patchname),
             ojoin(PATCHDIR, "PUSH"))
 
 def git_gq_abort():
@@ -2346,7 +2385,7 @@ def git_gq_abort():
     rm_new_unknown_files(UNKNOWN1_FILENAME, UNKNOWN2_FILENAME)
     git_revert()
     sh_rm_f(UNKNOWN1_FILENAME, UNKNOWN2_FILENAME,
-            f"{SERIESFILE}.new", ojoin(PATCHDIR, "PUSH"))
+            sh_file_new(SERIESFILE), ojoin(PATCHDIR, "PUSH"))
 
 def git_gq_conflict(cmd):
     """conflict command."""

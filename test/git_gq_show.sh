@@ -17,7 +17,7 @@ cd $TMPDIR || exit 1
 
 echo "# Dump an applied patch."
 echo "\$ git gq show 'README'"
-$GIT_GQ show 'README' 2>&1 | filter_commit_hash | filter_author | filter_mail_date | filter_git_index_hash
+$GIT_GQ show 'README' 2>&1 | filter_commit_hash | filter_author | filter_mail_date | filter_git_index_hash | filter_patch_version_number
 
 echo
 echo "\$ git gq pop -a"
@@ -26,9 +26,9 @@ $GIT_GQ pop -a | filter_git_head_hash
 echo
 echo "# Dump an unapplied patch."
 echo "\$ git gq show 'README'"
-$GIT_GQ show 'README' 2>&1 | filter_from_hash | filter_mail_from | filter_mail_date
+$GIT_GQ show 'README' 2>&1 | filter_from_hash | filter_mail_from | filter_mail_date | filter_patch_version_number
 
 echo
 echo "# Dump an HEAD commit."
 echo "\$ git gq show 'HEAD'"
-$GIT_GQ show 'HEAD' 2>&1 | filter_commit_hash | filter_author | filter_mail_date | filter_git_index_hash
+$GIT_GQ show 'HEAD' 2>&1 | filter_commit_hash | filter_author | filter_mail_date | filter_git_index_hash | filter_patch_version_number

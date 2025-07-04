@@ -29,6 +29,6 @@ echo "# Content of patchfiles:"
 for f in patchdir/*.patch; do
     echo "---------------------"
     echo "File: $f"
-    cat $f | filter_from_hash | filter_mail_from | filter_mail_date | filter_git_index_hash
+    cat $f | filter_from_hash | filter_mail_from | filter_mail_date | filter_git_index_hash | filter_patch_version_number | filter_patch_version_number
 done
 

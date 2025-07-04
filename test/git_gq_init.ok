@@ -6,10 +6,10 @@ queue parent revision set to HEAD (abcdef0)
 
 # Files in directory .gqpatches:
 .gqpatches
-.gqpatches/tmp
-.gqpatches/queue
 .gqpatches/default
 .gqpatches/default/parent
+.gqpatches/queue
+.gqpatches/tmp
 
 $ git gq applied
 

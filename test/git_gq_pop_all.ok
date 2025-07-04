@@ -43,7 +43,7 @@ index abcdef0..abcdef1 abcdef3
 -A readme file
 +This is an improved README file.
 --
-2.49.0
+1.2.3
 
 
 # Content of patch file script.sh-was-improved.patch:
@@ -67,5 +67,5 @@ index abcdef0..abcdef1 abcdef3
 +echo "Script prototype"
 
 --
-2.49.0
+1.2.3
 

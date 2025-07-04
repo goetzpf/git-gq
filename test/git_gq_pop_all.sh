@@ -35,8 +35,8 @@ find .gqpatches/default | sort
 echo
 FILE="README-was-improved.patch"
 echo "# Content of patch file $FILE:"
-cat .gqpatches/default/$FILE | filter_from_hash | filter_mail_from | filter_mail_date | filter_git_index_hash
+cat .gqpatches/default/$FILE | filter_from_hash | filter_mail_from | filter_mail_date | filter_git_index_hash | filter_patch_version_number
 echo
 FILE="script.sh-was-improved.patch"
 echo "# Content of patch file $FILE:"
-cat .gqpatches/default/$FILE | filter_from_hash | filter_mail_from | filter_mail_date | filter_git_index_hash
+cat .gqpatches/default/$FILE | filter_from_hash | filter_mail_from | filter_mail_date | filter_git_index_hash | filter_patch_version_number
