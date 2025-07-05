@@ -46,7 +46,7 @@ clean:
 
 # how to generate an out file:
 %.out: %.sh repo.stamp
-	@bash ./$< $(GIT_GQ) > $@
+	@time (bash ./$< $(GIT_GQ)) > $@ 2> $*.time
 
 # how to perform a shell test:
 $(shell_tests_tst): %.tst: %.sh %.ok %.out

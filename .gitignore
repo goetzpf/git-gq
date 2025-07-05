@@ -3,6 +3,7 @@
 /test/tmp_*
 /test/*.out
 /test/*.tst
+/test/*.time
 
 /doc/_build
 /doc/commandline.rst
