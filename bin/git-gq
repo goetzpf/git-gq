@@ -43,8 +43,6 @@ TEMP_BASEDIR="tmp"
 
 TEMPDIR=os.path.join(TOPPATCHDIR, TEMP_BASEDIR)
 
-QUEUENAME="default"
-
 DIFF_FILENAME=ojoin(TEMPDIR, "DIFF.patch")
 HDIFF_FILENAME=ojoin(TEMPDIR, "HEAD.patch")
 LOG_FILENAME=ojoin(TEMPDIR, "LOG")
@@ -1033,14 +1031,14 @@ def system_rc_io(cmd,
             if stdout_par=="PIPE":
                 stdout_par=subprocess.PIPE
             else:
-                raise ValueError(f"stdout_par has wrong type: {stdout_par!r}")
+                raise ValueError(f"stdout_par has wrong value: {stdout_par!r}")
         # otherwise assume file-like object
     if stderr_par is not None:
         if isinstance(stderr_par, str):
             if stderr_par=="PIPE":
                 stderr_par=subprocess.PIPE
             else:
-                raise ValueError(f"stderr_par has wrong type: {stderr_par!r}")
+                raise ValueError(f"stderr_par has wrong value: {stderr_par!r}")
         # otherwise assume file-like object
     if env is None:
         env= _new_env
@@ -1543,16 +1541,6 @@ def at_null_revision():
     """returns if we are at the null revision."""
     return git_head_subject() == "NULL"
 
-#def git_rm_reject_files():
-#    """remove all files named *.rej that are not tracked by git."""
-#    (out, _)= system(("git", "ls-files", ".", "--exclude-standard",
-#                     "--others", "--exclude", f"{TOPPATCHDIR}*"),
-#                     catch_stdout= True, catch_stderr= False,
-#                     env= None, verbose= gbl_verbose, dry_run= gbl_dry_run)
-#    for line in out.splitlines():
-#        if line.endswith(".rej"):
-#            sh_rm_f(line)
-
 def git_add_changes(add_unknown_files):
     """add only changed files to stash.
 
@@ -1998,7 +1986,11 @@ def create_parentfile(revspec):
     sh_text_to_file(log, PARENTFILE, do_append= False,
                     add_final_newline= True)
 
-def manpage():
+# ---------------------------------------------------------
+# main coommand functions
+# ---------------------------------------------------------
+
+def git_gq_man():
     """display man page generated with rst2man."""
     def testrun(cmd_list):
         """test if prg. exists."""
@@ -2065,7 +2057,6 @@ def git_gq_backup():
     date_= portable_isodate()
     system_simple(("tar", "-czf", f"{TOPPATCHDIR}-{date_}.tgz", TOPPATCHDIR))
     del_applied_patches()
-
 
 def git_gq_init(name, rev):
     """run git gq init."""
@@ -2465,14 +2456,14 @@ def process(args, rest):
             pydoc.pager(short_help_text("txt"))
             return
         if not rest:
-            manpage()
+            git_gq_man()
             return
 
         command= rest[0]
         command_args= rest[1:]
 
         if command in ("help", "man"):
-            manpage()
+            git_gq_man()
             return
 
         if command=="commands":
