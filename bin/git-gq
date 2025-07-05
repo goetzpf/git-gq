@@ -1716,12 +1716,16 @@ def git_mk_changes_files(only_diff_patch):
                           fh, None,
                           env= None,
                           verbose= gbl_verbose, dry_run= gbl_dry_run)
+    if os.path.getsize(DIFF_FILENAME)==0:
+        os.remove(DIFF_FILENAME)
     if not only_diff_patch:
         with open(HDIFF_FILENAME, "wt", encoding="utf-8") as fh:
             (_, _)= system_io(("git", "show", "HEAD"),
                               fh, None,
                               env= None,
                               verbose= gbl_verbose, dry_run= gbl_dry_run)
+        if os.path.getsize(HDIFF_FILENAME)==0:
+            os.remove(HDIFF_FILENAME)
 
 def git_rm_changes_files():
     """remove changes files."""
