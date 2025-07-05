@@ -24,7 +24,7 @@ if [ ! -d "doc/_build" ]; then
 fi
 
 
-DISTDIR="$(bin/git-gq --version | sed -e 's/ /-/')"
+DISTDIR="git-gq-$(bin/git-gq --version)"
 DISTPATH="dist/$DISTDIR"
 
 mkdir -p dist

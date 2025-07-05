@@ -35,14 +35,15 @@ import re
 
 ojoin= os.path.join
 
-MYNAME="git-gq"
-
-MYNAME_GIT= MYNAME.replace("-", " ")
+MYNAME_GIT= "git gq"
 
 TOPPATCHDIR=".gqpatches"
+
 TEMP_BASEDIR="tmp"
 
 TEMPDIR=os.path.join(TOPPATCHDIR, TEMP_BASEDIR)
+
+QUEUENAME="default"
 
 DIFF_FILENAME=ojoin(TEMPDIR, "DIFF.patch")
 HDIFF_FILENAME=ojoin(TEMPDIR, "HEAD.patch")
@@ -61,7 +62,7 @@ BASHCOMPLETION=r'_git_gq() { __gitcomp "$(git-gq commands)" "" "$cur"; }'
 
 USAGE= "%(prog)s [OPTIONS] COMMAND"
 
-DESC= f'''
+DESC= '''
 Bash completion commands
 ++++++++++++++++++++++++
 
@@ -85,14 +86,14 @@ Queue management commands
     If QNAME is not given, show current patch queue name. if QNAME is given,
     change to patch queue QNAME. If the patch queue QNAME is created for the
     first time, the parent revision is set to your 'HEAD' revision. If this is
-    not intended, you may change this with `{MYNAME_GIT} parent REVISION` to
+    not intended, you may change this with `git gq parent REVISION` to
     another revision.
 
   backup         
-    Create backup tar file of patch directory '{TOPPATCHDIR}'.
+    Create backup tar file of patch directory.
 
   restore FILE   
-    Restore patch directory from a backup file. '{TOPPATCHDIR}'.
+    Restore patch directory from a backup file.
 
   change-order   
     Call an editor to edit the file that contains all currently unapplied
@@ -108,7 +109,7 @@ Queue management commands
     Set REVISION as patch queue parent revision. Do never go beyond this
     revision with pop. Use 'HEAD' to set your repository HEAD as parent
     revision. If REVISION is 'NULL', this means that *all* revisions in
-    the repository can be managed with `{MYNAME_GIT} pop`, you should only
+    the repository can be managed with `git gq pop`, you should only
     use this for unpublished repositories. If REVISION is not given, show the
     current parent revision.
 
@@ -120,7 +121,7 @@ Queue management commands
   import PATCHFILE [PATCHFILE...]
     Import a number of patchfiles to the patch queue. The last patchfile in the
     list will be on the top of the queue. Note that the patch files must have
-    been generated with `git format-patch` or `{MYNAME_GIT} pop`. This
+    been generated with `git format-patch` or `git gq pop`. This
     cannot be used for patches generated with the `patch` program. These you
     have to apply with `git apply PATCHFILE`.
 
@@ -150,7 +151,7 @@ Patch management commands
   fold NAME|REGEXP
     Fold patch 'NAME' to the topmost patch. Patch 'NAME' must not be appled
     already. Note that the log message of the fold-patch is appended to the
-    existing log message. You may change the log message with `{MYNAME_GIT}
+    existing log message. You may change the log message with `git gq
     refresh -e`.
 
   edit NAME|REGEXP
@@ -195,8 +196,8 @@ OPTIONS
 '''
 
 DOC_HEADING=\
-f'''======================================================
-{MYNAME_GIT} - patch queues for git
+'''======================================================
+git gq - patch queues for git
 ======================================================
 '''
 
@@ -322,23 +323,23 @@ series
 
 The order of patches is kept in a file named 'series' that just contains all
 the filenames of all unapplied patches. This file is maintained by
-`{MYNAME_GIT}`.
+`git gq`.
 
 parent
 ::::::
 
 The parent revision is stored in a file 'parent'. This is the latest commit
 that is not allowed to be modified. This file is usually created when you start
-your work with `{MYNAME_GIT} init`. It can be changed with `{MYNAME_GIT}
+your work with `git gq init`. It can be changed with `git gq
 parent`.
 
 A special revision is `NULL`. This is the very first revision in the
 repository where no files are committed. git doesn't have a concept of a
-`NULL` revision, so this is emulated by `{MYNAME_GIT}` by creating a
+`NULL` revision, so this is emulated by `git gq` by creating a
 revision with no files in it. When the parent is set to `NULL` this means
 that you can pop the very first revision as a patch and by this have the
 capability to modify the very first revision. Of course, you should never do
-this with a published repository, since `{MYNAME_GIT} pop` and `{MYNAME_GIT}
+this with a published repository, since `git gq pop` and `git gq
 push` always modify revision hash keys.
 
 patch files '\\*.patch'
@@ -348,7 +349,7 @@ A *patch file* is basically a file with recipes for changes in files. Each
 recipe is called a *hunk*. A *hunk* contains line numbers, context lines, lines
 to remove and lines to add.
 
-`{MYNAME_GIT}` uses standard git commands to move patches between the
+`git gq` uses standard git commands to move patches between the
 repository and the patch queue. In the patch queue, each patch is a file
 created from the difference of a commit and it's predecessor in the repository
 with `git format-patch`. Among the changes between two commits this file also
@@ -408,11 +409,11 @@ DOC_CONFLICTS=\
 
 Conflicts may happen when:
 
-- you change the order of unapplied patches with `{MYNAME_GIT} change-order`
-  and then run `{MYNAME_GIT} push`
+- you change the order of unapplied patches with `git gq change-order`
+  and then run `git gq push`
 - you unapply patches, make changes in the repository, e.g. `git pull` and
   then apply the patches again
-- you combine unapplied patches with `{MYNAME_GIT} fold` that are not in
+- you combine unapplied patches with `git gq fold` that are not in
   consecutive order
 
 In the patch file example above, you see after '@@ -4,8 +4,8 @@' a single
@@ -425,7 +426,7 @@ a '+' character are to be added.
 A conflict occurs when the context lines or the lines to be removed couldn't be
 found. In this case, a reject file is created.
 
-Here are the messages you see in case of a conflict after you ran `{MYNAME_GIT}
+Here are the messages you see in case of a conflict after you ran `git gq
 push`::
 
   Applying: sample-comment
@@ -501,16 +502,16 @@ there may be more than one and resolve all conflicts.
 
 After you are finished, run::
 
-  {MYNAME_GIT} continue
+  git gq continue
 
 This finishes the operation and tells git that the conflict was resolved. You
-*must not* run `git am continue` yourself, `{MYNAME_GIT} continue` already
+*must not* run `git am continue` yourself, `git gq continue` already
 does this for you.
 
 If you cannot resolve conflicts because the reject files are too long or
 complicated, you can abort the last command with::
 
-  {MYNAME_GIT} abort
+  git gq abort
 
 In this case you may have to compare two versions of files and apply changes
 directly.
@@ -524,55 +525,55 @@ Local development
 +++++++++++++++++
 
 Assuming you have cloned another git repository and want to start development
-here. With `{MYNAME_GIT}` you don't need to create a local branch. Just run::
+here. With `git gq` you don't need to create a local branch. Just run::
 
-  {MYNAME_GIT} init
+  git gq init
 
-This sets up the `{MYNAME_GIT}` directory and marks the current HEAD revision
+This sets up the `git gq` directory and marks the current HEAD revision
 as parent revision.
 
 You can now begin to make changes. You create preliminary commits with::
 
-  {MYNAME_GIT} new NAME
+  git gq new NAME
 
 where NAME should be a one line string with no spaces in it. This is a
 preliminary log message that you can later update and extend. Every time you
 make more changes you can either:
 
-- run `{MYNAME_GIT} new` to create a new commit
-- run `{MYNAME_GIT} refresh` to update the topmost commit
+- run `git gq new` to create a new commit
+- run `git gq refresh` to update the topmost commit
 - run the `git add..` and `git commit` as usual to create a new commit
 
 You can see what patches are applied with::
 
-  {MYNAME_GIT} applied
+  git gq applied
 
 You can see what patches are unapplied with::
 
-  {MYNAME_GIT} unapplied
+  git gq unapplied
 
 When you want to finalize your commits and update commit messages, first move
 all of them as patches to the patch queue::
 
-  {MYNAME_GIT} pop -a
+  git gq pop -a
 
 Then for each patch, to provide a proper log message, run::
 
-  {MYNAME_GIT} push
-  {MYNAME_GIT} refresh -e
+  git gq push
+  git gq refresh -e
 
 You can also combine ('fold') an unapplied patch with::
 
-  {MYNAME_GIT} fold PATCH
+  git gq fold PATCH
 
 Inspect the applied patches with::
 
-  {MYNAME_GIT} glog
+  git gq glog
 
 When you are finished for all patches you can finalize these changes by setting
 the parent version to the current HEAD version::
 
-  {MYNAME_GIT} parent HEAD
+  git gq parent HEAD
 
 You are now ready to publish your patches.
 
@@ -587,11 +588,11 @@ With the patch queue, there is now another way to handle this. Before pulling
 patches from the public repository, put all your local changes on the patch
 queue::
 
-  {MYNAME_GIT} pop -a
+  git gq pop -a
 
 As a safety measure backup your patch queue with::
 
-  {MYNAME_GIT} backup
+  git gq backup
 
 Now pull patches from the remote repository::
 
@@ -599,11 +600,11 @@ Now pull patches from the remote repository::
 
 Reset the parent revision to the new repository HEAD::
 
-  {MYNAME_GIT} parent HEAD
+  git gq parent HEAD
 
 Finally re-apply all your patches::
 
-  {MYNAME_GIT} push -a
+  git gq push -a
 
 If you get messages about conflicts ("rejects") you have to resolve them. See
 further above at "Conflicts and conflict resolution".
@@ -629,10 +630,10 @@ Unknown files for git that should be part of the patch have to be added with:
   git add FILE
 
 If you could resolve the conflicts run:
-  {MYNAME_GIT} continue
+  git gq continue
 
 To abort the operation without resolving run:
-  {MYNAME_GIT} abort'''
+  git gq abort'''
 
 # ---------------------------------------------------------
 # globals
@@ -890,11 +891,6 @@ def sh_file_head(head_no, invert, file, file_out):
 # ---------------------------------------------------------
 # constants
 # ---------------------------------------------------------
-
-MYNAME_GIT="git gq"
-
-QUEUENAME="default"
-TOPPATCHDIR=".gqpatches"
 
 RX_TOPPPATCHDIR_FILES=re.compile(f'^ {TOPPATCHDIR}[{os.sep}-]')
 
@@ -1320,7 +1316,7 @@ def git_head_track_error():
     for line in out.splitlines():
         if RX_TOPPPATCHDIR_FILES.search(line):
             errtext=[f"FATAL Error, somehow git is tracking {TOPPATCHDIR}.",
-                     f"'{MYNAME_GIT} pop' would remove {TOPPATCHDIR}.",
+                     f"'git gq pop' would remove {TOPPATCHDIR}.",
                       "Do the following to fix this:",
                      f"  git reset HEAD~1 {TOPPATCHDIR}*",
                       "  git commit -C HEAD --amend"]
@@ -1673,7 +1669,7 @@ def check_uncomitted(commandname, force):
                        "be lost with this option.")
     else:
         raise AssertionError(f"unknown commandname: {commandname}")
-    errtext.append(f"- Create a new patch with '{MYNAME_GIT} new PATCHNAME' "
+    errtext.append("- Create a new patch with 'git gq new PATCHNAME' "
                    "and run this command again.")
     errtext.append("")
     raise GitGqException("\n".join(errtext))
@@ -2048,7 +2044,7 @@ def git_gq_restore(restorefile, full):
         print("Warning: this parent:")
         print(f"{parent}")
         print("does not exist in your repository.")
-        print("You have to set a valid parent with '{MYNAME_GIT} parent'.")
+        print("You have to set a valid parent with 'git gq parent'.")
     if parent_exists and full and (os.path.isdir(APPLIEDDIR)):
         print("Restore originally applied patches in repository ?")
         reply= input("Enter 'y' or 'Y' to continue, everything else skips.")
@@ -2273,8 +2269,8 @@ def git_gq_fold(name_regexp, edit, force, no_add):
     else:
         patchname= find_single_unapplied_patch(name_regexp)
     if at_null_revision():
-        raise GitGqException(f"Error, cannot fold to 'NULL' revision, "
-                             f"use '{MYNAME_GIT} push' instead.")
+        raise GitGqException("Error, cannot fold to 'NULL' revision, "
+                             "use 'git gq push' instead.")
     make_head_logfile(LOG_FILENAME, edit)
     sh_text_to_file("\n\n***\n\n", LOG_FILENAME, do_append= True)
     qpush_specified(patchname, force)
@@ -2299,10 +2295,10 @@ def git_gq_fold(name_regexp, edit, force, no_add):
     qdelete(patchname)
     print("Note: Log messages were combined into one, you should review/edit "
           "the log message with:")
-    print(f"      {MYNAME_GIT} refresh -e")
+    print("      git gq refresh -e")
     print("Note: If new files were added by the folded patch, run:")
     print("      git add NEW-FILES")
-    print(f"      {MYNAME_GIT} refresh -e")
+    print("      git gq refresh -e")
 
 def git_gq_show(name_regexp):
     """fold command."""
@@ -2510,7 +2506,7 @@ def process(args, rest):
             return
 
         if not os.path.isdir(TOPPATCHDIR):
-            raise GitGqException(f"please run '{MYNAME_GIT} init' first.")
+            raise GitGqException("please run 'git gq init' first.")
 
         if command=="qname":
             check_command_args(command, command_args, None, 1)
@@ -2654,7 +2650,7 @@ def main():
                  formatter_class=argparse.RawDescriptionHelpFormatter,
                                     )
     parser.add_argument('--version', action='version',
-                        version=f"{MYNAME_GIT} {VERSION}")
+                        version=f"{VERSION}")
 
     parser.add_argument("--summary",
                         action="store_true",
@@ -2707,8 +2703,8 @@ def main():
                        )
     parser.add_argument("-R", "--force",
                         action="store_true",
-                        help="Allow to run `$MYNAME_GIT pop` and "
-                             "`$MYNAME_GIT push` even if there are "
+                        help="Allow to run `git gq pop` and "
+                             "`git gq push` even if there are "
                              "uncommited changes. Note the with 'pop' this "
                              "will discard uncommited changes."
                        )
