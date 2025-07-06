@@ -1222,8 +1222,10 @@ def git_checkout(revision_spec):
 
     system_simple(("git", "checkout", revision_spec))
 
-def git_rev_parse(revision_spec):
+def git_rev_parse(revision_spec, catch_stderr):
     """runs git rev-parse on revision_spec.
+
+    catch_err: If true, catch stderr output.
 
     returns:
     revision 
@@ -1231,8 +1233,11 @@ def git_rev_parse(revision_spec):
     May raise IOError
     """
     (out, _)= system(("git", "rev-parse", "--short", revision_spec),
-                     catch_stdout= True, catch_stderr= False,
-                     env= None, verbose= gbl_verbose, dry_run= gbl_dry_run)
+                     catch_stdout= True, catch_stderr= catch_stderr,
+                     env= None,
+                     verbose= gbl_verbose, dry_run= gbl_dry_run)
+    # Note: if an error occurs and catch_stderr==True, the output on stderr
+    # is part of the IOError exception text.
     return out.strip()
 
 def git_show(revspec):
@@ -1816,7 +1821,7 @@ def find_first_applied_patch(regexp):
     if not found:
         raise GitGqException(f"Error, patch '{regexp}' not found.")
     hash_= found.split(maxsplit=1)[0]
-    return git_rev_parse(hash_)
+    return git_rev_parse(hash_, catch_stderr= False)
 
 def find_head_patch(regexp):
     """looks if the HEAD patch matches pattern.
@@ -1976,7 +1981,7 @@ def create_parentfile(revspec):
     if revspec=="NULL":
         rev= revspec
     else:
-        rev= git_rev_parse(revspec)
+        rev= git_rev_parse(revspec, catch_stderr= False)
         if rev == revspec:
             print(f"queue parent revision set to {revspec}")
         else:
@@ -2296,6 +2301,21 @@ def git_gq_fold(name_regexp, edit, force, no_add):
 def git_gq_show(name_regexp):
     """fold command."""
     patchname= name_regexp
+    try:
+        # First try if $name_arg is a revision specification:
+        patchname= git_rev_parse(name_regexp, catch_stderr= True)
+        git_show(patchname)
+        return
+    except GitGqException:
+        pass
+    except IOError:
+        pass
+    try:
+        patchname= find_first_applied_patch(name_regexp)
+        git_show(patchname)
+        return
+    except GitGqException:
+        pass
     if os.path.isfile(ojoin(PATCHDIR, patchname)):
         dump_patch_file(ojoin(PATCHDIR, patchname))
         return
@@ -2304,20 +2324,8 @@ def git_gq_show(name_regexp):
         dump_patch_file(ojoin(PATCHDIR, patchname))
         return
     except GitGqException:
-        pass
-    try:
-        patchname= find_first_applied_patch(name_regexp)
-        git_show(patchname)
-        return
-    except GitGqException:
-        pass
-    try:
-        # as last resort try if $name_arg is a revision specification:
-        patchname= git_rev_parse(name_regexp)
-        git_show(patchname)
-        return
-    except GitGqException:
-        raise GitGqException(f"Error, patch '{name_regexp}' not found.") from None
+        raise GitGqException(f"Error, patch '{name_regexp}' not found.") \
+              from None
 
 def git_gq_applied(lines):
     """applied command."""
