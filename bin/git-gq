@@ -23,6 +23,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import argparse
 #import string
+import pathlib
 import os.path
 import sys
 import subprocess
@@ -40,8 +41,9 @@ MYNAME_GIT= "git gq"
 TOPPATCHDIR=".gqpatches"
 
 TEMP_BASEDIR="tmp"
-
 TEMPDIR=os.path.join(TOPPATCHDIR, TEMP_BASEDIR)
+
+FORBIDDED_QUEUENAMES=set((TEMP_BASEDIR, ))
 
 DIFF_FILENAME=ojoin(TEMPDIR, "DIFF.patch")
 HDIFF_FILENAME=ojoin(TEMPDIR, "HEAD.patch")
@@ -88,10 +90,22 @@ Queue management commands
     another revision.
 
   backup         
-    Create backup tar file of patch directory.
+    Backup state of patch queue with a separate git repository. You may
+    provide a short log message with oṕtion `-m`.
 
-  restore FILE   
-    Restore patch directory from a backup file.
+  restore REVISION   
+    Restore patch directory to a REVISION that was created with `git gq backup`
+    before. This *does not* change your git repository. To do this, you must
+    run `git gq revert`.
+
+  revert
+    Revert git repository to the state stored in the patch queue. All *applied*
+    patches are restored to the state at the last `git gq backup`. All
+    *unapplied* patches remain in their present state. This will create a new
+    branch in the repository beginning at the PARENT revision.
+
+  qrepo COMMAND [-- OPTIONS]
+    Run git command COMMAND with OPTIONS in patch-queue repository.
 
   change-order   
     Call an editor to edit the file that contains all currently unapplied
@@ -306,12 +320,6 @@ queue. All patch queue directories are in directory '{TOPPATCHDIR}'.
 
 A file 'queue' in directory '{TOPPATCHDIR}' contains the currently selected
 patch queue.
-
-Backup files
-++++++++++++
-
-Backups are '\\*.tar.gz' files in '{TOPPATCHDIR}'. All backups have the name
-schema '{TOPPATCHDIR}-TIMESTAMP.tar.gz'.
 
 Files in the patch queue directory
 ++++++++++++++++++++++++++++++++++
@@ -692,6 +700,16 @@ def sh_file_rename(old, new):
         os.remove(new)
     os.rename(old, new)
 
+def sh_chdir(dir_):
+    """returns the old CWD."""
+    this_dir= os.getcwd()
+    os.chdir(dir_)
+    return this_dir
+
+def sh_mkdir_p(dir_):
+    """mkdir -p"""
+    pathlib.Path(dir_).mkdir(parents= True, exist_ok= True)
+
 def sh_file_exists(file):
     """check if a file exists.
 
@@ -913,7 +931,7 @@ ALL_COMMANDS={\
     "abort", "applied", "backup", "bashcompletion", "change-order", "commands",
     "conflict", "continue", "delete", "doc", "edit", "export", "fold", "glog",
     "goto", "help", "import", "init", "man", "new", "parent", "pop", "push",
-    "qname", "record", "refresh", "restore",
+    "qname", "qrepo", "record", "refresh", "restore", "revert",
     "show", "unapplied"} # type: ignore
 
 # ---------------------------------------------------------
@@ -1219,27 +1237,68 @@ def git_goto_repo_dir():
 # functions that call git
 # ---------------------------------------------------------
 
-def git_checkout(revision_spec):
-    """run git checkout"""
+def git_init(dir_):
+    """git init and git add."""
 
-    system_simple(("git", "checkout", revision_spec))
+    cmd_list= ["git", "init"]
+    if dir_:
+        cmd_list.append(dir_)
+    system_simple(cmd_list)
 
-def git_rev_parse(revision_spec, catch_stderr):
+def git_checkout(revision_spec, dir_= None):
+    """run git checkout
+
+    dir_: change to this directory first
+    """
+    old_dir= None
+    if dir_ is not None:
+        old_dir= sh_chdir(dir_)
+    try:
+        system_simple(("git", "checkout", revision_spec))
+    finally:
+        if old_dir is not None:
+            sh_chdir(old_dir)
+
+def git_clean(dir_= None):
+    """run git clean -d -f
+
+    CAUTION: removes all files/directories unoknown to git.
+
+    dir_: change to this directory first
+    """
+    old_dir= None
+    if dir_ is not None:
+        old_dir= sh_chdir(dir_)
+    try:
+        system_simple(("git", "clean", "-d", "-f"))
+    finally:
+        if old_dir is not None:
+            sh_chdir(old_dir)
+
+def git_rev_parse(revision_spec, catch_stderr, dir_= None):
     """runs git rev-parse on revision_spec.
 
     catch_err: If true, catch stderr output.
+    dir_: change to this directory first
 
     returns:
     revision 
 
     May raise IOError
     """
-    (out, _)= system(("git", "rev-parse", "--short", revision_spec),
-                     catch_stdout= True, catch_stderr= catch_stderr,
-                     env= None,
-                     verbose= gbl_verbose, dry_run= gbl_dry_run)
-    # Note: if an error occurs and catch_stderr==True, the output on stderr
-    # is part of the IOError exception text.
+    old_dir= None
+    if dir_ is not None:
+        old_dir= sh_chdir(dir_)
+    try:
+        (out, _)= system(("git", "rev-parse", "--short", revision_spec),
+                         catch_stdout= True, catch_stderr= catch_stderr,
+                         env= None,
+                         verbose= gbl_verbose, dry_run= gbl_dry_run)
+        # Note: if an error occurs and catch_stderr==True, the output on stderr
+        # is part of the IOError exception text.
+    finally:
+        if old_dir is not None:
+            sh_chdir(old_dir)
     return out.strip()
 
 def git_show(revspec):
@@ -1250,12 +1309,36 @@ def git_glog():
     """git graphlog."""
     system_simple(("git", "log", "--graph", "--all", "--decorate"))
 
-def git_add(filelist):
-    """add a list of files to git."""
+def git_add(filelist, dir_=None):
+    """add a list of files to git.+
 
+    If dir_ is not None, do chdir to that directory first
+    """
+    old_dir= None
+    if dir_ is not None:
+        old_dir= sh_chdir(dir_)
     cmd_lst= ["git", "add"]
     cmd_lst.extend(filelist)
-    system_simple(cmd_lst)
+    try:
+        system_simple(cmd_lst)
+    finally:
+        if old_dir is not None:
+            sh_chdir(old_dir)
+
+def git_commit(message, dir_=None):
+    """simple git commit.
+
+    If dir_ is not None, do chdir to that directory first
+    """
+    old_dir= None
+    if dir_ is not None:
+        old_dir= sh_chdir(dir_)
+    cmd_lst= ["git", "commit", "-m", message]
+    try:
+        system_simple(cmd_lst)
+    finally:
+        if old_dir is not None:
+            sh_chdir(old_dir)
 
 def git_rm_all():
     """remove all tracked files."""
@@ -1295,12 +1378,22 @@ def git_unknown_files(file):
                 continue
             fh_w.write(f"{unknown_file}\n")
 
-def git_uncommitted():
-    """returns list uncommited changes."""
+def git_uncommitted(dir_= None):
+    """returns list uncommited changes.
 
-    (out, _)= system(("git", "status", "--porcelain=v1"),
-                     catch_stdout= True, catch_stderr= True,
-                     env= None, verbose= gbl_verbose, dry_run= gbl_dry_run)
+    dir_: change to this directory first
+    """
+    old_dir= None
+    if dir_ is not None:
+        old_dir= sh_chdir(dir_)
+    try:
+        (out, _)= system(("git", "status", "--porcelain=v1"),
+                         catch_stdout= True, catch_stderr= True,
+                         env= None,
+                         verbose= gbl_verbose, dry_run= gbl_dry_run)
+    finally:
+        if old_dir is not None:
+            sh_chdir(old_dir)
     filelist=[]
     for l in out.splitlines():
         if l.startswith("??"):
@@ -1541,6 +1634,20 @@ def git_amend(log_message, log_message_file, log_message_template,
     system_simple(cmd_list)
 
 # ---------------------------------------------------------
+# function that call git several times
+# ---------------------------------------------------------
+
+def git_create_null():
+    """create a new NULL revision."""
+    # go to the very first revision:
+    rev1= git_revision_1()
+    git_checkout(rev1)
+    # Create a "zero revision" patch by deleting all files and amend the first
+    # patch accordingly:
+    git_rm_all()
+    git_amend_null()
+
+# ---------------------------------------------------------
 # other functions
 # ---------------------------------------------------------
 
@@ -1590,6 +1697,10 @@ def git_add_changes(add_unknown_files):
         else:
             # a line in the form 'A  README.txt' or 'M  README.txt'
             file= line[3:] # remove leading flags
+        # do not add .gqpatches directory:
+        m= RX_TOPPPATCHDIR_FILES_STAT.search(line)
+        if m:
+            continue
         filelist.append(file)
     if filelist:
         git_add(filelist)
@@ -1923,10 +2034,6 @@ def save_applied_patches():
         files= git_format_applied(parent_hash, None, APPLIEDDIR)
         print("\n".join(files))
 
-def del_applied_patches():
-    """delete applied patches dir created by save_applied_patches()."""
-    shutil.rmtree(APPLIEDDIR)
-
 def select_queue(queue):
     """modifies global variables for a new queue.
 
@@ -1999,11 +2106,11 @@ def qpush_specified(patch, force):
     """
     check_uncomitted("push", force)
     patchname= find_single_unapplied_patch(patch)
-    sh_text_to_file(patchname, ojoin(PATCHDIR, "PUSH"),
-                    do_append= False, add_final_newline= True)
     sh_file_exists(SERIESFILE)
     if os.path.getsize(SERIESFILE)==0:
         raise GitGqException("Error, there are no unapplied patches.")
+    sh_text_to_file(patchname, ojoin(PATCHDIR, "PUSH"),
+                    do_append= False, add_final_newline= True)
     # remove PATCHNAME from SERIESFILE:
     seriesfile_new= sh_file_new(SERIESFILE)
     if patch is None:
@@ -2075,54 +2182,99 @@ def git_gq_man():
     else:
         system_simple(f"{__file__} doc | rst2man | man -l -")
 
-def git_gq_restore(restorefile, full):
-    """restore from file."""
+def git_gq_restore(revision):
+    """restore from revision."""
     check_conflict(True)
-    sh_file_exists(restorefile) # raises Exception if not
-    if os.path.isdir(TOPPATCHDIR):
-        print(f"{TOPPATCHDIR} already exists, is it okay to rename it to")
-        date_= portable_isodate()
-        new_dirname= f"{TOPPATCHDIR}-{date_}"
-        print(f"{new_dirname} ?")
-        reply= input("Enter 'y' or 'Y' to continue, everything else aborts ")
-        if not reply in ("y", "Y"):
-            raise GitGqException("Operation aborted")
-        os.rename(TOPPATCHDIR, new_dirname)
-    system_simple(("tar", "-xzf", restorefile))
+    if not os.path.isdir(ojoin(TOPPATCHDIR, ".git")):
+        raise GitGqException("Error, 'git gq backup' was never run.")
+    if git_uncommitted(TOPPATCHDIR):
+        raise GitGqException(f"Error, there are uncomited changes "
+                             f"in {TOPPATCHDIR}")
+    try:
+        revspec= git_rev_parse(revision, catch_stderr= False,
+                               dir_= TOPPATCHDIR)
+        git_checkout(revspec, TOPPATCHDIR)
+        git_clean(TOPPATCHDIR)
+    except IOError as e:
+        raise GitGqException(str(e)) from None
     queuename= sh_file_to_list(QUEUEFILE)[0].strip()
     select_queue(queuename)
     parent_exists= True
     (parent_hash, parent)= get_parent(exist_test= True, use_exception= False)
     if parent=="NULL":
-        print("Your PARENT revision is NULL.")
+        print("Note: The restored PARENT revision is NULL.")
         print(f"Originally applied patches are in {APPLIEDDIR}.")
         # do not try to restore applied patches:
         parent_exists= False
     if parent_hash is None:
         # parent hash couldn't be found in repository
         parent_exists= False
-        print("Warning: this parent:")
+        print("Warning: The restored PARENT revision:")
         print(f"{parent}")
         print("does not exist in your repository.")
         print("You have to set a valid parent with 'git gq parent'.")
-    if parent_exists and full and (os.path.isdir(APPLIEDDIR)):
-        print("Restore originally applied patches in repository ?")
-        reply= input("Enter 'y' or 'Y' to continue, everything else skips.")
-        if reply in ("y", "Y"):
-            git_checkout(parent_hash)
-            # all patches here have a preceeding number and should already
-            # have the right order by this.
-            git_am_simple(f"{APPLIEDDIR}/*.patch")
-            del_applied_patches()
-        else:
-            print(f"Originally applied patches are in {APPLIEDDIR}.")
+    if parent_exists and (os.path.isdir(APPLIEDDIR)):
+        print("You can now re-create the patch queue with 'git gq revert'.")
 
-def git_gq_backup():
+def git_gq_revert():
+    """revert repo to state in patch queue."""
+    check_conflict(True)
+    if not os.path.isdir(ojoin(TOPPATCHDIR, ".git")):
+        raise GitGqException("Error, 'git gq backup' was never run.")
+    if git_uncommitted(TOPPATCHDIR):
+        raise GitGqException(f"Error, there are uncomited changes "
+                             f"in {TOPPATCHDIR}")
+    print("Reverting changes in repository cannot be undone easily.")
+    print("Continue ?")
+    reply= input("Enter 'y' or 'Y' to continue, everything else aborts.")
+    if reply not in ("y", "Y"):
+        print("command aborted")
+        return
+    (parent_hash, parent)= get_parent(exist_test= True, use_exception= False)
+    if parent=="NULL":
+        print("Note: The current PARENT revision is NULL.")
+        if not at_null_revision():
+            # Create a single empty 'NULL' revision at the start:
+            git_create_null()
+    elif parent_hash is None:
+        # parent hash couldn't be found in repository
+        print("Error: this parent:")
+        print(f"{parent}")
+        print("does not exist in your repository.")
+        print("You have to set a valid parent with 'git gq parent' first.")
+        return
+    else:
+        git_checkout(parent_hash)
+    git_am_simple(f"{APPLIEDDIR}/*.patch")
+
+def git_gq_backup(message):
     """create a backup."""
     save_applied_patches()
-    date_= portable_isodate()
-    system_simple(("tar", "-czf", f"{TOPPATCHDIR}-{date_}.tgz", TOPPATCHDIR))
-    del_applied_patches()
+    if not os.path.isdir(ojoin(TOPPATCHDIR, ".git")):
+        git_init(TOPPATCHDIR)
+    git_add(os.listdir(TOPPATCHDIR), TOPPATCHDIR)
+    if message is None:
+        message=f"backup {portable_isodate()}"
+    git_commit(message, TOPPATCHDIR)
+
+def git_gq_qrepo(command_args):
+    """run git command in .gqpatches.
+
+    Examples:
+    git-gq qrepo log
+    git-gq qrepo log -- --stat
+    """
+    if not os.path.isdir(ojoin(TOPPATCHDIR, ".git")):
+        raise GitGqException(f"Error, no git repo in {TOPPATCHDIR}")
+    old_dir= sh_chdir(TOPPATCHDIR)
+    cmd_list= ["git"]
+    cmd_list.extend(command_args)
+    try:
+        system_rc(cmd_list, catch_stdout= False, catch_stderr= False,
+                  env= None, verbose= gbl_verbose, dry_run= gbl_dry_run)
+    finally:
+        if old_dir is not None:
+            sh_chdir(old_dir)
 
 def git_gq_init(name, rev):
     """run git gq init."""
@@ -2158,8 +2310,8 @@ def git_gq_qname(qname):
         print(f"\t{QUEUENAME}")
         return
     check_conflict(True)
-    if qname == TEMP_BASEDIR:
-        raise GitGqException(f"Error, '{TEMP_BASEDIR}' is a special name "
+    if qname in FORBIDDED_QUEUENAMES:
+        raise GitGqException(f"Error, '{qname}' is a special name "
                              f"and cannot be used as name for a queue.")
     QUEUENAME= qname
     sh_text_to_file(QUEUENAME, QUEUEFILE, do_append= False,
@@ -2563,7 +2715,12 @@ def process(args, rest):
 
         if command=="restore":
             check_command_args(command, command_args, 1, 1)
-            git_gq_restore(command_args[0], args.full)
+            git_gq_restore(command_args[0])
+            return
+
+        if command=="revert":
+            check_command_args(command, command_args, None, 0)
+            git_gq_revert()
             return
 
         if command=="init":
@@ -2589,7 +2746,11 @@ def process(args, rest):
 
         if command=="backup":
             check_command_args(command, command_args, None, 0)
-            git_gq_backup()
+            git_gq_backup(args.message)
+            return
+
+        if command=="qrepo":
+            git_gq_qrepo(command_args)
             return
 
         if command=="change-order":
@@ -2754,7 +2915,7 @@ def main():
                         help="refresh/fold: start editor to edit log message"
                        )
     parser.add_argument("-m", "--message",
-                        help="refresh: use MESSAGE as log message.",
+                        help="backup/refresh: use MESSAGE as log message.",
                         metavar="MESSAGE"
                        )
     parser.add_argument("-F", "--file",
@@ -2774,13 +2935,6 @@ def main():
                              "`git gq push` even if there are "
                              "uncommited changes. Note the with 'pop' this "
                              "will discard uncommited changes."
-                       )
-    parser.add_argument("-L", "--full",
-                        action="store_true",
-                        help="restore: do also restore all patches that "
-                             "were applied when the backup was created. "
-                             "Caution: This runs `git checkout PARENT` "
-                             "and `git am` on your repository."
                        )
     parser.add_argument("--exception",
                         action="store_true",

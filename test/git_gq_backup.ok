@@ -12,20 +12,75 @@ $ git gq unapplied
 README-was-extended.patch
 
 $ git gq backup
+hint: Using 'master' as the name for the initial branch. This default branch name
+hint: is subject to change. To configure the initial branch name to use in all
+hint: of your new repositories, which will suppress this warning, call:
+hint:
+hint: 	git config --global init.defaultBranch <name>
+hint:
+hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+hint: 'development'. The just-created branch can be renamed via this command:
+hint:
+hint: 	git branch -m <name>
+Initialized empty Git repository in /.gqpatches/.git/
+[master (root-commit) abcdef0] backup 2001-12-31T091234
+6 files changed, 63 insertions(+)
+create mode 100644 default/README-was-extended.patch
+create mode 100644 default/applied/0001-README-was-improved.patch
+create mode 100644 default/applied/0002-script.sh-was-improved.patch
+create mode 100644 default/parent
+create mode 100644 default/series
+create mode 100644 queue
 .gqpatches/default/applied/0001-README-was-improved.patch
 .gqpatches/default/applied/0002-script.sh-was-improved.patch
 
-Tar file generated:
-.gqpatches-2001-12-31T091234.tgz
+Created backup:
+$ git gq qrepo log -- --oneline | cat
+abcdef0 backup 2025-2001-12-31T091234
 
-Files stored in tar file:
-.gqpatches/
-.gqpatches/default/
-.gqpatches/default/applied/
-.gqpatches/default/applied/0001-README-was-improved.patch
-.gqpatches/default/applied/0002-script.sh-was-improved.patch
-.gqpatches/default/parent
-.gqpatches/default/README-was-extended.patch
-.gqpatches/default/series
-.gqpatches/queue
-.gqpatches/tmp/
+Now create an extra, new file, 'NEW_FILE':
+$ git add NEW_FILE
+$ git commit -m 'NEW_FILE added'
+[master abcdef0] NEW_FILE added
+1 file changed, 1 insertion(+)
+create mode 100644 NEW_FILE
+
+$ git gq applied
+abcdef0 NEW_FILE added
+abcdef0 script.sh was improved.
+abcdef0 README was improved.
+
+$ git gq unapplied
+README-was-extended.patch
+
+Now revert the patch queue directly:
+$ git gq revert
+Reverting changes in repository cannot be undone easily.
+Continue ?
+Enter 'y' or 'Y' to continue, everything else aborts.Note: switching to 'abcdef0'.
+
+You are in 'detached HEAD' state. You can look around, make experimental
+changes and commit them, and you can discard any commits you make in this
+state without impacting any branches by switching back to a branch.
+
+If you want to create a new branch to retain commits you create, you may
+do so (now or later) by using -c with the switch command. Example:
+
+git switch -c <new-branch-name>
+
+Or undo this operation with:
+
+git switch -
+
+Turn off this advice by setting config variable advice.detachedHead to false
+
+HEAD is now at abcdef0 initial commit
+Applying: README was improved.
+Applying: script.sh was improved.
+
+$ git gq applied
+abcdef0 script.sh was improved.
+abcdef0 README was improved.
+
+$ git gq unapplied
+README-was-extended.patch

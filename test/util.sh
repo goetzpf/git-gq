@@ -25,6 +25,22 @@ function filter_patch_version_number {
     done
 }
 
+function filter_isodate {
+    # 2025-06-04T144559 --> 2001-12-31T091234
+    local line
+    while read -r line ; do
+        echo "$line" | sed -e "s/^\([^-]\+\)-[0-9T-]\+/\1-$DUMMY_ISODATE/"
+    done
+}
+
+function filter_isodate_any {
+    # ... 2025-06-04T144559 --> ... 2001-12-31T091234
+    local line
+    while read -r line ; do
+        echo "$line" | sed -e "s/\([0-9]\+-[0-9]\+-[0-9]\+T[0-9]\+\)/$DUMMY_ISODATE/"
+    done
+}
+
 function filter_tar_isodate {
     # .gqpatches-2025-06-04T144559.tgz --> .gqpatches-2001-12-31T091234.tgz
     local line
@@ -49,6 +65,14 @@ function filter_parenthesis_hash {
     done
 }
 
+function filter_quoted_hash {
+    # '983fda7' --> 'abcdef0'
+    local line
+    while read -r line ; do
+        echo "$line" | sed -e "s/'[a-f0-9]\+'/'$DUMMY_HASH'/"
+    done
+}
+
 function filter_set_to_hash {
     # '(983fda7)' --> '(abcdef0)'
     local line
@@ -62,6 +86,14 @@ function filter_squarebracket_hash {
     local line
     while read -r line ; do
         echo "$line" | sed -e "s/^\[\([^ ]\+\) \+[a-f0-9]\+\]/[\1 $DUMMY_HASH]/"
+    done
+}
+
+function filter_squarebracket_end_hash {
+    # '... [sometext 76ad5f4]' --> '... [sometext abcdef0]'
+    local line
+    while read -r line ; do
+        echo "$line" | sed -e "s/[a-f0-9]\+\]/$DUMMY_HASH]/"
     done
 }
 
@@ -135,8 +167,8 @@ function filter_git_index_hash {
 }
 
 function filter_git_head_hash {
-    # 'HEAD is not at 54da6cd' -->
-    # 'HEAD is not at abcdef0'
+    # 'HEAD is now at 54da6cd' -->
+    # 'HEAD is now at abcdef0'
     local line
     while read -r line ; do
         echo "$line" | sed -e "s/^\(HEAD is now at\) \+[a-f0-9]\+ \+\(.*\)/\1 $DUMMY_HASH \2/"
