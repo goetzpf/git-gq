@@ -49,7 +49,10 @@ Queue management commands
   parent [REVISION}   
     Set REVISION as patch queue parent revision. Do never go beyond this
     revision with pop. Use 'HEAD' to set your repository HEAD as parent
-    revision. If HEAD is not given, show the current parent revision.
+    revision. If REVISION is 'NULL', this means that *all* revisions in
+    the repository can be managed with `git gq pop`, you should only
+    use this for unpublished repositories. If REVISION is not given, show the
+    current parent revision.
 
   export DIRECTORY
     Create numbered patch files from all currently applied patches in
@@ -92,6 +95,9 @@ Patch management commands
     existing log message. You may change the log message with `git gq
     refresh -e`.
 
+  edit NAME|REGEXP
+    Call an editor to edit an unapplied patch. 
+
   delete NAME|REGEXP
     Delete unapplied patch with given name.
 
@@ -99,16 +105,23 @@ Patch management commands
     Show changes of an applied or unapplied patch on the console.
 
   continue       
-    Continue 'push' after you had a conflict and had it fixed manually.
+    Continue 'push' after you had a conflict and had it fixed manually. This
+    also removes all reject (\*.rej) files that are not tracked by git.
 
   abort          
     Abort (undo) 'push' after you had a conflict and could not fix it manually.
+    This also removes all reject (\*.rej) files that are not tracked by git.
 
 Miscellaneous commands
 ++++++++++++++++++++++
 
   help           
     Show this help.
+
+  conflict [CMD]
+    Show if the repository is in an unresolved conflict state.
+    CMD is a sub-command, `files` shows files changed by the patch,
+    `show` shows the patch.
 
   doc            
     Show reStructuredText source of man page.
@@ -149,6 +162,15 @@ OPTIONS
 
   -F --file FILE
     refresh: take log message from FILE.
+
+  -l --lines LINECOUNT
+    applied, unapplied: Limit the number of lines printed by the command. Print
+    only the first LINECOUNT lines.
+
+  -R --force
+    Allow to run `git gq pop` and `git gq push` even if there are
+    uncommited changes. Note the with 'pop' this will discard uncommited
+    changes. 
 
   -L --full
     restore: do also restore all patches that were applied when the backup was

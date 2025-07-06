@@ -6,14 +6,14 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Implementation &mdash; git-gq 1.1 documentation</title>
+  <title>Implementation &mdash; git-gq 1.2 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
 
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=56dcb7b8"></script>
+      <script src="_static/documentation_options.js?v=61243dd2"></script>
       <script src="_static/doctools.js?v=9a2dae69"></script>
       <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/js/theme.js"></script>
@@ -141,6 +141,14 @@ the filenames of all unapplied patches. This file is maintained by
 that is not allowed to be modified. This file is usually created when you start
 your work with <cite>git gq init</cite>. It can be changed with <cite>git gq
 parent</cite>.</p>
+<p>A special revision is <cite>NULL</cite>. This is the very first revision in the
+repository where no files are committed. git doesn’t have a concept of a
+<cite>NULL</cite> revision, so this is emulated by <cite>git gq</cite> by creating a
+revision with no files in it. When the parent is set to <cite>NULL</cite> this means
+that you can pop the very first revision as a patch and by this have the
+capability to modify the very first revision. Of course, you should never do
+this with a published repository, since <cite>git gq pop</cite> and <cite>git gq
+push</cite> always modify revision hash keys.</p>
 </section>
 <section id="patch-files-patch">
 <h3>patch files ‘*.patch’<a class="headerlink" href="#patch-files-patch" title="Link to this heading"></a></h3>

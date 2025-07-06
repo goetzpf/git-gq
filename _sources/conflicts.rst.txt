@@ -23,7 +23,6 @@ found. In this case, a reject file is created.
 Here are the messages you see in case of a conflict after you ran `git gq
 push`::
 
-  $ ../../bin/git-gq push
   Applying: sample-comment
   Checking patch sample.c...
   error: while searching for:
@@ -45,11 +44,25 @@ push`::
   hint: If you prefer to skip this patch, run "git am --skip" instead.
   hint: To restore the original branch and stop patching, run "git am --abort".
   hint: Disable this message with "git config set advice.mergeConflict false"
-  Fix the change by looking at the *.rej files.
-  Then run:
-    git-gq continue
-  To abort the operation without fixing run:
-    git-gq abort
+  
+  git gq help on conflicts
+  ------------------------
+  
+  Resolve this conflict by looking at the *.rej files.
+  For files that were not found there is no reject file, then look at the patch with:
+    less .gqpatches/tmp/DIFF.patch
+  
+  To see the state of your repo run:
+    git status
+  
+  Unknown files for git that should be part of the patch have to be added with:
+    git add FILE
+  
+  If you could resolve the conflicts run:
+    git gq continue
+  
+  To abort the operation without resolving run:
+    git gq abort
 
 And here is the content of the reject file, 'sample.c.rej' in this case::
 

@@ -34,6 +34,15 @@ that is not allowed to be modified. This file is usually created when you start
 your work with `git gq init`. It can be changed with `git gq
 parent`.
 
+A special revision is `NULL`. This is the very first revision in the
+repository where no files are committed. git doesn't have a concept of a
+`NULL` revision, so this is emulated by `git gq` by creating a
+revision with no files in it. When the parent is set to `NULL` this means
+that you can pop the very first revision as a patch and by this have the
+capability to modify the very first revision. Of course, you should never do
+this with a published repository, since `git gq pop` and `git gq
+push` always modify revision hash keys.
+
 patch files '\*.patch'
 ::::::::::::::::::::::
 
