@@ -475,20 +475,20 @@ And here is the content of the reject file, 'sample.c.rej' in this case::
      {
        int i;
    
-  -    printf("number of arguments: %d\n", argc);
-       printf("program name: %s\n", argv[0]);
+  -    printf("number of arguments: %d\\n", argc);
+       printf("program name: %s\\n", argv[0]);
   +    /* iterate over all command line arguments: */
        for(i=1; i<argc; i++)
-         printf("arg no %2d: %s\n", i, argv[i]);
+         printf("arg no %2d: %s\\n", i, argv[i]);
        return 0;
 
 In our example here, while the patch was moved to the patch queue, this line::
 
-  printf("number of arguments: %d\n", argc);
+  printf("number of arguments: %d\\n", argc);
 
 had been changed to::
 
-  printf("My number of arguments: %d\n", argc);
+  printf("My number of arguments: %d\\n", argc);
 
 So the line to remove by the patch wasn't found and we had a conflict. If we
 open both, the original file 'sample.c' and the reject file 'sample.c.rej' in
@@ -2479,6 +2479,7 @@ def process(args, rest):
         if command=="doc":
             check_command_args(command, command_args, None, 1)
             print_doc(unpack_one(command_args))
+            return
 
         git_goto_repo_dir()
 
