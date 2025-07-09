@@ -67,6 +67,7 @@ git_gq_refresh.out: git_gq_add_2.tst
 git_gq_mv_refresh.out: git_gq_add_2.tst
 git_gq_goto.out: git_gq_new.tst
 git_gq_fold.out: git_gq_add_2.tst
+git_gq_fold2.out: git_gq_add_2.tst
 git_gq_record.out: git_gq_add_2.tst
 git_gq_delete.out: git_gq_new.tst
 git_gq_qname.out: git_gq_add_2.tst

@@ -896,6 +896,7 @@ RX_NUMBER=re.compile(r'^[0-9]+-')
 
 RX_HASH=re.compile(r'^[A-Fa-f0-9]{6,}$')
 RX_GITSTAT_MV=re.compile(r'^R[M ] .*-> (.*)')
+RX_GITSTAT_DEL=re.compile(r'^D  ')
 
 RX_RST_PLUS=re.compile(r'\++$')
 
@@ -1573,18 +1574,74 @@ def git_add_changes(add_unknown_files):
                      env= None, verbose= gbl_verbose, dry_run= gbl_dry_run)
     filelist= []
     for line in out.splitlines():
+        if RX_GITSTAT_DEL.search(line):
+            # deleted file
+            continue
         m= RX_GITSTAT_MV.search(line)
         if m:
+            # renamed file
             # a line in the form 'R  README.txt -> README.rst'
             file= m.group(1)
         else:
-            # a line in the form ';  README.txt
+            # a line in the form 'A  README.txt' or 'M  README.txt'
             file= line[3:] # remove leading flags
         m= RX_TOPPPATCHDIR_FILES.search(file)
         if m:
             continue
         filelist.append(file)
-    git_add(filelist)
+    if filelist:
+        git_add(filelist)
+
+def git_head_patch_status():
+    """returns a status for each changed file for head patch.
+
+    Example:
+    D	README.rst
+    M	bin/git-gq
+    M	test/Makefile
+    M	test/TESTS
+    A	test/git_gq_pop_push_null.ok
+    A	test/git_gq_pop_push_null.sh
+    M	test/util.sh
+
+    Flags:
+    - A : added
+    - C : copied
+    - D : deleted
+    - M : modified
+    - R : renamed
+    - T : changed
+    - U : unmerged
+    - X : unknown
+    - B : broken
+
+    Note: a rename looks like this:
+    'R100 README.txt\tREADME2.txt'
+    """
+    (out, _)= system(("git", "diff", "--name-status", "HEAD~1", "HEAD"),
+                     catch_stdout= True, catch_stderr= False,
+                     env= None,
+                     verbose= gbl_verbose, dry_run= gbl_dry_run)
+    result= []
+    for line in out.splitlines():
+        (flag, file)= line.split(maxsplit=1)
+        result.append((flag, file))
+    return result
+
+def git_head_patch_filelist():
+    """just all files the head patch adds, modifies or renames."""
+    exclude_list= set(("D", "X", "B"))
+    lst= git_head_patch_status()
+    files= []
+    for e in lst:
+        if e[0] in exclude_list:
+            continue
+        if e[0].startswith("R"):
+            # rename
+            files.append(e[1].split("\t", maxsplit=1)[1])
+        else:
+            files.append(e[1])
+    return files
 
 def _new_unknown_files(oldlist_file, newlist_file):
     """return list of new unknown files for git."""
@@ -2272,6 +2329,7 @@ def git_gq_fold(name_regexp, edit, force, no_add):
     make_head_logfile(LOG_FILENAME, edit)
     sh_text_to_file("\n\n***\n\n", LOG_FILENAME, do_append= True)
     qpush_specified(patchname, force)
+    filelist= git_head_patch_filelist()
     sh_text_to_file(git_head_log(), LOG_FILENAME, do_append= True,
                     add_final_newline= True)
     qpop_one()
@@ -2281,6 +2339,7 @@ def git_gq_fold(name_regexp, edit, force, no_add):
             git_add_changes(add_unknown_files= True)
         else:
             git_add_changes(add_unknown_files= False)
+            git_add(filelist)
     if edit:
         git_mk_changes_files(only_diff_patch= False)
     # if edit is True, git_amend will start an editor to edit the combination
@@ -2289,6 +2348,7 @@ def git_gq_fold(name_regexp, edit, force, no_add):
     if edit:
         # remove the changes files:
         git_rm_changes_files()
+    # remove left-overs
     sh_rm_f(LOG_FILENAME)
     qdelete(patchname)
     print("Note: Log messages were combined into one, you should review/edit "

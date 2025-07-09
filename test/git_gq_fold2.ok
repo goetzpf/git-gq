@@ -1,0 +1,238 @@
+* Test git gq fold
+---------------------------------------
+
+
+-------------------------------------------------
+initial state
+-------------------------------------------------
+
+$ git gq applied
+abcdef0 script.sh was improved.
+abcdef0 README was improved.
+
+$ git gq unapplied
+
+-------------------------------------------------
+create two fold patches, README-fold, README-fold2
+-------------------------------------------------
+
+
+# Change README.txt again ...
+$ git gq new README-fold
+[master abcdef0] README-fold
+1 file changed, 1 insertion(+)
+# Add a file named 'extra.txt'.
+$git add extra.txt
+Delete file 'script.sh'.
+rm 'script.sh'
+Rename README.txt to README2.txt
+$ git mv README.txt README2.txt
+$ git gq new README-fold2
+[master abcdef0] README-fold2
+3 files changed, 1 insertion(+), 4 deletions(-)
+rename README.txt => README2.txt (100%)
+create mode 100644 extra.txt
+delete mode 100755 script.sh
+
+$ git show HEAD
+commit abcdef0123456789abcdef0123456789
+Author: Homer Simpson <simpson@burns-powerplant.com>
+Date: Sun Dec 31 09:12:34 2001 +0100
+
+README-fold2
+
+diff --git a/README.txt b/README2.txt
+similarity index 100%
+rename from README.txt
+rename to README2.txt
+diff --git a/extra.txt b/extra.txt
+new file mode 100644
+index abcdef0..abcdef1 abcdef3
+--- /dev/null
++++ b/extra.txt
+@@ -0,0 +1 @@
++New file
+diff --git a/script.sh b/script.sh
+deleted file mode 100755
+index abcdef0..abcdef1 abcdef3
+--- a/script.sh
++++ /dev/null
+@@ -1,4 +0,0 @@
+-#!/bin/bash
+-
+-echo "Script prototype"
+-
+
+$ git gq applied
+abcdef0 README-fold2
+abcdef0 README-fold
+abcdef0 script.sh was improved.
+abcdef0 README was improved.
+
+$ git gq unapplied
+$ git gq pop
+$ git gq pop
+HEAD is now at abcdef0 README-fold
+HEAD is now at abcdef0 script.sh was improved.
+
+$ git gq applied
+abcdef0 script.sh was improved.
+abcdef0 README was improved.
+
+$ git gq unapplied
+README-fold.patch
+README-fold2.patch
+
+$ git show HEAD
+commit abcdef0123456789abcdef0123456789
+Author: Homer Simpson <simpson@burns-powerplant.com>
+Date: Sun Dec 31 09:12:34 2001 +0100
+
+script.sh was improved.
+
+diff --git a/script.sh b/script.sh
+index abcdef0..abcdef1 abcdef3
+--- a/script.sh
++++ b/script.sh
+@@ -1,4 +1,4 @@
+#!/bin/bash
+
+-echo HOHO
++echo "Script prototype"
+
+
+-------------------------------------------------
+fold README-fold
+-------------------------------------------------
+
+
+$ git gq fold README-fold.patch
+Checking patch README.txt...
+Applied patch README.txt cleanly.
+Applying: README-fold
+HEAD is now at abcdef0 script.sh was improved.
+[master abcdef0] script.sh was improved.
+Date: Sun Dec 31 09:12:34 2001 +0100
+2 files changed, 2 insertions(+), 1 deletion(-)
+Note: Log messages were combined into one, you should review/edit the log message with:
+git gq refresh -e
+Note: If new files were added by the folded patch, run:
+git add NEW-FILES
+git gq refresh -e
+
+$ git show HEAD
+commit abcdef0123456789abcdef0123456789
+Author: Homer Simpson <simpson@burns-powerplant.com>
+Date: Sun Dec 31 09:12:34 2001 +0100
+
+script.sh was improved.
+
+***
+
+README-fold
+
+diff --git a/README.txt b/README.txt
+index abcdef0..abcdef1 abcdef3
+--- a/README.txt
++++ b/README.txt
+@@ -1 +1,2 @@
+This is an improved README file.
++This file will describe my project.
+diff --git a/script.sh b/script.sh
+index abcdef0..abcdef1 abcdef3
+--- a/script.sh
++++ b/script.sh
+@@ -1,4 +1,4 @@
+#!/bin/bash
+
+-echo HOHO
++echo "Script prototype"
+
+
+$ git gq applied
+abcdef0 script.sh was improved.
+abcdef0 README was improved.
+
+$ git gq unapplied
+README-fold2.patch
+
+-------------------------------------------------
+fold README-fold2
+-------------------------------------------------
+
+
+$ git gq fold README-fold2
+Checking patch README.txt => README2.txt...
+Checking patch extra.txt...
+Checking patch script.sh...
+Applied patch README.txt => README2.txt cleanly.
+Applied patch extra.txt cleanly.
+Applied patch script.sh cleanly.
+Applying: README-fold2
+HEAD is now at abcdef0 script.sh was improved.
+[master abcdef0] script.sh was improved.
+Date: Sun Dec 31 09:12:34 2001 +0100
+4 files changed, 3 insertions(+), 5 deletions(-)
+delete mode 100644 README.txt
+create mode 100644 README2.txt
+create mode 100644 extra.txt
+delete mode 100755 script.sh
+Note: Log messages were combined into one, you should review/edit the log message with:
+git gq refresh -e
+Note: If new files were added by the folded patch, run:
+git add NEW-FILES
+git gq refresh -e
+
+$ git show HEAD
+commit abcdef0123456789abcdef0123456789
+Author: Homer Simpson <simpson@burns-powerplant.com>
+Date: Sun Dec 31 09:12:34 2001 +0100
+
+script.sh was improved.
+
+***
+
+README-fold
+
+***
+
+README-fold2
+
+diff --git a/README.txt b/README.txt
+deleted file mode 100644
+index abcdef0..abcdef1 abcdef3
+--- a/README.txt
++++ /dev/null
+@@ -1 +0,0 @@
+-This is an improved README file.
+diff --git a/README2.txt b/README2.txt
+new file mode 100644
+index abcdef0..abcdef1 abcdef3
+--- /dev/null
++++ b/README2.txt
+@@ -0,0 +1,2 @@
++This is an improved README file.
++This file will describe my project.
+diff --git a/extra.txt b/extra.txt
+new file mode 100644
+index abcdef0..abcdef1 abcdef3
+--- /dev/null
++++ b/extra.txt
+@@ -0,0 +1 @@
++New file
+diff --git a/script.sh b/script.sh
+deleted file mode 100755
+index abcdef0..abcdef1 abcdef3
+--- a/script.sh
++++ /dev/null
+@@ -1,4 +0,0 @@
+-#!/bin/bash
+-
+-echo HOHO
+-
+
+$ git gq applied
+abcdef0 script.sh was improved.
+abcdef0 README was improved.
+
+$ git gq unapplied
