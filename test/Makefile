@@ -59,6 +59,7 @@ git_gq_pop.out: git_gq_add_2.tst
 git_gq_push.out: git_gq_pop.tst
 git_gq_pop_all.out: git_gq_add_2.tst
 git_gq_push_all.out: git_gq_pop_all.tst
+git_gq_pop_push_null.out: git_gq_add_2.tst
 git_gq_pop_all_push_all.out: git_gq_add_2.tst
 git_gq_pop_reorder_push.out: git_gq_add_2.tst
 git_gq_new.out: git_gq_add_2.tst

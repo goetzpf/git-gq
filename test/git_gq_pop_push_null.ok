@@ -1,0 +1,74 @@
+* Test git gq pop /push with NULL parent
+----------------------------------------
+
+$ ls
+README.txt
+script.sh
+
+$ git status --porcelain
+?? .gqpatches/
+
+$ git gq applied
+abcdef0 script.sh was improved.
+abcdef0 README was improved.
+
+$ git gq unapplied
+
+Set parent to 'NULL'.
+$ git gq parent NULL
+
+$ git gq applied
+abcdef0 script.sh was improved.
+abcdef0 README was improved.
+abcdef0 initial commit
+
+$ git gq unapplied
+
+Now unapply all patches.
+$ git gq pop -a
+HEAD is now at abcdef0 README was improved.
+HEAD is now at abcdef0 initial commit
+rm '.gitignore'
+rm 'README.txt'
+rm 'script.sh'
+[master abcdef0] NULL
+
+$ git gq applied
+abcdef0 NULL
+
+$ git gq unapplied
+initial-commit.patch
+README-was-improved.patch
+script.sh-was-improved.patch
+
+$ ls
+
+$ git status --porcelain
+?? .gqpatches/
+
+Now apply all patches.
+$ git gq push -a
+Applying: initial commit
+HEAD is now at abcdef0 NULL
+[master abcdef0] initial commit
+Date: Sun Dec 31 09:12:34 2001 +0100
+3 files changed, 9 insertions(+)
+create mode 100644 .gitignore
+create mode 100644 README.txt
+create mode 100755 script.sh
+Applying: README was improved.
+Applying: script.sh was improved.
+
+$ git gq applied
+abcdef0 script.sh was improved.
+abcdef0 README was improved.
+abcdef0 initial commit
+
+$ git gq unapplied
+
+$ ls
+README.txt
+script.sh
+
+$ git status --porcelain
+?? .gqpatches/

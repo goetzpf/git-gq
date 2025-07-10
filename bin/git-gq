@@ -889,6 +889,7 @@ def sh_file_head(head_no, invert, file, file_out):
 # ---------------------------------------------------------
 
 RX_TOPPPATCHDIR_FILES=re.compile(f'^ {TOPPATCHDIR}[{os.sep}-]')
+RX_TOPPPATCHDIR_FILES_STAT=re.compile(f'^.. {TOPPATCHDIR}[{os.sep}-]')
 
 RX_TOPPPATCHDIR=re.compile(f'^{TOPPATCHDIR}{os.sep}')
 
@@ -1335,7 +1336,7 @@ def git_head_revision():
 def git_revision_1():
     """returns hash of first revision."""
     (out, _)= system(("git", "rev-list", "--max-parents=0",
-                     "--format='%h'", "HEAD"),
+                     "--format=%h", "HEAD"),
                      catch_stdout= True, catch_stderr= False,
                      env= None, verbose= gbl_verbose, dry_run= gbl_dry_run)
     return out.splitlines()[-1]
@@ -1534,9 +1535,9 @@ def git_amend(log_message, log_message_file, log_message_template,
     elif log_message_file:
         cmd_list.extend(["-F", log_message_file])
     if date:
-        cmd_list.extend(["-date", date])
+        cmd_list.extend(["--date", date])
     if author:
-        cmd_list.extend(["-author", author])
+        cmd_list.extend(["--author", author])
     system_simple(cmd_list)
 
 # ---------------------------------------------------------
@@ -1574,6 +1575,10 @@ def git_add_changes(add_unknown_files):
                      env= None, verbose= gbl_verbose, dry_run= gbl_dry_run)
     filelist= []
     for line in out.splitlines():
+        # do not add .gqpatches directory:
+        m= RX_TOPPPATCHDIR_FILES_STAT.search(line)
+        if m:
+            continue
         if RX_GITSTAT_DEL.search(line):
             # deleted file
             continue
@@ -1585,9 +1590,6 @@ def git_add_changes(add_unknown_files):
         else:
             # a line in the form 'A  README.txt' or 'M  README.txt'
             file= line[3:] # remove leading flags
-        m= RX_TOPPPATCHDIR_FILES.search(file)
-        if m:
-            continue
         filelist.append(file)
     if filelist:
         git_add(filelist)
@@ -1784,6 +1786,8 @@ def git_rm_changes_files():
 def get_parent(exist_test, use_exception):
     """get parent revision.
 
+    Note: for parent=="NULL", the returned hash is "NULL"
+
     May raise:
     AssertionError
     GitGqException
@@ -1794,15 +1798,15 @@ def get_parent(exist_test, use_exception):
     if len(lines)!=1:
         raise AssertionError(f"unexpected lineno: {len(lines)}")
     parent= lines[0]
-    hash_= None
-    if parent!="NULL":
-        hash_= parent.split(maxsplit=1)[0]
-        if exist_test:
-            if not git_check_exists(hash_):
-                if not use_exception:
-                    return (None, parent)
-                raise GitGqException(f"Error, parent revision {hash_} "
-                                     f"doesn't exist in repository")
+    if parent=="NULL":
+        return ("NULL", "NULL")
+    hash_= parent.split(maxsplit=1)[0]
+    if exist_test:
+        if not git_check_exists(hash_):
+            if not use_exception:
+                return (None, parent)
+            raise GitGqException(f"Error, parent revision {hash_} "
+                                 f"doesn't exist in repository")
     return (hash_, parent)
 
 def find_single_unapplied_patch(regexp):
@@ -2036,15 +2040,15 @@ def qdelete(patch):
 def create_parentfile(revspec):
     """create a parent file."""
     if revspec=="NULL":
-        rev= revspec
+        log= revspec
     else:
         rev= git_rev_parse(revspec, catch_stderr= False)
         if rev == revspec:
             print(f"queue parent revision set to {revspec}")
         else:
             print(f"queue parent revision set to {revspec} ({rev})")
-    log= repo_log(rev, 1, print_to_console= False,
-                  use_long_hash= False)
+        log= repo_log(rev, 1, print_to_console= False,
+                      use_long_hash= False)
     sh_text_to_file(log, PARENTFILE, do_append= False,
                     add_final_newline= True)
 
@@ -2389,6 +2393,7 @@ def git_gq_show(name_regexp):
 
 def git_gq_applied(lines):
     """applied command."""
+    # Note: for parent==NULL, parent_hash is "NULL"
     (parent_hash, _)= get_parent(exist_test= True, use_exception= True)
     applied_log(parent_hash, lines, print_to_console= True,
                 use_long_hash= False)
