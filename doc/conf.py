@@ -9,7 +9,7 @@
 project = 'git-gq'
 copyright = '2025, Goetz Pfeiffer <goetzpf@googlemail.com>'
 author = 'Goetz Pfeiffer <goetzpf@googlemail.com>'
-version = '1.2' #VERSION#
+version = '2.0' #VERSION#
 release = version
 
 # -- General configuration ---------------------------------------------------
