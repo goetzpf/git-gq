@@ -26,5 +26,6 @@ done
 
 git add $FILES
 git commit -m "The version was changed to $VERSION."
-git tag -a "$VERSION" -m "The version was changed to $VERSION."
+# Note: '-s' creates a signed tag
+git tag -s -a "$VERSION" -m "The version was changed to $VERSION."
 
