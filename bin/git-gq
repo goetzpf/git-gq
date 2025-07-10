@@ -2312,7 +2312,11 @@ def git_gq_init(name, rev):
         # pylint: disable= global-statement
         global QUEUENAME
         QUEUENAME= name
-    os.mkdir(TOPPATCHDIR)
+    try:
+        os.mkdir(TOPPATCHDIR)
+    except FileExistsError:
+        raise GitGqException(f"Error, patch queue directory "
+                             f"{TOPPATCHDIR!r} already exists") from None
     os.mkdir(TEMPDIR)
     if os.path.isdir(ojoin(TOPPATCHDIR, QUEUENAME)):
         raise GitGqException(f"Error, patch queue '{QUEUENAME}' "
