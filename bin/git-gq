@@ -679,6 +679,8 @@ gbl_verbose= None
 gbl_dry_run= None
 gbl_parser= None
 
+gbl_tag_warning= True
+
 # ---------------------------------------------------------
 # exceptions
 # ---------------------------------------------------------
@@ -1334,6 +1336,13 @@ def git_rev_parse(revision_spec, catch_stderr, dir_= None):
 def git_show(revspec):
     """git show."""
     system_simple(("git", "show", revspec))
+
+def git_head_tags():
+    """return tags of the HEAD revision."""
+    (out, _)= system(("git", "tag", "--contains", "HEAD"),
+                     catch_stdout= True, catch_stderr= False,
+                     env= None, verbose= gbl_verbose, dry_run= gbl_dry_run)
+    return out.splitlines()
 
 def git_glog():
     """git graphlog."""
@@ -2096,6 +2105,23 @@ def qpop_check(force):
     git_head_track_error()
     # may raise GitGqException:
     check_uncomitted("pop", force)
+    tags= None
+    # pylint: disable= global-statement
+    global gbl_tag_warning
+    if gbl_tag_warning:
+        tags= git_head_tags()
+    if tags:
+        print(f"Warning: The HEAD revision has the tag(s) {tags!r}")
+        print("'git gq pop' cannot remove this tag, so the tagged revision ")
+        print("will remain in the repository, just the 'HEAD' will be moved.")
+        print("You may abort here and remove the tag with:")
+        print("  git tag -d TAGNAME")
+        print("or continue nevertheless.")
+        reply= input("Enter 'y' or 'Y' to continue, everything else aborts.")
+        if reply not in ("y", "Y"):
+            raise GitGqException("user abort")
+        # Warn only a single time (relevant for 'git gq pop -a')
+        gbl_tag_warning= False
     # may raise GitGqException:
     (parent_hash, parent)= get_parent(exist_test= True, use_exception= True)
     if parent=="NULL":
