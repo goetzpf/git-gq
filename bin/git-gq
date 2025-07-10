@@ -69,9 +69,23 @@ Bash completion commands
   commands       
     List all known commands on the console
 
-  bashcompletion 
-    List the line you have to add to your .bashrc
-    to integrate completion into the 'git' command.
+  bashcompletion
+    Prints a text that, if you add it to your bash configuration in
+    $HOME/.bashrc, adds bash completion. This means that you get a list of
+    possible commands when you type <TAB>, e.g.::
+
+      git gq a<TAB>
+
+    shows the possible completions `abort` and `applied`. If there is only one
+    matching command, you command line is completed, e.g::
+
+      git gq ab<TAB>
+
+    becomes::
+
+      git gq abort
+
+    This can save you many keystrokes and makes using this tool easier.
 
 Queue management commands
 +++++++++++++++++++++++++
@@ -90,7 +104,7 @@ Queue management commands
     another revision.
 
   backup         
-    Backup state of patch queue with a separate git repository. You may
+    Backup patch queue directory with a separate git repository. You may
     provide a short log message with oṕtion `-m`.
 
   restore REVISION   
@@ -315,21 +329,30 @@ DOC_IMPLEMENTATION=\
 Directory structure
 +++++++++++++++++++
 
-Each patch queue has all it's files in a directory with the name of the patch
-queue. All patch queue directories are in directory '{TOPPATCHDIR}'. 
+All files `git gq` uses are in directory '.gqpatches'. You may want to add this
+to your '.gitignore' file.
 
-A file 'queue' in directory '{TOPPATCHDIR}' contains the currently selected
-patch queue.
+'.gqpatches/tmp' is the directory for temporary files `git gq` creates.
+
+The program can manage more than one patch queue. Each patch queue has a name
+and all files of the queue are in a directory with the same name, e.g.
+'.gqpatches/MYQUEUE'. The default name for the first patch queue is 'default'.
+
+The file '.gqpatches/queue' contains the name of the currently selected patch
+queue.
 
 Files in the patch queue directory
 ++++++++++++++++++++++++++++++++++
+
+In the patch queue directory, e.g. '.gqpatches/default', you find the following
+files or directories:
 
 series
 ::::::
 
 The order of patches is kept in a file named 'series' that just contains all
-the filenames of all unapplied patches. This file is maintained by
-`git gq`.
+the filenames of all unapplied patches. `git gq push` takes and applues the
+patch from the first line in this file.
 
 parent
 ::::::
@@ -392,6 +415,13 @@ Here is an example of a patch file::
        return 0;
   -- 
   2.49.0
+
+applied
+:::::::
+
+Directory 'applied' is created by `git gq backup`. It contains the *applied*
+patches from the time this command is issued. Note that files in this directory
+are not changed by `git gq push` or `git gq pop`, only by `git gq backup`.
 '''
 
 # Note how this example was created:
