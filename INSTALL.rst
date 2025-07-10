@@ -15,19 +15,15 @@ Check out the repository::
 Build distribution directory::
 
   administration_tools/doc-rebuild.sh
-  administration_tools/mk-dist.sh  
+  administration_tools/mk-dist.sh --keep
 
 Now go to directory "dist::
 
   cd dist
 
-Unpack the tar file::
+go to the distribution directory::
 
-  tar -xzf git-gq-*.tar.gz
-
-See with `ls -l` which directory was created and change into that directory::
-
-  cd git-gq-<SOME-VERSION-NUMBER>
+  cd git-gq-*[0-9]
 
 And continue below at "Install from distribution".
 
@@ -44,14 +40,25 @@ System wide installation
 
 Run::
 
-  ./install.sh install global
+  sudo ./install.sh
 
-Local installation in directory "DIR"
-+++++++++++++++++++++++++++++++++++++
+Local installation in DIRECTORY
++++++++++++++++++++++++++++++++
 
 Run::
 
-  ./install.sh install DIR
+  ./install.sh DIRECTORY
+
+You should set your PATH variable to the install location. Add this line to
+your `$HOME/.bashrc` file (replace 'DIRECTORY' with the actual directory
+name)::
+
+  PATH=DIRECTORY/bin:$PATH
+
+To have bash completion, add this line to your `$HOME/.bashrc` file (replace
+'DIRECTORY' with the actual directory name)::
+
+  source DIRECTORY/profile.d/git-gq.sh
 
 How to uninstall
 ----------------
@@ -61,3 +68,5 @@ In any case, git-gq can be uninstalled with::
   git-gq-uninstall.sh
 
 The script is installed at the same location as the program `git-gq`.
+
+
