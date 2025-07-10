@@ -1,8 +1,6 @@
 Command line interface
 ----------------------
-git-gq : handle git patch queues
-
-usage: git gq COMMAND [OPTIONS]
+usage: git-gq [OPTIONS] COMMAND
 
 Bash completion commands
 ++++++++++++++++++++++++
@@ -10,9 +8,23 @@ Bash completion commands
   commands       
     List all known commands on the console
 
-  bashcompletion 
-    List the line you have to add to your .bashrc
-    to integrate completion into the 'git' command.
+  bashcompletion
+    Prints a text that, if you add it to your bash configuration in
+    $HOME/.bashrc, adds bash completion. This means that you get a list of
+    possible commands when you type <TAB>, e.g.::
+
+      git gq a<TAB>
+
+    shows the possible completions `abort` and `applied`. If there is only one
+    matching command, you command line is completed, e.g::
+
+      git gq ab<TAB>
+
+    becomes::
+
+      git gq abort
+
+    This can save you many keystrokes and makes using this tool easier.
 
 Queue management commands
 +++++++++++++++++++++++++
@@ -31,10 +43,22 @@ Queue management commands
     another revision.
 
   backup         
-    Create backup tar file of patch directory '.gqpatches'.
+    Backup patch queue directory with a separate git repository. You may
+    provide a short log message with oṕtion `-m`.
 
-  restore FILE   
-    Restore patch directory from a backup file. '.gqpatches'.
+  restore REVISION   
+    Restore patch directory to a REVISION that was created with `git gq backup`
+    before. This *does not* change your git repository. To do this, you must
+    run `git gq revert`.
+
+  revert
+    Revert git repository to the state stored in the patch queue. All *applied*
+    patches are restored to the state at the last `git gq backup`. All
+    *unapplied* patches remain in their present state. This will create a new
+    branch in the repository beginning at the PARENT revision.
+
+  qrepo COMMAND [-- OPTIONS]
+    Run git command COMMAND with OPTIONS in patch-queue repository.
 
   change-order   
     Call an editor to edit the file that contains all currently unapplied
@@ -46,7 +70,7 @@ Queue management commands
   unapplied      
     Show all patches of the patch queue.
 
-  parent [REVISION}   
+  parent [REVISION]   
     Set REVISION as patch queue parent revision. Do never go beyond this
     revision with pop. Use 'HEAD' to set your repository HEAD as parent
     revision. If REVISION is 'NULL', this means that *all* revisions in
@@ -135,44 +159,24 @@ Miscellaneous commands
 OPTIONS
 +++++++
 
-  -h --help
-    Show help.
-
-  -H --HELP
-    Show help without pager.
-
-  -v --version
-    Show version and exit.
-
-  -D --debug
-    Run the script with "set -x" which shows what it does.
-
-  -a --all
-    push/pop: apply on ALL patches.
-
-  -N --no-add
-    new/refresh/fold: DO NOT add all modified changes to patch.
-    continue: DO NOT add all modified and unknown changes to patch
-
-  -e --edit
-    refresh/fold: start editor to edit log message
-
-  -m --message MESSAGE
-    refresh: use MESSAGE as log message
-
-  -F --file FILE
-    refresh: take log message from FILE.
-
-  -l --lines LINECOUNT
-    applied, unapplied: Limit the number of lines printed by the command. Print
-    only the first LINECOUNT lines.
-
-  -R --force
-    Allow to run `git gq pop` and `git gq push` even if there are
-    uncommited changes. Note the with 'pop' this will discard uncommited
-    changes. 
-
-  -L --full
-    restore: do also restore all patches that were applied when the backup was
-    created. Caution: This runs `git checkout PARENT` and `git am` on your
-    repository.
+  --version             show program's version number and exit
+  --summary             print a summary of the function of the program
+  -h, --help            Show help.
+  --verbose             show called commands
+  --dry-run             do not actually call commands
+  -D, --debug           Show debug information.
+  -a, --all             push/pop: apply on ALL patches.
+  -N, --no-add          new/refresh/fold: DO NOT add all modified changes to
+                        patch, continue: DO NOT add all modified and unknown
+                        changes to patch.
+  -e, --edit            refresh/fold: start editor to edit log message
+  -m, --message MESSAGE
+                        backup/refresh: use MESSAGE as log message.
+  -F, --file FILE       refresh: take log message from FILE.
+  -l, --lines LINECOUNT
+                        applied, unapplied: Limit the number of lines printed
+                        by the command. Print only the first LINECOUNT lines.
+  -R, --force           Allow to run `git gq pop` and `git gq push` even if
+                        there are uncommited changes. Note the with 'pop' this
+                        will discard uncommited changes.
+  --exception           do not catch exceptions (for debugging).

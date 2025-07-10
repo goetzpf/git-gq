@@ -109,3 +109,4 @@ complicated, you can abort the last command with::
 
 In this case you may have to compare two versions of files and apply changes
 directly.
+

@@ -6,14 +6,14 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Implementation &mdash; git-gq 1.2 documentation</title>
+  <title>Implementation &mdash; git-gq 2.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
 
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=61243dd2"></script>
+      <script src="_static/documentation_options.js?v=60dbed4a"></script>
       <script src="_static/doctools.js?v=9a2dae69"></script>
       <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/js/theme.js"></script>
@@ -54,16 +54,22 @@
 <li class="toctree-l1"><a class="reference internal" href="prerequisites.html">Prerequisites</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Implementation</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#directory-structure">Directory structure</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#backup-files">Backup files</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#files-in-the-patch-queue-directory">Files in the patch queue directory</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#series">series</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#parent">parent</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#patch-files-patch">patch files ‘*.patch’</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#applied">applied</a></li>
 </ul>
 </li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="conflicts.html">Conflicts and conflict resolution</a></li>
+<li class="toctree-l1"><a class="reference internal" href="backups.html">Backups</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="backups.html#implementation">Implementation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="backups.html#how-to-create-a-backup">How to create  a backup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="backups.html#how-to-restore-a-backup">How to restore a backup</a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="examples.html">Example Workflows</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="examples.html#local-development">Local development</a></li>
 <li class="toctree-l2"><a class="reference internal" href="examples.html#updates-from-a-remote-repository">Updates from a remote repository</a></li>
@@ -81,7 +87,7 @@
 <li class="toctree-l2"><a class="reference internal" href="install.html#install-from-source">Install from source</a></li>
 <li class="toctree-l2"><a class="reference internal" href="install.html#install-from-distribution">Install from distribution</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="install.html#system-wide-installation">System wide installation</a></li>
-<li class="toctree-l3"><a class="reference internal" href="install.html#local-installation-in-directory-dir">Local installation in directory “DIR”</a></li>
+<li class="toctree-l3"><a class="reference internal" href="install.html#local-installation-in-directory">Local installation in DIRECTORY</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="install.html#how-to-uninstall">How to uninstall</a></li>
@@ -117,23 +123,24 @@
 <h1>Implementation<a class="headerlink" href="#implementation" title="Link to this heading"></a></h1>
 <section id="directory-structure">
 <h2>Directory structure<a class="headerlink" href="#directory-structure" title="Link to this heading"></a></h2>
-<p>Each patch queue has all it’s files in a directory with the name of the patch
-queue. All patch queue directories are in directory ‘.gqpatches’.</p>
-<p>A file ‘queue’ in directory ‘.gqpatches’ contains the currently selected
-patch queue.</p>
-</section>
-<section id="backup-files">
-<h2>Backup files<a class="headerlink" href="#backup-files" title="Link to this heading"></a></h2>
-<p>Backups are ‘*.tar.gz’ files in ‘.gqpatches’. All backups have the name
-schema ‘.gqpatches-TIMESTAMP.tar.gz’.</p>
+<p>All files <cite>git gq</cite> uses are in directory ‘.gqpatches’. You may want to add this
+to your ‘.gitignore’ file.</p>
+<p>‘.gqpatches/tmp’ is the directory for temporary files <cite>git gq</cite> creates.</p>
+<p>The program can manage more than one patch queue. Each patch queue has a name
+and all files of the queue are in a directory with the same name, e.g.
+‘.gqpatches/MYQUEUE’. The default name for the first patch queue is ‘default’.</p>
+<p>The file ‘.gqpatches/queue’ contains the name of the currently selected patch
+queue.</p>
 </section>
 <section id="files-in-the-patch-queue-directory">
 <h2>Files in the patch queue directory<a class="headerlink" href="#files-in-the-patch-queue-directory" title="Link to this heading"></a></h2>
+<p>In the patch queue directory, e.g. ‘.gqpatches/default’, you find the following
+files or directories:</p>
 <section id="series">
 <h3>series<a class="headerlink" href="#series" title="Link to this heading"></a></h3>
 <p>The order of patches is kept in a file named ‘series’ that just contains all
-the filenames of all unapplied patches. This file is maintained by
-<cite>git gq</cite>.</p>
+the filenames of all unapplied patches. <cite>git gq push</cite> takes and applues the
+patch from the first line in this file.</p>
 </section>
 <section id="parent">
 <h3>parent<a class="headerlink" href="#parent" title="Link to this heading"></a></h3>
@@ -191,6 +198,12 @@ dashes and end with the extension ‘.patch’.</p>
 <span class="mf">2.49.0</span>
 </pre></div>
 </div>
+</section>
+<section id="applied">
+<h3>applied<a class="headerlink" href="#applied" title="Link to this heading"></a></h3>
+<p>Directory ‘applied’ is created by <cite>git gq backup</cite>. It contains the <em>applied</em>
+patches from the time this command is issued. Note that files in this directory
+are not changed by <cite>git gq push</cite> or <cite>git gq pop</cite>, only by <cite>git gq backup</cite>.</p>
 </section>
 </section>
 </section>

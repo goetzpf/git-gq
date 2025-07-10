@@ -6,14 +6,14 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Command line interface &mdash; git-gq 1.2 documentation</title>
+  <title>Command line interface &mdash; git-gq 2.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
 
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=61243dd2"></script>
+      <script src="_static/documentation_options.js?v=60dbed4a"></script>
       <script src="_static/doctools.js?v=9a2dae69"></script>
       <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/js/theme.js"></script>
@@ -54,16 +54,22 @@
 <li class="toctree-l1"><a class="reference internal" href="prerequisites.html">Prerequisites</a></li>
 <li class="toctree-l1"><a class="reference internal" href="implementation.html">Implementation</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="implementation.html#directory-structure">Directory structure</a></li>
-<li class="toctree-l2"><a class="reference internal" href="implementation.html#backup-files">Backup files</a></li>
 <li class="toctree-l2"><a class="reference internal" href="implementation.html#files-in-the-patch-queue-directory">Files in the patch queue directory</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="implementation.html#series">series</a></li>
 <li class="toctree-l3"><a class="reference internal" href="implementation.html#parent">parent</a></li>
 <li class="toctree-l3"><a class="reference internal" href="implementation.html#patch-files-patch">patch files ‘*.patch’</a></li>
+<li class="toctree-l3"><a class="reference internal" href="implementation.html#applied">applied</a></li>
 </ul>
 </li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="conflicts.html">Conflicts and conflict resolution</a></li>
+<li class="toctree-l1"><a class="reference internal" href="backups.html">Backups</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="backups.html#implementation">Implementation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="backups.html#how-to-create-a-backup">How to create  a backup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="backups.html#how-to-restore-a-backup">How to restore a backup</a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="examples.html">Example Workflows</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="examples.html#local-development">Local development</a></li>
 <li class="toctree-l2"><a class="reference internal" href="examples.html#updates-from-a-remote-repository">Updates from a remote repository</a></li>
@@ -81,7 +87,7 @@
 <li class="toctree-l2"><a class="reference internal" href="install.html#install-from-source">Install from source</a></li>
 <li class="toctree-l2"><a class="reference internal" href="install.html#install-from-distribution">Install from distribution</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="install.html#system-wide-installation">System wide installation</a></li>
-<li class="toctree-l3"><a class="reference internal" href="install.html#local-installation-in-directory-dir">Local installation in directory “DIR”</a></li>
+<li class="toctree-l3"><a class="reference internal" href="install.html#local-installation-in-directory">Local installation in DIRECTORY</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="install.html#how-to-uninstall">How to uninstall</a></li>
@@ -115,16 +121,29 @@
              
   <section id="command-line-interface">
 <h1>Command line interface<a class="headerlink" href="#command-line-interface" title="Link to this heading"></a></h1>
-<p>git-gq : handle git patch queues</p>
-<p>usage: git gq COMMAND [OPTIONS]</p>
+<p>usage: git-gq [OPTIONS] COMMAND</p>
 <section id="bash-completion-commands">
 <h2>Bash completion commands<a class="headerlink" href="#bash-completion-commands" title="Link to this heading"></a></h2>
 <blockquote>
-<div><dl class="simple">
+<div><dl>
 <dt>commands</dt><dd><p>List all known commands on the console</p>
 </dd>
-<dt>bashcompletion</dt><dd><p>List the line you have to add to your .bashrc
-to integrate completion into the ‘git’ command.</p>
+<dt>bashcompletion</dt><dd><p>Prints a text that, if you add it to your bash configuration in
+$HOME/.bashrc, adds bash completion. This means that you get a list of
+possible commands when you type &lt;TAB&gt;, e.g.:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">git</span> <span class="n">gq</span> <span class="n">a</span><span class="o">&lt;</span><span class="n">TAB</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<p>shows the possible completions <cite>abort</cite> and <cite>applied</cite>. If there is only one
+matching command, you command line is completed, e.g:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">git</span> <span class="n">gq</span> <span class="n">ab</span><span class="o">&lt;</span><span class="n">TAB</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<p>becomes:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">git</span> <span class="n">gq</span> <span class="n">abort</span>
+</pre></div>
+</div>
+<p>This can save you many keystrokes and makes using this tool easier.</p>
 </dd>
 </dl>
 </div></blockquote>
@@ -144,9 +163,19 @@ first time, the parent revision is set to your ‘HEAD’ revision. If this is
 not intended, you may change this with <cite>git gq parent REVISION</cite> to
 another revision.</p>
 </dd>
-<dt>backup</dt><dd><p>Create backup tar file of patch directory ‘.gqpatches’.</p>
+<dt>backup</dt><dd><p>Backup patch queue directory with a separate git repository. You may
+provide a short log message with oṕtion <cite>-m</cite>.</p>
 </dd>
-<dt>restore FILE</dt><dd><p>Restore patch directory from a backup file. ‘.gqpatches’.</p>
+<dt>restore REVISION</dt><dd><p>Restore patch directory to a REVISION that was created with <cite>git gq backup</cite>
+before. This <em>does not</em> change your git repository. To do this, you must
+run <cite>git gq revert</cite>.</p>
+</dd>
+<dt>revert</dt><dd><p>Revert git repository to the state stored in the patch queue. All <em>applied</em>
+patches are restored to the state at the last <cite>git gq backup</cite>. All
+<em>unapplied</em> patches remain in their present state. This will create a new
+branch in the repository beginning at the PARENT revision.</p>
+</dd>
+<dt>qrepo COMMAND [– OPTIONS]</dt><dd><p>Run git command COMMAND with OPTIONS in patch-queue repository.</p>
 </dd>
 <dt>change-order</dt><dd><p>Call an editor to edit the file that contains all currently unapplied
 patches. Note the the patches in the file are applied from top to bottom.</p>
@@ -155,7 +184,7 @@ patches. Note the the patches in the file are applied from top to bottom.</p>
 </dd>
 <dt>unapplied</dt><dd><p>Show all patches of the patch queue.</p>
 </dd>
-<dt>parent [REVISION}</dt><dd><p>Set REVISION as patch queue parent revision. Do never go beyond this
+<dt>parent [REVISION]</dt><dd><p>Set REVISION as patch queue parent revision. Do never go beyond this
 revision with pop. Use ‘HEAD’ to set your repository HEAD as parent
 revision. If REVISION is ‘NULL’, this means that <em>all</em> revisions in
 the repository can be managed with <cite>git gq pop</cite>, you should only
@@ -235,36 +264,53 @@ CMD is a sub-command, <cite>files</cite> shows files changed by the patch,
 <section id="options">
 <h2>OPTIONS<a class="headerlink" href="#options" title="Link to this heading"></a></h2>
 <blockquote>
-<div><dl class="simple">
-<dt>-h –help</dt><dd><p>Show help.</p>
+<div><dl class="option-list">
+<dt><kbd><span class="option">--version</span></kbd></dt>
+<dd><p>show program’s version number and exit</p>
 </dd>
-<dt>-H –HELP</dt><dd><p>Show help without pager.</p>
+<dt><kbd><span class="option">--summary</span></kbd></dt>
+<dd><p>print a summary of the function of the program</p>
 </dd>
-<dt>-v –version</dt><dd><p>Show version and exit.</p>
+<dt><kbd><span class="option">-h</span>, <span class="option">--help</span></kbd></dt>
+<dd><p>Show help.</p>
 </dd>
-<dt>-D –debug</dt><dd><p>Run the script with “set -x” which shows what it does.</p>
+<dt><kbd><span class="option">--verbose</span></kbd></dt>
+<dd><p>show called commands</p>
 </dd>
-<dt>-a –all</dt><dd><p>push/pop: apply on ALL patches.</p>
+<dt><kbd><span class="option">--dry-run</span></kbd></dt>
+<dd><p>do not actually call commands</p>
 </dd>
-<dt>-N –no-add</dt><dd><p>new/refresh/fold: DO NOT add all modified changes to patch.
-continue: DO NOT add all modified and unknown changes to patch</p>
+<dt><kbd><span class="option">-D</span>, <span class="option">--debug</span></kbd></dt>
+<dd><p>Show debug information.</p>
 </dd>
-<dt>-e –edit</dt><dd><p>refresh/fold: start editor to edit log message</p>
+<dt><kbd><span class="option">-a</span>, <span class="option">--all</span></kbd></dt>
+<dd><p>push/pop: apply on ALL patches.</p>
 </dd>
-<dt>-m –message MESSAGE</dt><dd><p>refresh: use MESSAGE as log message</p>
+<dt><kbd><span class="option">-N</span>, <span class="option">--no-add</span></kbd></dt>
+<dd><p>new/refresh/fold: DO NOT add all modified changes to
+patch, continue: DO NOT add all modified and unknown
+changes to patch.</p>
 </dd>
-<dt>-F –file FILE</dt><dd><p>refresh: take log message from FILE.</p>
+<dt><kbd><span class="option">-e</span>, <span class="option">--edit</span></kbd></dt>
+<dd><p>refresh/fold: start editor to edit log message</p>
 </dd>
-<dt>-l –lines LINECOUNT</dt><dd><p>applied, unapplied: Limit the number of lines printed by the command. Print
-only the first LINECOUNT lines.</p>
+<dt><kbd><span class="option">-m</span>, <span class="option">--message <var>MESSAGE</var></span></kbd></dt>
+<dd><p>backup/refresh: use MESSAGE as log message.</p>
 </dd>
-<dt>-R –force</dt><dd><p>Allow to run <cite>git gq pop</cite> and <cite>git gq push</cite> even if there are
-uncommited changes. Note the with ‘pop’ this will discard uncommited
-changes.</p>
+<dt><kbd><span class="option">-F</span>, <span class="option">--file <var>FILE</var></span></kbd></dt>
+<dd><p>refresh: take log message from FILE.</p>
 </dd>
-<dt>-L –full</dt><dd><p>restore: do also restore all patches that were applied when the backup was
-created. Caution: This runs <cite>git checkout PARENT</cite> and <cite>git am</cite> on your
-repository.</p>
+<dt><kbd><span class="option">-l</span>, <span class="option">--lines <var>LINECOUNT</var></span></kbd></dt>
+<dd><p>applied, unapplied: Limit the number of lines printed
+by the command. Print only the first LINECOUNT lines.</p>
+</dd>
+<dt><kbd><span class="option">-R</span>, <span class="option">--force</span></kbd></dt>
+<dd><p>Allow to run <cite>git gq pop</cite> and <cite>git gq push</cite> even if
+there are uncommited changes. Note the with ‘pop’ this
+will discard uncommited changes.</p>
+</dd>
+<dt><kbd><span class="option">--exception</span></kbd></dt>
+<dd><p>do not catch exceptions (for debugging).</p>
 </dd>
 </dl>
 </div></blockquote>

@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Prerequisites &mdash; git-gq 2.0 documentation</title>
+  <title>Backups &mdash; git-gq 2.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
 
@@ -19,8 +19,8 @@
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Implementation" href="implementation.html" />
-    <link rel="prev" title="Overview" href="overview.html" /> 
+    <link rel="next" title="Example Workflows" href="examples.html" />
+    <link rel="prev" title="Conflicts and conflict resolution" href="conflicts.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -51,7 +51,7 @@
 <li class="toctree-l2"><a class="reference internal" href="overview.html#disadvantages-of-the-patch-queue">Disadvantages of the patch queue</a></li>
 </ul>
 </li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Prerequisites</a></li>
+<li class="toctree-l1"><a class="reference internal" href="prerequisites.html">Prerequisites</a></li>
 <li class="toctree-l1"><a class="reference internal" href="implementation.html">Implementation</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="implementation.html#directory-structure">Directory structure</a></li>
 <li class="toctree-l2"><a class="reference internal" href="implementation.html#files-in-the-patch-queue-directory">Files in the patch queue directory</a><ul>
@@ -64,10 +64,10 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="conflicts.html">Conflicts and conflict resolution</a></li>
-<li class="toctree-l1"><a class="reference internal" href="backups.html">Backups</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="backups.html#implementation">Implementation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="backups.html#how-to-create-a-backup">How to create  a backup</a></li>
-<li class="toctree-l2"><a class="reference internal" href="backups.html#how-to-restore-a-backup">How to restore a backup</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Backups</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#implementation">Implementation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#how-to-create-a-backup">How to create  a backup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#how-to-restore-a-backup">How to restore a backup</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="examples.html">Example Workflows</a><ul>
@@ -109,9 +109,9 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
-      <li class="breadcrumb-item active">Prerequisites</li>
+      <li class="breadcrumb-item active">Backups</li>
       <li class="wy-breadcrumbs-aside">
-            <a href="_sources/prerequisites.rst.txt" rel="nofollow"> View page source</a>
+            <a href="_sources/backups.rst.txt" rel="nofollow"> View page source</a>
       </li>
   </ul>
   <hr/>
@@ -119,26 +119,68 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <section id="prerequisites">
-<h1>Prerequisites<a class="headerlink" href="#prerequisites" title="Link to this heading"></a></h1>
-<p>In order to run git-gq you need to have installed these programs/packages:</p>
-<ul class="simple">
-<li><p>git</p></li>
-<li><p>bash</p></li>
-<li><p>grep</p></li>
-<li><p>sed</p></li>
-<li><p>vi or some other text editor</p></li>
-<li><p>colordiff</p></li>
-<li><p>standard shell commands like ‘cat’, ‘cp’, ‘printf’ etc.</p></li>
-</ul>
+  <section id="backups">
+<h1>Backups<a class="headerlink" href="#backups" title="Link to this heading"></a></h1>
+<p>The flexibility of the patch queue also makes it easier to mess things up.</p>
+<p>In order to have some kind of safety and to be able to restore an older working
+state of the patch queue, git-gq has a simple backup mechanism.</p>
+<section id="implementation">
+<h2>Implementation<a class="headerlink" href="#implementation" title="Link to this heading"></a></h2>
+<p>If <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">gq</span> <span class="pre">backup</span></code> is called for the first time, it creates a git repository
+inside the patch queue directory.</p>
+<p><em>All</em> patch queues are managed with a single git repository.</p>
+<p>The backup command then creates a directory ‘applied’ inside the current queue
+directory which has a copy of all patches currently applied.</p>
+<p>It then does a <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">commit</span></code> for the patch queue repository.</p>
+<p>The user can run all git commands on the patch queue repository with:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">git</span> <span class="n">gq</span> <span class="n">grepo</span> <span class="n">COMMAND</span> <span class="o">--</span> <span class="n">OPTIONS</span>
+</pre></div>
+</div>
+<p>The command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">git</span> <span class="n">gq</span> <span class="n">restore</span> <span class="n">REVISION</span>
+</pre></div>
+</div>
+<p>checks out the given revision in the queue repository.</p>
+<p>The git repository of the user is not changed by the two commands above.</p>
+<p>The command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">git</span> <span class="n">revert</span>
+</pre></div>
+</div>
+<p>changes the git repository to the state it had when the last backup was made.</p>
+<p>At the parent revision a new branch is created where all the patched from
+directory ‘applied’ are added.</p>
+</section>
+<section id="how-to-create-a-backup">
+<h2>How to create  a backup<a class="headerlink" href="#how-to-create-a-backup" title="Link to this heading"></a></h2>
+<p>Simply enter:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">git</span> <span class="n">gq</span> <span class="n">backup</span>
+</pre></div>
+</div>
+</section>
+<section id="how-to-restore-a-backup">
+<h2>How to restore a backup<a class="headerlink" href="#how-to-restore-a-backup" title="Link to this heading"></a></h2>
+<p>Look what backups are present, e.g. with:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">git</span> <span class="n">gq</span> <span class="n">qrepo</span> <span class="n">log</span>
+</pre></div>
+</div>
+<p>Select a revision and restore it with:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">git</span> <span class="n">gq</span> <span class="n">restore</span> <span class="n">REVISION</span>
+</pre></div>
+</div>
+<p>Your main git repository is still not changed at this stage.</p>
+<p>If you want to reset your main repository to the state of the backup, enter:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">git</span> <span class="n">gq</span> <span class="n">revert</span>
+</pre></div>
+</div>
+</section>
 </section>
 
 
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="overview.html" class="btn btn-neutral float-left" title="Overview" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="implementation.html" class="btn btn-neutral float-right" title="Implementation" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="conflicts.html" class="btn btn-neutral float-left" title="Conflicts and conflict resolution" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="examples.html" class="btn btn-neutral float-right" title="Example Workflows" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

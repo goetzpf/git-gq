@@ -4,27 +4,30 @@ Implementation
 Directory structure
 +++++++++++++++++++
 
-Each patch queue has all it's files in a directory with the name of the patch
-queue. All patch queue directories are in directory '.gqpatches'. 
+All files `git gq` uses are in directory '.gqpatches'. You may want to add this
+to your '.gitignore' file.
 
-A file 'queue' in directory '.gqpatches' contains the currently selected
-patch queue.
+'.gqpatches/tmp' is the directory for temporary files `git gq` creates.
 
-Backup files
-++++++++++++
+The program can manage more than one patch queue. Each patch queue has a name
+and all files of the queue are in a directory with the same name, e.g.
+'.gqpatches/MYQUEUE'. The default name for the first patch queue is 'default'.
 
-Backups are '\*.tar.gz' files in '.gqpatches'. All backups have the name
-schema '.gqpatches-TIMESTAMP.tar.gz'.
+The file '.gqpatches/queue' contains the name of the currently selected patch
+queue.
 
 Files in the patch queue directory
 ++++++++++++++++++++++++++++++++++
+
+In the patch queue directory, e.g. '.gqpatches/default', you find the following
+files or directories:
 
 series
 ::::::
 
 The order of patches is kept in a file named 'series' that just contains all
-the filenames of all unapplied patches. This file is maintained by
-`git gq`.
+the filenames of all unapplied patches. `git gq push` takes and applues the
+patch from the first line in this file.
 
 parent
 ::::::
@@ -87,4 +90,11 @@ Here is an example of a patch file::
        return 0;
   -- 
   2.49.0
+
+applied
+:::::::
+
+Directory 'applied' is created by `git gq backup`. It contains the *applied*
+patches from the time this command is issued. Note that files in this directory
+are not changed by `git gq push` or `git gq pop`, only by `git gq backup`.
 

@@ -15,6 +15,7 @@ Welcome to git-gq's documentation!
    prerequisites
    implementation
    conflicts
+   backups
    examples
    commandline
    install
@@ -78,6 +79,7 @@ Documentation
 - :doc:`prerequisites`
 - :doc:`implementation`
 - :doc:`conflicts`
+- :doc:`backups`
 - :doc:`examples`
 - :doc:`commandline`
 - :doc:`install`
