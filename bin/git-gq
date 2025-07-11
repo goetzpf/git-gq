@@ -1353,6 +1353,8 @@ def git_add(filelist, dir_=None):
 
     If dir_ is not None, do chdir to that directory first
     """
+    if not filelist:
+        return
     old_dir= None
     if dir_ is not None:
         old_dir= sh_chdir(dir_)
