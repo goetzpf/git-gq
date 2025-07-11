@@ -939,7 +939,10 @@ def sh_file_head(head_no, invert, file, file_out):
 # ---------------------------------------------------------
 
 RX_TOPPPATCHDIR_FILES=re.compile(f'^ {TOPPATCHDIR}[{os.sep}-]')
-RX_TOPPPATCHDIR_FILES_STAT=re.compile(f'^.. {TOPPATCHDIR}[{os.sep}-]')
+RX_TOPPPATCHDIR=re.compile(f'^{TOPPATCHDIR}[{os.sep}-]')
+
+RX_STAT= re.compile(r'^(..) (.*)')
+RX_REJ= re.compile(r'\.rej$')
 
 RX_TOPPPATCHDIR=re.compile(f'^{TOPPATCHDIR}{os.sep}')
 
@@ -947,7 +950,6 @@ RX_NUMBER=re.compile(r'^[0-9]+-')
 
 RX_HASH=re.compile(r'^[A-Fa-f0-9]{6,}$')
 RX_GITSTAT_MV=re.compile(r'^R[M ] .*-> (.*)')
-RX_GITSTAT_DEL=re.compile(r'^D  ')
 
 RX_RST_PLUS=re.compile(r'\++$')
 
@@ -1411,13 +1413,17 @@ def git_unknown_files(file):
                      catch_stdout= True, catch_stderr= False,
                      env= None, verbose= gbl_verbose, dry_run= gbl_dry_run)
     with open(file, "wt", encoding="utf-8") as fh_w:
-        for l in out.splitlines():
-            if not l.startswith("??"):
+        for line in out.splitlines():
+            m= RX_STAT.search(line)
+            if m is None:
+                errprint(f"WARNING: Cannot parse {line!r}")
                 continue
-            unknown_file= l[2:]
-            if RX_TOPPPATCHDIR_FILES.search(unknown_file):
+            (stat, file)= (m.group(1), m.group(2))
+            if stat != "??":
                 continue
-            fh_w.write(f"{unknown_file}\n")
+            if RX_TOPPPATCHDIR.search(file):
+                continue
+            fh_w.write(f"{file}\n")
 
 def git_uncommitted(dir_= None):
     """returns list uncommited changes.
@@ -1723,11 +1729,21 @@ def git_add_changes(add_unknown_files):
                      env= None, verbose= gbl_verbose, dry_run= gbl_dry_run)
     filelist= []
     for line in out.splitlines():
-        # do not add .gqpatches directory:
-        m= RX_TOPPPATCHDIR_FILES_STAT.search(line)
-        if m:
+        m= RX_STAT.search(line)
+        if m is None:
+            errprint(f"WARNING: Cannot parse {line!r}, maybe not all "
+                     f"unknown files were added")
             continue
-        if RX_GITSTAT_DEL.search(line):
+        (stat, file)= (m.group(1), m.group(2))
+        if stat=="??":
+            # a file unknown to git
+            # do not add .gqpatches directory:
+            if RX_TOPPPATCHDIR.search(file):
+                continue
+            # do not add 'reject' files:
+            if RX_REJ.search(file):
+                continue
+        if stat=="D ":
             # deleted file
             continue
         m= RX_GITSTAT_MV.search(line)
@@ -1735,13 +1751,7 @@ def git_add_changes(add_unknown_files):
             # renamed file
             # a line in the form 'R  README.txt -> README.rst'
             file= m.group(1)
-        else:
-            # a line in the form 'A  README.txt' or 'M  README.txt'
-            file= line[3:] # remove leading flags
         # do not add .gqpatches directory:
-        m= RX_TOPPPATCHDIR_FILES_STAT.search(line)
-        if m:
-            continue
         filelist.append(file)
     if filelist:
         git_add(filelist)
@@ -1812,6 +1822,13 @@ def _new_unknown_files(oldlist_file, newlist_file):
     lst= []
     for l in out.splitlines():
         if not l.startswith(">"):
+            continue
+        file= l[1:].lstrip()
+        # do not add .gqpatches directory:
+        if RX_TOPPPATCHDIR.search(file):
+            continue
+        # do not add 'reject' files:
+        if RX_REJ.search(file):
             continue
         lst.append(l[1:].lstrip())
     return lst
