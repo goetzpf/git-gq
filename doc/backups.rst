@@ -21,7 +21,7 @@ It then does a ``git commit`` for the patch queue repository.
 
 The user can run all git commands on the patch queue repository with::
 
-  git gq grepo COMMAND -- OPTIONS
+  git gq qrepo COMMAND -- OPTIONS
 
 The command::
 
