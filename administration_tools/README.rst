@@ -34,6 +34,8 @@ Run::
 
   github-upload-html.sh
 
+and follwow the instructions printed on the console.
+
 Create distribution tar file
 ----------------------------
 
