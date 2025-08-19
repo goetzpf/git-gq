@@ -2,6 +2,10 @@ Command line interface
 ----------------------
 usage: git-gq [OPTIONS] COMMAND
 
+.. note::
+   REGEXP is a
+   `regular expression <https://docs.python.org/3/howto/regex.html#regex-howto>`_.
+
 Bash completion commands
 ++++++++++++++++++++++++
 
@@ -15,7 +19,7 @@ Bash completion commands
 
       git gq a<TAB>
 
-    shows the possible completions `abort` and `applied`. If there is only one
+    shows the possible completions ``abort`` and ``applied``. If there is only one
     matching command, you command line is completed, e.g::
 
       git gq ab<TAB>
@@ -30,39 +34,42 @@ Queue management commands
 +++++++++++++++++++++++++
 
   init [QNAME [REV]]
-    Create/select a patch queue with name 'QNAME'. QNAME is optional, the
-    default patch queue name is 'default'. If 'REV' is given this is the parent
-    revision, if it is not givem, 'HEAD' is taken as the parent. You must run
+    Create/select a patch queue with name QNAME. QNAME is optional, the
+    default patch queue name is 'default'. If REV is given this is the parent
+    revision, if it is not given, 'HEAD' is taken as the parent. You must run
     this command once to initialize the patch queue in your repository.
 
   qname [QNAME]   
     If QNAME is not given, show current patch queue name. if QNAME is given,
     change to patch queue QNAME. If the patch queue QNAME is created for the
     first time, the parent revision is set to your 'HEAD' revision. If this is
-    not intended, you may change this with `git gq parent REVISION` to
+    not intended, you may change this with ``git gq parent REVISION`` to
     another revision.
 
   backup         
     Backup patch queue directory with a separate git repository. You may
-    provide a short log message with oṕtion `-m`.
+    provide a short log message with option ``-m``.
 
   restore REVISION   
-    Restore patch directory to a REVISION that was created with `git gq backup`
-    before. This *does not* change your git repository. To do this, you must
-    run `git gq revert`.
+    Restore patch directory to a REVISION that was created with ``git gq
+    backup`` before. This *does not* change your git repository. Enter ``git gq
+    revert`` to reset your repository to the last saved state.
 
   revert
-    Revert git repository to the state stored in the patch queue. All *applied*
-    patches are restored to the state at the last `git gq backup`. All
-    *unapplied* patches remain in their present state. This will create a new
-    branch in the repository beginning at the PARENT revision.
+    Revert git repository to the state from the last backup of the patch queue.
+    All *applied* patches are restored to the state at the last ``git gq
+    backup``. All *unapplied* patches remain in their present state. This will
+    create a new branch in the repository beginning at the PARENT revision.
 
   qrepo COMMAND [-- OPTIONS]
-    Run git command COMMAND with OPTIONS in patch-queue repository.
+    Run git command COMMAND with OPTIONS in patch-queue repository. Note that
+    OPTIONS must be preceded by a *double* '-' character.
 
   change-order   
-    Call an editor to edit the file that contains all currently unapplied
-    patches. Note the the patches in the file are applied from top to bottom.
+    Call an editor to edit the file 'series' that contains all currently
+    unapplied patches. Note that ``git gq push`` always applies the patch from
+    the *first* line in this file, so the top of the queue is the top of the
+    file.
 
   applied    
     Show all applied patches up to parent+1.
@@ -73,10 +80,10 @@ Queue management commands
   parent [REVISION]   
     Set REVISION as patch queue parent revision. Do never go beyond this
     revision with pop. Use 'HEAD' to set your repository HEAD as parent
-    revision. If REVISION is 'NULL', this means that *all* revisions in
-    the repository can be managed with `git gq pop`, you should only
-    use this for unpublished repositories. If REVISION is not given, show the
-    current parent revision.
+    revision. If REVISION is `NULL`, it means that *all* revisions in the
+    repository can be managed with ``git gq pop``, you should only use this for
+    unpublished repositories. If REVISION is not given, show the current parent
+    revision.
 
   export DIRECTORY
     Create numbered patch files from all currently applied patches in
@@ -86,9 +93,9 @@ Queue management commands
   import PATCHFILE [PATCHFILE...]
     Import a number of patchfiles to the patch queue. The last patchfile in the
     list will be on the top of the queue. Note that the patch files must have
-    been generated with `git format-patch` or `git gq pop`. This
-    cannot be used for patches generated with the `patch` program. These you
-    have to apply with `git apply PATCHFILE`.
+    been generated with ``git format-patch`` or ``git gq pop``. This
+    cannot be used for patches generated with the ``patch`` program. These you
+    have to apply with ``git apply PATCHFILE``.
 
 Patch management commands
 +++++++++++++++++++++++++
@@ -99,31 +106,39 @@ Patch management commands
     NAME is omitted, you can enter a complete log message interactively.
 
   record [NAME]  
-    Interactively select changes for a new patch (commit with log-message NAME)
+    Interactively select changes for a new patch (commit with log-message
+    NAME). This command runs ``git add --patch`` to select the changes before
+    ``git commit``.
 
   refresh        
-    Update the topmost patch.
+    Update the top patch, all changes in files known to git are added to the
+    top patch. If you want to add new files, add them with ``git add`` first.
+    If you want complete control over the changes added, run ``git add``
+    yourself and then run this command with option ``--no-add``.
 
   pop            
-    Pop the topmost patch.
+    Pop the top patch, the HEAD patch of your repository is moved to the patch
+    queue.
 
   push           
-    Apply the top patch from the patch queue.
+    Apply the top patch from the patch queue, the patch is moved to your
+    repository as the new HEAD patch.
 
   goto NAME|REGEXP
-    Do push or pop until the specified patch is the latest applied patch.
+    Do push or pop until the patch specified by name or regular expression is
+    the latest applied patch.
 
   fold NAME|REGEXP
-    Fold patch 'NAME' to the topmost patch. Patch 'NAME' must not be appled
+    Fold patch 'NAME' to the top patch. Patch 'NAME' must not have been applied
     already. Note that the log message of the fold-patch is appended to the
-    existing log message. You may change the log message with `git gq
-    refresh -e`.
+    existing log message. You can change the log message with
+    ``git gq refresh -e``.
 
   edit NAME|REGEXP
-    Call an editor to edit an unapplied patch. 
+    Call an editor to edit the patch file of an unapplied patch. 
 
   delete NAME|REGEXP
-    Delete unapplied patch with given name.
+    Delete unapplied patch with given by name or regular expression.
 
   show NAME|REGEXP
     Show changes of an applied or unapplied patch on the console.
@@ -144,8 +159,8 @@ Miscellaneous commands
 
   conflict [CMD]
     Show if the repository is in an unresolved conflict state.
-    CMD is a sub-command, `files` shows files changed by the patch,
-    `show` shows the patch.
+    CMD is a sub-command, ``files`` shows files changed by the patch,
+    ``show`` shows the patch.
 
   doc            
     Show reStructuredText source of man page.
@@ -162,8 +177,8 @@ OPTIONS
   --version             show program's version number and exit
   --summary             print a summary of the function of the program
   -h, --help            Show help.
-  --verbose             show called commands
-  --dry-run             do not actually call commands
+  --verbose             show what commands are called
+  --dry-run             show what commands would be called
   -D, --debug           Show debug information.
   -a, --all             push/pop: apply on ALL patches.
   -N, --no-add          new/refresh/fold: DO NOT add all modified changes to
@@ -176,7 +191,8 @@ OPTIONS
   -l, --lines LINECOUNT
                         applied, unapplied: Limit the number of lines printed
                         by the command. Print only the first LINECOUNT lines.
-  -R, --force           Allow to run `git gq pop` and `git gq push` even if
+  -R, --force           Allow to run `git gq pop` and ``git gq push`` even if
                         there are uncommited changes. Note the with 'pop' this
                         will discard uncommited changes.
   --exception           do not catch exceptions (for debugging).
+

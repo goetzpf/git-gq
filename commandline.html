@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Command line interface &mdash; git-gq 2.0.1 documentation</title>
+  <title>Command line interface &mdash; git-gq 2.0.2 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=330c1f8c" />
 
@@ -12,7 +12,7 @@
   
         <script src="_static/jquery.js?v=5d32c60e"></script>
         <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-        <script src="_static/documentation_options.js?v=f5cff4aa"></script>
+        <script src="_static/documentation_options.js?v=c2377ec0"></script>
         <script src="_static/doctools.js?v=9a2dae69"></script>
         <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/js/theme.js"></script>
@@ -34,7 +34,7 @@
             git-gq
           </a>
               <div class="version">
-                2.0.1
+                2.0.2
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -124,6 +124,11 @@
   <section id="command-line-interface">
 <h1>Command line interface<a class="headerlink" href="#command-line-interface" title="Link to this heading"></a></h1>
 <p>usage: git-gq [OPTIONS] COMMAND</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>REGEXP is a
+<a class="reference external" href="https://docs.python.org/3/howto/regex.html#regex-howto">regular expression</a>.</p>
+</div>
 <section id="bash-completion-commands">
 <h2>Bash completion commands<a class="headerlink" href="#bash-completion-commands" title="Link to this heading"></a></h2>
 <blockquote>
@@ -136,7 +141,7 @@ possible commands when you type &lt;TAB&gt;, e.g.:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">git</span> <span class="n">gq</span> <span class="n">a</span><span class="o">&lt;</span><span class="n">TAB</span><span class="o">&gt;</span>
 </pre></div>
 </div>
-<p>shows the possible completions <cite>abort</cite> and <cite>applied</cite>. If there is only one
+<p>shows the possible completions <code class="docutils literal notranslate"><span class="pre">abort</span></code> and <code class="docutils literal notranslate"><span class="pre">applied</span></code>. If there is only one
 matching command, you command line is completed, e.g:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">git</span> <span class="n">gq</span> <span class="n">ab</span><span class="o">&lt;</span><span class="n">TAB</span><span class="o">&gt;</span>
 </pre></div>
@@ -154,33 +159,36 @@ matching command, you command line is completed, e.g:</p>
 <h2>Queue management commands<a class="headerlink" href="#queue-management-commands" title="Link to this heading"></a></h2>
 <blockquote>
 <div><dl class="simple">
-<dt>init [QNAME [REV]]</dt><dd><p>Create/select a patch queue with name ‘QNAME’. QNAME is optional, the
-default patch queue name is ‘default’. If ‘REV’ is given this is the parent
-revision, if it is not givem, ‘HEAD’ is taken as the parent. You must run
+<dt>init [QNAME [REV]]</dt><dd><p>Create/select a patch queue with name QNAME. QNAME is optional, the
+default patch queue name is ‘default’. If REV is given this is the parent
+revision, if it is not given, ‘HEAD’ is taken as the parent. You must run
 this command once to initialize the patch queue in your repository.</p>
 </dd>
 <dt>qname [QNAME]</dt><dd><p>If QNAME is not given, show current patch queue name. if QNAME is given,
 change to patch queue QNAME. If the patch queue QNAME is created for the
 first time, the parent revision is set to your ‘HEAD’ revision. If this is
-not intended, you may change this with <cite>git gq parent REVISION</cite> to
+not intended, you may change this with <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">gq</span> <span class="pre">parent</span> <span class="pre">REVISION</span></code> to
 another revision.</p>
 </dd>
 <dt>backup</dt><dd><p>Backup patch queue directory with a separate git repository. You may
-provide a short log message with oṕtion <cite>-m</cite>.</p>
+provide a short log message with option <code class="docutils literal notranslate"><span class="pre">-m</span></code>.</p>
 </dd>
-<dt>restore REVISION</dt><dd><p>Restore patch directory to a REVISION that was created with <cite>git gq backup</cite>
-before. This <em>does not</em> change your git repository. To do this, you must
-run <cite>git gq revert</cite>.</p>
+<dt>restore REVISION</dt><dd><p>Restore patch directory to a REVISION that was created with <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">gq</span>
+<span class="pre">backup</span></code> before. This <em>does not</em> change your git repository. Enter <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">gq</span>
+<span class="pre">revert</span></code> to reset your repository to the last saved state.</p>
 </dd>
-<dt>revert</dt><dd><p>Revert git repository to the state stored in the patch queue. All <em>applied</em>
-patches are restored to the state at the last <cite>git gq backup</cite>. All
-<em>unapplied</em> patches remain in their present state. This will create a new
-branch in the repository beginning at the PARENT revision.</p>
+<dt>revert</dt><dd><p>Revert git repository to the state from the last backup of the patch queue.
+All <em>applied</em> patches are restored to the state at the last <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">gq</span>
+<span class="pre">backup</span></code>. All <em>unapplied</em> patches remain in their present state. This will
+create a new branch in the repository beginning at the PARENT revision.</p>
 </dd>
-<dt>qrepo COMMAND [– OPTIONS]</dt><dd><p>Run git command COMMAND with OPTIONS in patch-queue repository.</p>
+<dt>qrepo COMMAND [– OPTIONS]</dt><dd><p>Run git command COMMAND with OPTIONS in patch-queue repository. Note that
+OPTIONS must be preceded by a <em>double</em> ‘-’ character.</p>
 </dd>
-<dt>change-order</dt><dd><p>Call an editor to edit the file that contains all currently unapplied
-patches. Note the the patches in the file are applied from top to bottom.</p>
+<dt>change-order</dt><dd><p>Call an editor to edit the file ‘series’ that contains all currently
+unapplied patches. Note that <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">gq</span> <span class="pre">push</span></code> always applies the patch from
+the <em>first</em> line in this file, so the top of the queue is the top of the
+file.</p>
 </dd>
 <dt>applied</dt><dd><p>Show all applied patches up to parent+1.</p>
 </dd>
@@ -188,10 +196,10 @@ patches. Note the the patches in the file are applied from top to bottom.</p>
 </dd>
 <dt>parent [REVISION]</dt><dd><p>Set REVISION as patch queue parent revision. Do never go beyond this
 revision with pop. Use ‘HEAD’ to set your repository HEAD as parent
-revision. If REVISION is ‘NULL’, this means that <em>all</em> revisions in
-the repository can be managed with <cite>git gq pop</cite>, you should only
-use this for unpublished repositories. If REVISION is not given, show the
-current parent revision.</p>
+revision. If REVISION is <cite>NULL</cite>, it means that <em>all</em> revisions in the
+repository can be managed with <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">gq</span> <span class="pre">pop</span></code>, you should only use this for
+unpublished repositories. If REVISION is not given, show the current parent
+revision.</p>
 </dd>
 <dt>export DIRECTORY</dt><dd><p>Create numbered patch files from all currently applied patches in
 DIRECTORY. The numbers are in the order of patches from bottom to top.
@@ -199,9 +207,9 @@ DIRECTORY must exist.</p>
 </dd>
 <dt>import PATCHFILE [PATCHFILE…]</dt><dd><p>Import a number of patchfiles to the patch queue. The last patchfile in the
 list will be on the top of the queue. Note that the patch files must have
-been generated with <cite>git format-patch</cite> or <cite>git gq pop</cite>. This
-cannot be used for patches generated with the <cite>patch</cite> program. These you
-have to apply with <cite>git apply PATCHFILE</cite>.</p>
+been generated with <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">format-patch</span></code> or <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">gq</span> <span class="pre">pop</span></code>. This
+cannot be used for patches generated with the <code class="docutils literal notranslate"><span class="pre">patch</span></code> program. These you
+have to apply with <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">apply</span> <span class="pre">PATCHFILE</span></code>.</p>
 </dd>
 </dl>
 </div></blockquote>
@@ -214,24 +222,32 @@ have to apply with <cite>git apply PATCHFILE</cite>.</p>
 preliminary commit message, it should be a single line without spaces. If
 NAME is omitted, you can enter a complete log message interactively.</p>
 </dd>
-<dt>record [NAME]</dt><dd><p>Interactively select changes for a new patch (commit with log-message NAME)</p>
+<dt>record [NAME]</dt><dd><p>Interactively select changes for a new patch (commit with log-message
+NAME). This command runs <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">add</span> <span class="pre">--patch</span></code> to select the changes before
+<code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">commit</span></code>.</p>
 </dd>
-<dt>refresh</dt><dd><p>Update the topmost patch.</p>
+<dt>refresh</dt><dd><p>Update the top patch, all changes in files known to git are added to the
+top patch. If you want to add new files, add them with <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">add</span></code> first.
+If you want complete control over the changes added, run <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">add</span></code>
+yourself and then run this command with option <code class="docutils literal notranslate"><span class="pre">--no-add</span></code>.</p>
 </dd>
-<dt>pop</dt><dd><p>Pop the topmost patch.</p>
+<dt>pop</dt><dd><p>Pop the top patch, the HEAD patch of your repository is moved to the patch
+queue.</p>
 </dd>
-<dt>push</dt><dd><p>Apply the top patch from the patch queue.</p>
+<dt>push</dt><dd><p>Apply the top patch from the patch queue, the patch is moved to your
+repository as the new HEAD patch.</p>
 </dd>
-<dt>goto NAME|REGEXP</dt><dd><p>Do push or pop until the specified patch is the latest applied patch.</p>
+<dt>goto NAME|REGEXP</dt><dd><p>Do push or pop until the patch specified by name or regular expression is
+the latest applied patch.</p>
 </dd>
-<dt>fold NAME|REGEXP</dt><dd><p>Fold patch ‘NAME’ to the topmost patch. Patch ‘NAME’ must not be appled
+<dt>fold NAME|REGEXP</dt><dd><p>Fold patch ‘NAME’ to the top patch. Patch ‘NAME’ must not have been applied
 already. Note that the log message of the fold-patch is appended to the
-existing log message. You may change the log message with <cite>git gq
-refresh -e</cite>.</p>
+existing log message. You can change the log message with
+<code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">gq</span> <span class="pre">refresh</span> <span class="pre">-e</span></code>.</p>
 </dd>
-<dt>edit NAME|REGEXP</dt><dd><p>Call an editor to edit an unapplied patch.</p>
+<dt>edit NAME|REGEXP</dt><dd><p>Call an editor to edit the patch file of an unapplied patch.</p>
 </dd>
-<dt>delete NAME|REGEXP</dt><dd><p>Delete unapplied patch with given name.</p>
+<dt>delete NAME|REGEXP</dt><dd><p>Delete unapplied patch with given by name or regular expression.</p>
 </dd>
 <dt>show NAME|REGEXP</dt><dd><p>Show changes of an applied or unapplied patch on the console.</p>
 </dd>
@@ -251,8 +267,8 @@ This also removes all reject (*.rej) files that are not tracked by git.</p>
 <dt>help</dt><dd><p>Show this help.</p>
 </dd>
 <dt>conflict [CMD]</dt><dd><p>Show if the repository is in an unresolved conflict state.
-CMD is a sub-command, <cite>files</cite> shows files changed by the patch,
-<cite>show</cite> shows the patch.</p>
+CMD is a sub-command, <code class="docutils literal notranslate"><span class="pre">files</span></code> shows files changed by the patch,
+<code class="docutils literal notranslate"><span class="pre">show</span></code> shows the patch.</p>
 </dd>
 <dt>doc</dt><dd><p>Show reStructuredText source of man page.</p>
 </dd>
@@ -277,10 +293,10 @@ CMD is a sub-command, <cite>files</cite> shows files changed by the patch,
 <dd><p>Show help.</p>
 </dd>
 <dt><kbd><span class="option">--verbose</span></kbd></dt>
-<dd><p>show called commands</p>
+<dd><p>show what commands are called</p>
 </dd>
 <dt><kbd><span class="option">--dry-run</span></kbd></dt>
-<dd><p>do not actually call commands</p>
+<dd><p>show what commands would be called</p>
 </dd>
 <dt><kbd><span class="option">-D</span>, <span class="option">--debug</span></kbd></dt>
 <dd><p>Show debug information.</p>
@@ -307,7 +323,7 @@ changes to patch.</p>
 by the command. Print only the first LINECOUNT lines.</p>
 </dd>
 <dt><kbd><span class="option">-R</span>, <span class="option">--force</span></kbd></dt>
-<dd><p>Allow to run <cite>git gq pop</cite> and <cite>git gq push</cite> even if
+<dd><p>Allow to run <cite>git gq pop</cite> and <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">gq</span> <span class="pre">push</span></code> even if
 there are uncommited changes. Note the with ‘pop’ this
 will discard uncommited changes.</p>
 </dd>

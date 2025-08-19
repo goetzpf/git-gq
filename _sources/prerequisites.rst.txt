@@ -10,7 +10,6 @@ variants.
 In order to run git-gq you need to have installed these programs/packages:
 
 - git
-
 - `Python <https://www.python.org/>`_ v.3.6 or newer
 - colordiff
 - vi or some other text editor

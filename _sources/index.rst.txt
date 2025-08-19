@@ -26,21 +26,28 @@ Patch queues for git
 This program implements patch queues for 
 `git <https://git-scm.com/>`_.
 
-It adds a new command 'gq' in git so you can use it like any other built-in git command.
+It adds the subcommand 'gq' for git. You can use it like any
+other built-in git subcommand like in::
 
-It also provides
-`command completion <https://en.wikipedia.org/wiki/Command-line_completion>`_ so
-you don't have to type commands in full length.
+  git gq COMMAND OPTIONS
 
-Patch queues are a very flexible tool for your *local* development. You can put
-your git commits aside on the patch queue, re-apply them later, reorder or
-combine them.
+With it's bash
+`command completion <https://en.wikipedia.org/wiki/Command-line_completion>`_ 
+support you can always just enter the first letters of your COMMAND and press
+<TAB> to show all possible completions.
 
-Patch queues can replace the 'git pull, git rebase' workflow. Instead you put
-your local commits aside, run 'git pull' and re-apply them. 
+Patch queues are a very flexible tool for your *local* development, everything
+you have not yet published or pushed to another git repository. You can put git
+commits on the patch queue with ``git gq pop`` and re-apply them later with
+``git gq push``. You can change, reorder or combine patches.
 
-You do not resolve all merge conflicts at once in one merge commit, instead you
-resolve conflicts separately for each patch. This is usually much easier.
+Patch queues can replace the usual 'git pull or git rebase' workflow. Instead
+you put your local commits on the queue with ``git gq pop -a``, run ``git
+pull`` and re-apply them with ``git gq push -a``.
+
+If there are conflicts with your patches, you do not have resolve them all at
+once in one big merge commit, instead you resolve conflicts step by step for
+each patch, which is usually much easier.
 
 :Author:
     Goetz Pfeiffer <goetzpf@googlemail.com>
@@ -60,17 +67,18 @@ Disclaimer
    it will *never* damage your repository. It's high degree of flexibility also
    means that you may use it in a way I didn't intend and didn't test. 
 
-When you first use this tool you should make regular backups of your
-repository. This can be as simple as::
+When you are new using this tool for the first time, you should make a backup
+of your repository, for example like this::
 
   cp -a MYREPO MYREPO-BACKUP
 
-A simple backup of the state of the patch queue can be done with::
+A backup of the current state of the patch queue is done with::
 
   git gq backup
 
-Run this *before* you reorder or fold patches and before you run `git pull`
-while some patches are unapplied.
+It is recommended that you *always* run this command *before* you reorder or
+fold patches and before you run ``git pull`` while some of your patches are
+still unapplied.
 
 Documentation
 -------------

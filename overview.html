@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Overview &mdash; git-gq 2.0.1 documentation</title>
+  <title>Overview &mdash; git-gq 2.0.2 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=330c1f8c" />
 
@@ -12,7 +12,7 @@
   
         <script src="_static/jquery.js?v=5d32c60e"></script>
         <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-        <script src="_static/documentation_options.js?v=f5cff4aa"></script>
+        <script src="_static/documentation_options.js?v=c2377ec0"></script>
         <script src="_static/doctools.js?v=9a2dae69"></script>
         <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/js/theme.js"></script>
@@ -34,7 +34,7 @@
             git-gq
           </a>
               <div class="version">
-                2.0.1
+                2.0.2
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -130,7 +130,7 @@
 <li><p>A state, this is the directory structure and the files and their contents and
 permissions.</p></li>
 <li><p>Metadata: log message, author and date</p></li>
-<li><p>A hash key that git uses internally to distinguish commits. Git hashes are
+<li><p>A hash key that git uses internally to identify commits. Git hashes are
 calculated based on the contents of the files in the commit, the metadata of
 the commit (like timestamp and author), and the parent commit’s hash.</p></li>
 <li><p>A predecessor commit unless it is the first commit in the repository</p></li>
@@ -189,25 +189,26 @@ repository:</p>
 <h2>Advantages of the patch queue<a class="headerlink" href="#advantages-of-the-patch-queue" title="Link to this heading"></a></h2>
 <p>The patch-queue is much more flexible than traditional commits:</p>
 <ul class="simple">
-<li><p>Patches can be reordered easily</p></li>
-<li><p>Patches can be combined (‘fold’)</p></li>
-<li><p>Patches can be updated (‘refresh’)</p></li>
+<li><p>Patches can be reordered easily.</p></li>
+<li><p>Patches can be combined (<code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">gq</span> <span class="pre">fold</span></code>).</p></li>
+<li><p>Patches can be updated (<code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">gq</span> <span class="pre">refresh</span></code>).</p></li>
 <li><p>Patches can replace development branches. You can put your local changes on
-the patch queue, run ‘git pull’ and put your patches back on the repository.</p></li>
-<li><p>Conflicts may occur but are usually easier to resolve than git merge
-conflicts</p></li>
+the patch queue, run <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">pull</span></code> and put your patches back on the
+repository.</p></li>
+<li><p>Conflicts that may occur with <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">gq</span> <span class="pre">push</span></code> are usually easier to resolve
+than git merge conflicts.</p></li>
 </ul>
 </section>
 <section id="disadvantages-of-the-patch-queue">
 <h2>Disadvantages of the patch queue<a class="headerlink" href="#disadvantages-of-the-patch-queue" title="Link to this heading"></a></h2>
 <ul class="simple">
-<li><p>moving a patch to the patch queue and back changes it’s git hash key. This
-means you shouldn’t apply this operation on patches that exist in other
+<li><p>Moving a patch to the patch queue and back changes it’s git hash key. This
+means you must not apply this operation on patches that exist in other
 repositories. The definition of the <em>parent revision</em> ensures that you cannot
 do this by accident.</p></li>
-<li><p>changing the order of patches may lead to <em>conflicts</em>.</p></li>
+<li><p>Changing the order of patches may lead to <em>conflicts</em>.</p></li>
 <li><p>Applying new commits in the repository while some patches are unapplied may
-lead to conflicts when the patches are applied later.</p></li>
+lead to conflicts when the patches are applied later on.</p></li>
 </ul>
 </section>
 </section>

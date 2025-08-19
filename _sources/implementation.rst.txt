@@ -4,10 +4,10 @@ Implementation
 Directory structure
 +++++++++++++++++++
 
-All files `git gq` uses are in directory '.gqpatches'. You may want to add this
-to your '.gitignore' file.
+All files git-gq uses are in directory '.gqpatches'. You may want to add this
+to your .gitignore file.
 
-'.gqpatches/tmp' is the directory for temporary files `git gq` creates.
+'.gqpatches/tmp' is the directory for temporary files git-gq creates.
 
 The program can manage more than one patch queue. Each patch queue has a name
 and all files of the queue are in a directory with the same name, e.g.
@@ -26,25 +26,23 @@ series
 ::::::
 
 The order of patches is kept in a file named 'series' that just contains all
-the filenames of all unapplied patches. `git gq push` takes and applues the
+the filenames of all unapplied patches. ``git gq push`` takes and applies the
 patch from the first line in this file.
 
 parent
 ::::::
 
-The parent revision is stored in a file 'parent'. This is the latest commit
-that is not allowed to be modified. This file is usually created when you start
-your work with `git gq init`. It can be changed with `git gq
-parent`.
+The parent revision is stored in a file 'parent'. This is the most recent
+commit that is not allowed to be modified. This file is created when you start
+your work with ``git gq init``. It can be changed with ``git gq parent``.
 
-A special revision is `NULL`. This is the very first revision in the
-repository where no files are committed. git doesn't have a concept of a
-`NULL` revision, so this is emulated by `git gq` by creating a
-revision with no files in it. When the parent is set to `NULL` this means
-that you can pop the very first revision as a patch and by this have the
-capability to modify the very first revision. Of course, you should never do
-this with a published repository, since `git gq pop` and `git gq
-push` always modify revision hash keys.
+A special revision is `NULL`. This is the very first revision in the repository
+where no files are committed. git doesn't have a concept of a `NULL` revision,
+this is emulated by git-gq by creating a revision with no files in it. When the
+parent is set to `NULL` this means that you can put the very first revision on
+the patch queue and by this have the ability to modify the very first revision.
+Of course, you should never do this with a published repository, since ``git gq
+pop`` and ``git gq push`` always modify revision hash keys.
 
 patch files '\*.patch'
 ::::::::::::::::::::::
@@ -53,15 +51,15 @@ A *patch file* is basically a file with recipes for changes in files. Each
 recipe is called a *hunk*. A *hunk* contains line numbers, context lines, lines
 to remove and lines to add.
 
-`git gq` uses standard git commands to move patches between the
+git-gq uses standard git commands to move patches between the
 repository and the patch queue. In the patch queue, each patch is a file
 created from the difference of a commit and it's predecessor in the repository
-with `git format-patch`. Among the changes between two commits this file also
+with ``git format-patch``. Among the changes between two commits this file also
 contains all the metadata of the second commit. The name of the patch file is
 computed from the first line of the log message where spaces are replaced with
 dashes and end with the extension '.patch'.
 
-A patch file is re-applied to the repository with `git am`. 
+A patch file is re-applied to the repository with ``git am``. 
 
 Here is an example of a patch file::
 
@@ -94,7 +92,7 @@ Here is an example of a patch file::
 applied
 :::::::
 
-Directory 'applied' is created by `git gq backup`. It contains the *applied*
+Directory 'applied' is created by ``git gq backup``. It contains the *applied*
 patches from the time this command is issued. Note that files in this directory
-are not changed by `git gq push` or `git gq pop`, only by `git gq backup`.
+are not changed by ``git gq push`` or ``git gq pop``, only by ``git gq backup``.
 

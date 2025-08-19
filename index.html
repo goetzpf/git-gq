@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Welcome to git-gq’s documentation! &mdash; git-gq 2.0.1 documentation</title>
+  <title>Welcome to git-gq’s documentation! &mdash; git-gq 2.0.2 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=330c1f8c" />
 
@@ -12,7 +12,7 @@
   
         <script src="_static/jquery.js?v=5d32c60e"></script>
         <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-        <script src="_static/documentation_options.js?v=f5cff4aa"></script>
+        <script src="_static/documentation_options.js?v=c2377ec0"></script>
         <script src="_static/doctools.js?v=9a2dae69"></script>
         <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/js/theme.js"></script>
@@ -33,7 +33,7 @@
             git-gq
           </a>
               <div class="version">
-                2.0.1
+                2.0.2
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -128,23 +128,31 @@
 <h2>Patch queues for git<a class="headerlink" href="#patch-queues-for-git" title="Link to this heading"></a></h2>
 <p>This program implements patch queues for
 <a class="reference external" href="https://git-scm.com/">git</a>.</p>
-<p>It adds a new command ‘gq’ in git so you can use it like any other built-in git command.</p>
-<p>It also provides
-<a class="reference external" href="https://en.wikipedia.org/wiki/Command-line_completion">command completion</a> so
-you don’t have to type commands in full length.</p>
-<p>Patch queues are a very flexible tool for your <em>local</em> development. You can put
-your git commits aside on the patch queue, re-apply them later, reorder or
-combine them.</p>
-<p>Patch queues can replace the ‘git pull, git rebase’ workflow. Instead you put
-your local commits aside, run ‘git pull’ and re-apply them.</p>
-<p>You do not resolve all merge conflicts at once in one merge commit, instead you
-resolve conflicts separately for each patch. This is usually much easier.</p>
+<p>It adds the subcommand ‘gq’ for git. You can use it like any
+other built-in git subcommand like in:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">git</span> <span class="n">gq</span> <span class="n">COMMAND</span> <span class="n">OPTIONS</span>
+</pre></div>
+</div>
+<p>With it’s bash
+<a class="reference external" href="https://en.wikipedia.org/wiki/Command-line_completion">command completion</a>
+support you can always just enter the first letters of your COMMAND and press
+&lt;TAB&gt; to show all possible completions.</p>
+<p>Patch queues are a very flexible tool for your <em>local</em> development, everything
+you have not yet published or pushed to another git repository. You can put git
+commits on the patch queue with <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">gq</span> <span class="pre">pop</span></code> and re-apply them later with
+<code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">gq</span> <span class="pre">push</span></code>. You can change, reorder or combine patches.</p>
+<p>Patch queues can replace the usual ‘git pull or git rebase’ workflow. Instead
+you put your local commits on the queue with <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">gq</span> <span class="pre">pop</span> <span class="pre">-a</span></code>, run <code class="docutils literal notranslate"><span class="pre">git</span>
+<span class="pre">pull</span></code> and re-apply them with <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">gq</span> <span class="pre">push</span> <span class="pre">-a</span></code>.</p>
+<p>If there are conflicts with your patches, you do not have resolve them all at
+once in one big merge commit, instead you resolve conflicts step by step for
+each patch, which is usually much easier.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Author<span class="colon">:</span></dt>
 <dd class="field-odd"><p>Goetz Pfeiffer &lt;<a class="reference external" href="mailto:goetzpf&#37;&#52;&#48;googlemail&#46;com">goetzpf<span>&#64;</span>googlemail<span>&#46;</span>com</a>&gt;</p>
 </dd>
 <dt class="field-even">Version<span class="colon">:</span></dt>
-<dd class="field-even"><p>2.0.1</p>
+<dd class="field-even"><p>2.0.2</p>
 </dd>
 </dl>
 <div class="admonition seealso">
@@ -161,17 +169,18 @@ for other open source projects.</p>
 it will <em>never</em> damage your repository. It’s high degree of flexibility also
 means that you may use it in a way I didn’t intend and didn’t test.</p>
 </div>
-<p>When you first use this tool you should make regular backups of your
-repository. This can be as simple as:</p>
+<p>When you are new using this tool for the first time, you should make a backup
+of your repository, for example like this:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">cp</span> <span class="o">-</span><span class="n">a</span> <span class="n">MYREPO</span> <span class="n">MYREPO</span><span class="o">-</span><span class="n">BACKUP</span>
 </pre></div>
 </div>
-<p>A simple backup of the state of the patch queue can be done with:</p>
+<p>A backup of the current state of the patch queue is done with:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">git</span> <span class="n">gq</span> <span class="n">backup</span>
 </pre></div>
 </div>
-<p>Run this <em>before</em> you reorder or fold patches and before you run <cite>git pull</cite>
-while some patches are unapplied.</p>
+<p>It is recommended that you <em>always</em> run this command <em>before</em> you reorder or
+fold patches and before you run <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">pull</span></code> while some of your patches are
+still unapplied.</p>
 </section>
 <section id="documentation">
 <h2>Documentation<a class="headerlink" href="#documentation" title="Link to this heading"></a></h2>

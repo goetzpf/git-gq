@@ -3,14 +3,14 @@ Conflicts and conflict resolution
 
 Conflicts may happen when:
 
-- you change the order of unapplied patches with `git gq change-order`
-  and then run `git gq push`
-- you unapply patches, make changes in the repository, e.g. `git pull` and
+- you change the order of unapplied patches with ``git gq change-order``
+  and then run ``git gq push``
+- you unapply patches, make changes in the repository, e.g. ``git pull`` and
   then apply the patches again
-- you combine unapplied patches with `git gq fold` that are not in
+- you combine unapplied patches with ``git gq fold`` that are not in
   consecutive order
 
-In the patch file example above, you see after '@@ -4,8 +4,8 @@' a single
+In the patch file example above, you see after ``@@ -4,8 +4,8 @@`` a single
 *hunk*. The numbers are line numbers in the source file, here 'sample.c'.
 
 All following lines that are indented with a single space are *context* lines.
@@ -20,8 +20,8 @@ a '+' character are to be added.
 A conflict occurs when the context lines or the lines to be removed couldn't be
 found. In this case, a reject file is created.
 
-Here are the messages you see in case of a conflict after you ran `git gq
-push`::
+Here are the messages you see in case of a conflict after you ran
+``git gq push``::
 
   Applying: sample-comment
   Checking patch sample.c...
@@ -49,19 +49,20 @@ push`::
   ------------------------
   
   Resolve this conflict by looking at the *.rej files.
-  For files that were not found there is no reject file, then look at the patch with:
+  For files that were not found there is no reject file, look at the original
+  patch with:
     less .gqpatches/tmp/DIFF.patch
   
-  To see the state of your repo run:
+  To see the state of your repository enter:
     git status
   
-  Unknown files for git that should be part of the patch have to be added with:
+  Unknown files for git that should be part of the patch must be added with:
     git add FILE
   
-  If you could resolve the conflicts run:
+  If you managed to resolve all the conflicts run:
     git gq continue
   
-  To abort the operation without resolving run:
+  To abort the whole operation without resolving conflicts run:
     git gq abort
 
 And here is the content of the reject file, 'sample.c.rej' in this case::
@@ -92,14 +93,20 @@ any text editor, we can easily see what the patch intended to do and apply the
 changes manually.
 
 This is called *resolving a conflict*. You have to go through all reject files,
-there may be more than one and resolve all conflicts.
+there may be more than one, and resolve all conflicts.
+
+ .. important::
+    If a file that the patch modifies couldn't be found, **there is no reject
+    file**. Look carefully at the git message and look at the original patch as
+    described in the git-gq help message that is printed when the conflict is
+    detected.
 
 After you are finished, run::
 
   git gq continue
 
 This finishes the operation and tells git that the conflict was resolved. You
-*must not* run `git am continue` yourself, `git gq continue` already
+*must not* run ``git am continue`` yourself, ``git gq continue`` already
 does this for you.
 
 If you cannot resolve conflicts because the reject files are too long or

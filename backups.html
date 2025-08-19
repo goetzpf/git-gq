@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Backups &mdash; git-gq 2.0.1 documentation</title>
+  <title>Backups &mdash; git-gq 2.0.2 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=330c1f8c" />
 
@@ -12,7 +12,7 @@
   
         <script src="_static/jquery.js?v=5d32c60e"></script>
         <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-        <script src="_static/documentation_options.js?v=f5cff4aa"></script>
+        <script src="_static/documentation_options.js?v=c2377ec0"></script>
         <script src="_static/doctools.js?v=9a2dae69"></script>
         <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/js/theme.js"></script>
@@ -34,7 +34,7 @@
             git-gq
           </a>
               <div class="version">
-                2.0.1
+                2.0.2
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -125,16 +125,19 @@
 <h1>Backups<a class="headerlink" href="#backups" title="Link to this heading"></a></h1>
 <p>The flexibility of the patch queue also makes it easier to mess things up.</p>
 <p>In order to have some kind of safety and to be able to restore an older working
-state of the patch queue, git-gq has a simple backup mechanism.</p>
+state of the patch queue, git-gq uses a git repository for backups.</p>
 <section id="implementation">
 <h2>Implementation<a class="headerlink" href="#implementation" title="Link to this heading"></a></h2>
 <p>If <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">gq</span> <span class="pre">backup</span></code> is called for the first time, it creates a git repository
 inside the patch queue directory.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
 <p><em>All</em> patch queues are managed with a single git repository.</p>
-<p>The backup command then creates a directory ‘applied’ inside the current queue
-directory which has a copy of all patches currently applied.</p>
-<p>It then does a <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">commit</span></code> for the patch queue repository.</p>
-<p>The user can run all git commands on the patch queue repository with:</p>
+</div>
+<p>The backup command creates a directory ‘applied’ inside the current queue
+directory which has a copy of all patches applied at the time.</p>
+<p>It then runs <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">commit</span></code> for the patch queue repository.</p>
+<p>You can enter arbitrary git commands on the patch queue repository with:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">git</span> <span class="n">gq</span> <span class="n">qrepo</span> <span class="n">COMMAND</span> <span class="o">--</span> <span class="n">OPTIONS</span>
 </pre></div>
 </div>
@@ -143,14 +146,18 @@ directory which has a copy of all patches currently applied.</p>
 </pre></div>
 </div>
 <p>checks out the given revision in the queue repository.</p>
-<p>The git repository of the user is not changed by the two commands above.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Your git repository is not changed by the commands <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">gq</span> <span class="pre">backup</span></code> and
+<code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">gq</span> <span class="pre">restore</span></code>.</p>
+</div>
 <p>The command:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">git</span> <span class="n">revert</span>
 </pre></div>
 </div>
-<p>changes the git repository to the state it had when the last backup was made.</p>
-<p>At the parent revision a new branch is created where all the patched from
-directory ‘applied’ are added.</p>
+<p>changes the git repository to the state it had when the last backup was made.
+At the parent revision a new branch is created where all the patches from
+directory ‘applied’ are added as regular commits.</p>
 </section>
 <section id="how-to-create-a-backup">
 <h2>How to create  a backup<a class="headerlink" href="#how-to-create-a-backup" title="Link to this heading"></a></h2>

@@ -9,7 +9,7 @@ git manages a repository with *commits*. A commit has the following properties:
 - A state, this is the directory structure and the files and their contents and
   permissions.
 - Metadata: log message, author and date
-- A hash key that git uses internally to distinguish commits. Git hashes are
+- A hash key that git uses internally to identify commits. Git hashes are
   calculated based on the contents of the files in the commit, the metadata of
   the commit (like timestamp and author), and the parent commit's hash.
 - A predecessor commit unless it is the first commit in the repository
@@ -72,22 +72,23 @@ Advantages of the patch queue
 
 The patch-queue is much more flexible than traditional commits:
 
-- Patches can be reordered easily
-- Patches can be combined ('fold')
-- Patches can be updated ('refresh')
+- Patches can be reordered easily.
+- Patches can be combined (``git gq fold``).
+- Patches can be updated (``git gq refresh``).
 - Patches can replace development branches. You can put your local changes on
-  the patch queue, run 'git pull' and put your patches back on the repository.
-- Conflicts may occur but are usually easier to resolve than git merge
-  conflicts
+  the patch queue, run ``git pull`` and put your patches back on the
+  repository.
+- Conflicts that may occur with ``git gq push`` are usually easier to resolve
+  than git merge conflicts.
 
 Disadvantages of the patch queue
 ++++++++++++++++++++++++++++++++
 
-- moving a patch to the patch queue and back changes it's git hash key. This
-  means you shouldn't apply this operation on patches that exist in other
+- Moving a patch to the patch queue and back changes it's git hash key. This
+  means you must not apply this operation on patches that exist in other
   repositories. The definition of the *parent revision* ensures that you cannot
   do this by accident.
-- changing the order of patches may lead to *conflicts*.
+- Changing the order of patches may lead to *conflicts*.
 - Applying new commits in the repository while some patches are unapplied may
-  lead to conflicts when the patches are applied later.
+  lead to conflicts when the patches are applied later on.
 

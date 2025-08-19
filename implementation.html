@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Implementation &mdash; git-gq 2.0.1 documentation</title>
+  <title>Implementation &mdash; git-gq 2.0.2 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=330c1f8c" />
 
@@ -12,7 +12,7 @@
   
         <script src="_static/jquery.js?v=5d32c60e"></script>
         <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-        <script src="_static/documentation_options.js?v=f5cff4aa"></script>
+        <script src="_static/documentation_options.js?v=c2377ec0"></script>
         <script src="_static/doctools.js?v=9a2dae69"></script>
         <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/js/theme.js"></script>
@@ -34,7 +34,7 @@
             git-gq
           </a>
               <div class="version">
-                2.0.1
+                2.0.2
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -125,9 +125,9 @@
 <h1>Implementation<a class="headerlink" href="#implementation" title="Link to this heading"></a></h1>
 <section id="directory-structure">
 <h2>Directory structure<a class="headerlink" href="#directory-structure" title="Link to this heading"></a></h2>
-<p>All files <cite>git gq</cite> uses are in directory ‘.gqpatches’. You may want to add this
-to your ‘.gitignore’ file.</p>
-<p>‘.gqpatches/tmp’ is the directory for temporary files <cite>git gq</cite> creates.</p>
+<p>All files git-gq uses are in directory ‘.gqpatches’. You may want to add this
+to your .gitignore file.</p>
+<p>‘.gqpatches/tmp’ is the directory for temporary files git-gq creates.</p>
 <p>The program can manage more than one patch queue. Each patch queue has a name
 and all files of the queue are in a directory with the same name, e.g.
 ‘.gqpatches/MYQUEUE’. The default name for the first patch queue is ‘default’.</p>
@@ -141,37 +141,35 @@ files or directories:</p>
 <section id="series">
 <h3>series<a class="headerlink" href="#series" title="Link to this heading"></a></h3>
 <p>The order of patches is kept in a file named ‘series’ that just contains all
-the filenames of all unapplied patches. <cite>git gq push</cite> takes and applues the
+the filenames of all unapplied patches. <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">gq</span> <span class="pre">push</span></code> takes and applies the
 patch from the first line in this file.</p>
 </section>
 <section id="parent">
 <h3>parent<a class="headerlink" href="#parent" title="Link to this heading"></a></h3>
-<p>The parent revision is stored in a file ‘parent’. This is the latest commit
-that is not allowed to be modified. This file is usually created when you start
-your work with <cite>git gq init</cite>. It can be changed with <cite>git gq
-parent</cite>.</p>
-<p>A special revision is <cite>NULL</cite>. This is the very first revision in the
-repository where no files are committed. git doesn’t have a concept of a
-<cite>NULL</cite> revision, so this is emulated by <cite>git gq</cite> by creating a
-revision with no files in it. When the parent is set to <cite>NULL</cite> this means
-that you can pop the very first revision as a patch and by this have the
-capability to modify the very first revision. Of course, you should never do
-this with a published repository, since <cite>git gq pop</cite> and <cite>git gq
-push</cite> always modify revision hash keys.</p>
+<p>The parent revision is stored in a file ‘parent’. This is the most recent
+commit that is not allowed to be modified. This file is created when you start
+your work with <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">gq</span> <span class="pre">init</span></code>. It can be changed with <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">gq</span> <span class="pre">parent</span></code>.</p>
+<p>A special revision is <cite>NULL</cite>. This is the very first revision in the repository
+where no files are committed. git doesn’t have a concept of a <cite>NULL</cite> revision,
+this is emulated by git-gq by creating a revision with no files in it. When the
+parent is set to <cite>NULL</cite> this means that you can put the very first revision on
+the patch queue and by this have the ability to modify the very first revision.
+Of course, you should never do this with a published repository, since <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">gq</span>
+<span class="pre">pop</span></code> and <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">gq</span> <span class="pre">push</span></code> always modify revision hash keys.</p>
 </section>
 <section id="patch-files-patch">
 <h3>patch files ‘*.patch’<a class="headerlink" href="#patch-files-patch" title="Link to this heading"></a></h3>
 <p>A <em>patch file</em> is basically a file with recipes for changes in files. Each
 recipe is called a <em>hunk</em>. A <em>hunk</em> contains line numbers, context lines, lines
 to remove and lines to add.</p>
-<p><cite>git gq</cite> uses standard git commands to move patches between the
+<p>git-gq uses standard git commands to move patches between the
 repository and the patch queue. In the patch queue, each patch is a file
 created from the difference of a commit and it’s predecessor in the repository
-with <cite>git format-patch</cite>. Among the changes between two commits this file also
+with <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">format-patch</span></code>. Among the changes between two commits this file also
 contains all the metadata of the second commit. The name of the patch file is
 computed from the first line of the log message where spaces are replaced with
 dashes and end with the extension ‘.patch’.</p>
-<p>A patch file is re-applied to the repository with <cite>git am</cite>.</p>
+<p>A patch file is re-applied to the repository with <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">am</span></code>.</p>
 <p>Here is an example of a patch file:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">From</span> <span class="mi">273</span><span class="n">c3709f7da0fe0e11369ea0d9a26053f78e3ee</span> <span class="n">Mon</span> <span class="n">Sep</span> <span class="mi">17</span> <span class="mi">00</span><span class="p">:</span><span class="mi">00</span><span class="p">:</span><span class="mi">00</span> <span class="mi">2001</span>
 <span class="n">From</span><span class="p">:</span> <span class="n">Goetz</span> <span class="n">Pfeiffer</span> <span class="o">&lt;</span><span class="n">goetzpf</span><span class="nd">@googlemail</span><span class="o">.</span><span class="n">com</span><span class="o">&gt;</span>
@@ -203,9 +201,9 @@ dashes and end with the extension ‘.patch’.</p>
 </section>
 <section id="applied">
 <h3>applied<a class="headerlink" href="#applied" title="Link to this heading"></a></h3>
-<p>Directory ‘applied’ is created by <cite>git gq backup</cite>. It contains the <em>applied</em>
+<p>Directory ‘applied’ is created by <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">gq</span> <span class="pre">backup</span></code>. It contains the <em>applied</em>
 patches from the time this command is issued. Note that files in this directory
-are not changed by <cite>git gq push</cite> or <cite>git gq pop</cite>, only by <cite>git gq backup</cite>.</p>
+are not changed by <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">gq</span> <span class="pre">push</span></code> or <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">gq</span> <span class="pre">pop</span></code>, only by <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">gq</span> <span class="pre">backup</span></code>.</p>
 </section>
 </section>
 </section>

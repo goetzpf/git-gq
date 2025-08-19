@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Conflicts and conflict resolution &mdash; git-gq 2.0.1 documentation</title>
+  <title>Conflicts and conflict resolution &mdash; git-gq 2.0.2 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=330c1f8c" />
 
@@ -12,7 +12,7 @@
   
         <script src="_static/jquery.js?v=5d32c60e"></script>
         <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-        <script src="_static/documentation_options.js?v=f5cff4aa"></script>
+        <script src="_static/documentation_options.js?v=c2377ec0"></script>
         <script src="_static/doctools.js?v=9a2dae69"></script>
         <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/js/theme.js"></script>
@@ -34,7 +34,7 @@
             git-gq
           </a>
               <div class="version">
-                2.0.1
+                2.0.2
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -125,22 +125,22 @@
 <h1>Conflicts and conflict resolution<a class="headerlink" href="#conflicts-and-conflict-resolution" title="Link to this heading"></a></h1>
 <p>Conflicts may happen when:</p>
 <ul class="simple">
-<li><p>you change the order of unapplied patches with <cite>git gq change-order</cite>
-and then run <cite>git gq push</cite></p></li>
-<li><p>you unapply patches, make changes in the repository, e.g. <cite>git pull</cite> and
+<li><p>you change the order of unapplied patches with <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">gq</span> <span class="pre">change-order</span></code>
+and then run <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">gq</span> <span class="pre">push</span></code></p></li>
+<li><p>you unapply patches, make changes in the repository, e.g. <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">pull</span></code> and
 then apply the patches again</p></li>
-<li><p>you combine unapplied patches with <cite>git gq fold</cite> that are not in
+<li><p>you combine unapplied patches with <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">gq</span> <span class="pre">fold</span></code> that are not in
 consecutive order</p></li>
 </ul>
-<p>In the patch file example above, you see after ‘&#64;&#64; -4,8 +4,8 &#64;&#64;’ a single
+<p>In the patch file example above, you see after <code class="docutils literal notranslate"><span class="pre">&#64;&#64;</span> <span class="pre">-4,8</span> <span class="pre">+4,8</span> <span class="pre">&#64;&#64;</span></code> a single
 <em>hunk</em>. The numbers are line numbers in the source file, here ‘sample.c’.</p>
 <p>All following lines that are indented with a single space are <em>context</em> lines.
 Lines that start with a ‘-’ character are to be removed, lines that start with
 a ‘+’ character are to be added.</p>
 <p>A conflict occurs when the context lines or the lines to be removed couldn’t be
 found. In this case, a reject file is created.</p>
-<p>Here are the messages you see in case of a conflict after you ran <cite>git gq
-push</cite>:</p>
+<p>Here are the messages you see in case of a conflict after you ran
+<code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">gq</span> <span class="pre">push</span></code>:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Applying</span><span class="p">:</span> <span class="n">sample</span><span class="o">-</span><span class="n">comment</span>
 <span class="n">Checking</span> <span class="n">patch</span> <span class="n">sample</span><span class="o">.</span><span class="n">c</span><span class="o">...</span>
 <span class="n">error</span><span class="p">:</span> <span class="k">while</span> <span class="n">searching</span> <span class="k">for</span><span class="p">:</span>
@@ -167,19 +167,20 @@ push</cite>:</p>
 <span class="o">------------------------</span>
 
 <span class="n">Resolve</span> <span class="n">this</span> <span class="n">conflict</span> <span class="n">by</span> <span class="n">looking</span> <span class="n">at</span> <span class="n">the</span> <span class="o">*.</span><span class="n">rej</span> <span class="n">files</span><span class="o">.</span>
-<span class="n">For</span> <span class="n">files</span> <span class="n">that</span> <span class="n">were</span> <span class="ow">not</span> <span class="n">found</span> <span class="n">there</span> <span class="ow">is</span> <span class="n">no</span> <span class="n">reject</span> <span class="n">file</span><span class="p">,</span> <span class="n">then</span> <span class="n">look</span> <span class="n">at</span> <span class="n">the</span> <span class="n">patch</span> <span class="k">with</span><span class="p">:</span>
+<span class="n">For</span> <span class="n">files</span> <span class="n">that</span> <span class="n">were</span> <span class="ow">not</span> <span class="n">found</span> <span class="n">there</span> <span class="ow">is</span> <span class="n">no</span> <span class="n">reject</span> <span class="n">file</span><span class="p">,</span> <span class="n">look</span> <span class="n">at</span> <span class="n">the</span> <span class="n">original</span>
+<span class="n">patch</span> <span class="k">with</span><span class="p">:</span>
   <span class="n">less</span> <span class="o">.</span><span class="n">gqpatches</span><span class="o">/</span><span class="n">tmp</span><span class="o">/</span><span class="n">DIFF</span><span class="o">.</span><span class="n">patch</span>
 
-<span class="n">To</span> <span class="n">see</span> <span class="n">the</span> <span class="n">state</span> <span class="n">of</span> <span class="n">your</span> <span class="n">repo</span> <span class="n">run</span><span class="p">:</span>
+<span class="n">To</span> <span class="n">see</span> <span class="n">the</span> <span class="n">state</span> <span class="n">of</span> <span class="n">your</span> <span class="n">repository</span> <span class="n">enter</span><span class="p">:</span>
   <span class="n">git</span> <span class="n">status</span>
 
-<span class="n">Unknown</span> <span class="n">files</span> <span class="k">for</span> <span class="n">git</span> <span class="n">that</span> <span class="n">should</span> <span class="n">be</span> <span class="n">part</span> <span class="n">of</span> <span class="n">the</span> <span class="n">patch</span> <span class="n">have</span> <span class="n">to</span> <span class="n">be</span> <span class="n">added</span> <span class="k">with</span><span class="p">:</span>
+<span class="n">Unknown</span> <span class="n">files</span> <span class="k">for</span> <span class="n">git</span> <span class="n">that</span> <span class="n">should</span> <span class="n">be</span> <span class="n">part</span> <span class="n">of</span> <span class="n">the</span> <span class="n">patch</span> <span class="n">must</span> <span class="n">be</span> <span class="n">added</span> <span class="k">with</span><span class="p">:</span>
   <span class="n">git</span> <span class="n">add</span> <span class="n">FILE</span>
 
-<span class="n">If</span> <span class="n">you</span> <span class="n">could</span> <span class="n">resolve</span> <span class="n">the</span> <span class="n">conflicts</span> <span class="n">run</span><span class="p">:</span>
+<span class="n">If</span> <span class="n">you</span> <span class="n">managed</span> <span class="n">to</span> <span class="n">resolve</span> <span class="nb">all</span> <span class="n">the</span> <span class="n">conflicts</span> <span class="n">run</span><span class="p">:</span>
   <span class="n">git</span> <span class="n">gq</span> <span class="k">continue</span>
 
-<span class="n">To</span> <span class="n">abort</span> <span class="n">the</span> <span class="n">operation</span> <span class="n">without</span> <span class="n">resolving</span> <span class="n">run</span><span class="p">:</span>
+<span class="n">To</span> <span class="n">abort</span> <span class="n">the</span> <span class="n">whole</span> <span class="n">operation</span> <span class="n">without</span> <span class="n">resolving</span> <span class="n">conflicts</span> <span class="n">run</span><span class="p">:</span>
   <span class="n">git</span> <span class="n">gq</span> <span class="n">abort</span>
 </pre></div>
 </div>
@@ -210,13 +211,22 @@ open both, the original file ‘sample.c’ and the reject file ‘sample.c.rej�
 any text editor, we can easily see what the patch intended to do and apply the
 changes manually.</p>
 <p>This is called <em>resolving a conflict</em>. You have to go through all reject files,
-there may be more than one and resolve all conflicts.</p>
+there may be more than one, and resolve all conflicts.</p>
+<blockquote>
+<div><div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>If a file that the patch modifies couldn’t be found, <strong>there is no reject
+file</strong>. Look carefully at the git message and look at the original patch as
+described in the git-gq help message that is printed when the conflict is
+detected.</p>
+</div>
+</div></blockquote>
 <p>After you are finished, run:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">git</span> <span class="n">gq</span> <span class="k">continue</span>
 </pre></div>
 </div>
 <p>This finishes the operation and tells git that the conflict was resolved. You
-<em>must not</em> run <cite>git am continue</cite> yourself, <cite>git gq continue</cite> already
+<em>must not</em> run <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">am</span> <span class="pre">continue</span></code> yourself, <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">gq</span> <span class="pre">continue</span></code> already
 does this for you.</p>
 <p>If you cannot resolve conflicts because the reject files are too long or
 complicated, you can abort the last command with:</p>
