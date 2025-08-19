@@ -79,19 +79,20 @@ git gq help on conflicts
 ------------------------
 
 Resolve this conflict by looking at the *.rej files.
-For files that were not found there is no reject file, then look at the patch with:
+For files that were not found there is no reject file, look at the original
+patch with:
 less .gqpatches/tmp/DIFF.patch
 
-To see the state of your repo run:
+To see the state of your repository enter:
 git status
 
-Unknown files for git that should be part of the patch have to be added with:
+Unknown files for git that should be part of the patch must be added with:
 git add FILE
 
-If you could resolve the conflicts run:
+If you managed to resolve all the conflicts run:
 git gq continue
 
-To abort the operation without resolving run:
+To abort the whole operation without resolving conflicts run:
 git gq abort
 
 Test if certain commands fail due to an unresolved conflict.
@@ -104,19 +105,20 @@ git gq help on conflicts
 ------------------------
 
 Resolve this conflict by looking at the *.rej files.
-For files that were not found there is no reject file, then look at the patch with:
+For files that were not found there is no reject file, look at the original
+patch with:
   less .gqpatches/tmp/DIFF.patch
 
-To see the state of your repo run:
+To see the state of your repository enter:
   git status
 
-Unknown files for git that should be part of the patch have to be added with:
+Unknown files for git that should be part of the patch must be added with:
   git add FILE
 
-If you could resolve the conflicts run:
+If you managed to resolve all the conflicts run:
   git gq continue
 
-To abort the operation without resolving run:
+To abort the whole operation without resolving conflicts run:
   git gq abort
 
 ---------------------------------------------
@@ -127,19 +129,20 @@ git gq help on conflicts
 ------------------------
 
 Resolve this conflict by looking at the *.rej files.
-For files that were not found there is no reject file, then look at the patch with:
+For files that were not found there is no reject file, look at the original
+patch with:
   less .gqpatches/tmp/DIFF.patch
 
-To see the state of your repo run:
+To see the state of your repository enter:
   git status
 
-Unknown files for git that should be part of the patch have to be added with:
+Unknown files for git that should be part of the patch must be added with:
   git add FILE
 
-If you could resolve the conflicts run:
+If you managed to resolve all the conflicts run:
   git gq continue
 
-To abort the operation without resolving run:
+To abort the whole operation without resolving conflicts run:
   git gq abort
 
 ---------------------------------------------
@@ -150,19 +153,20 @@ git gq help on conflicts
 ------------------------
 
 Resolve this conflict by looking at the *.rej files.
-For files that were not found there is no reject file, then look at the patch with:
+For files that were not found there is no reject file, look at the original
+patch with:
   less .gqpatches/tmp/DIFF.patch
 
-To see the state of your repo run:
+To see the state of your repository enter:
   git status
 
-Unknown files for git that should be part of the patch have to be added with:
+Unknown files for git that should be part of the patch must be added with:
   git add FILE
 
-If you could resolve the conflicts run:
+If you managed to resolve all the conflicts run:
   git gq continue
 
-To abort the operation without resolving run:
+To abort the whole operation without resolving conflicts run:
   git gq abort
 
 ---------------------------------------------
@@ -173,19 +177,20 @@ git gq help on conflicts
 ------------------------
 
 Resolve this conflict by looking at the *.rej files.
-For files that were not found there is no reject file, then look at the patch with:
+For files that were not found there is no reject file, look at the original
+patch with:
   less .gqpatches/tmp/DIFF.patch
 
-To see the state of your repo run:
+To see the state of your repository enter:
   git status
 
-Unknown files for git that should be part of the patch have to be added with:
+Unknown files for git that should be part of the patch must be added with:
   git add FILE
 
-If you could resolve the conflicts run:
+If you managed to resolve all the conflicts run:
   git gq continue
 
-To abort the operation without resolving run:
+To abort the whole operation without resolving conflicts run:
   git gq abort
 
 ---------------------------------------------
@@ -196,19 +201,20 @@ git gq help on conflicts
 ------------------------
 
 Resolve this conflict by looking at the *.rej files.
-For files that were not found there is no reject file, then look at the patch with:
+For files that were not found there is no reject file, look at the original
+patch with:
   less .gqpatches/tmp/DIFF.patch
 
-To see the state of your repo run:
+To see the state of your repository enter:
   git status
 
-Unknown files for git that should be part of the patch have to be added with:
+Unknown files for git that should be part of the patch must be added with:
   git add FILE
 
-If you could resolve the conflicts run:
+If you managed to resolve all the conflicts run:
   git gq continue
 
-To abort the operation without resolving run:
+To abort the whole operation without resolving conflicts run:
   git gq abort
 
 ---------------------------------------------
@@ -219,19 +225,20 @@ git gq help on conflicts
 ------------------------
 
 Resolve this conflict by looking at the *.rej files.
-For files that were not found there is no reject file, then look at the patch with:
+For files that were not found there is no reject file, look at the original
+patch with:
   less .gqpatches/tmp/DIFF.patch
 
-To see the state of your repo run:
+To see the state of your repository enter:
   git status
 
-Unknown files for git that should be part of the patch have to be added with:
+Unknown files for git that should be part of the patch must be added with:
   git add FILE
 
-If you could resolve the conflicts run:
+If you managed to resolve all the conflicts run:
   git gq continue
 
-To abort the operation without resolving run:
+To abort the whole operation without resolving conflicts run:
   git gq abort
 
 ---------------------------------------------
@@ -242,19 +249,20 @@ git gq help on conflicts
 ------------------------
 
 Resolve this conflict by looking at the *.rej files.
-For files that were not found there is no reject file, then look at the patch with:
+For files that were not found there is no reject file, look at the original
+patch with:
   less .gqpatches/tmp/DIFF.patch
 
-To see the state of your repo run:
+To see the state of your repository enter:
   git status
 
-Unknown files for git that should be part of the patch have to be added with:
+Unknown files for git that should be part of the patch must be added with:
   git add FILE
 
-If you could resolve the conflicts run:
+If you managed to resolve all the conflicts run:
   git gq continue
 
-To abort the operation without resolving run:
+To abort the whole operation without resolving conflicts run:
   git gq abort
 
 ---------------------------------------------
@@ -265,19 +273,20 @@ git gq help on conflicts
 ------------------------
 
 Resolve this conflict by looking at the *.rej files.
-For files that were not found there is no reject file, then look at the patch with:
+For files that were not found there is no reject file, look at the original
+patch with:
   less .gqpatches/tmp/DIFF.patch
 
-To see the state of your repo run:
+To see the state of your repository enter:
   git status
 
-Unknown files for git that should be part of the patch have to be added with:
+Unknown files for git that should be part of the patch must be added with:
   git add FILE
 
-If you could resolve the conflicts run:
+If you managed to resolve all the conflicts run:
   git gq continue
 
-To abort the operation without resolving run:
+To abort the whole operation without resolving conflicts run:
   git gq abort
 
 ---------------------------------------------
@@ -288,19 +297,20 @@ git gq help on conflicts
 ------------------------
 
 Resolve this conflict by looking at the *.rej files.
-For files that were not found there is no reject file, then look at the patch with:
+For files that were not found there is no reject file, look at the original
+patch with:
   less .gqpatches/tmp/DIFF.patch
 
-To see the state of your repo run:
+To see the state of your repository enter:
   git status
 
-Unknown files for git that should be part of the patch have to be added with:
+Unknown files for git that should be part of the patch must be added with:
   git add FILE
 
-If you could resolve the conflicts run:
+If you managed to resolve all the conflicts run:
   git gq continue
 
-To abort the operation without resolving run:
+To abort the whole operation without resolving conflicts run:
   git gq abort
 
 ---------------------------------------------
@@ -311,19 +321,20 @@ git gq help on conflicts
 ------------------------
 
 Resolve this conflict by looking at the *.rej files.
-For files that were not found there is no reject file, then look at the patch with:
+For files that were not found there is no reject file, look at the original
+patch with:
   less .gqpatches/tmp/DIFF.patch
 
-To see the state of your repo run:
+To see the state of your repository enter:
   git status
 
-Unknown files for git that should be part of the patch have to be added with:
+Unknown files for git that should be part of the patch must be added with:
   git add FILE
 
-If you could resolve the conflicts run:
+If you managed to resolve all the conflicts run:
   git gq continue
 
-To abort the operation without resolving run:
+To abort the whole operation without resolving conflicts run:
   git gq abort
 
 ---------------------------------------------
@@ -334,17 +345,18 @@ git gq help on conflicts
 ------------------------
 
 Resolve this conflict by looking at the *.rej files.
-For files that were not found there is no reject file, then look at the patch with:
+For files that were not found there is no reject file, look at the original
+patch with:
   less .gqpatches/tmp/DIFF.patch
 
-To see the state of your repo run:
+To see the state of your repository enter:
   git status
 
-Unknown files for git that should be part of the patch have to be added with:
+Unknown files for git that should be part of the patch must be added with:
   git add FILE
 
-If you could resolve the conflicts run:
+If you managed to resolve all the conflicts run:
   git gq continue
 
-To abort the operation without resolving run:
+To abort the whole operation without resolving conflicts run:
   git gq abort

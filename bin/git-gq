@@ -63,6 +63,10 @@ BASHCOMPLETION=r'_git_gq() { __gitcomp "$(git-gq commands)" "" "$cur"; }'
 USAGE= "%(prog)s [OPTIONS] COMMAND"
 
 DESC= '''
+.. note::
+   REGEXP is a
+   `regular expression <https://docs.python.org/3/howto/regex.html#regex-howto>`_.
+
 Bash completion commands
 ++++++++++++++++++++++++
 
@@ -76,7 +80,7 @@ Bash completion commands
 
       git gq a<TAB>
 
-    shows the possible completions `abort` and `applied`. If there is only one
+    shows the possible completions ``abort`` and ``applied``. If there is only one
     matching command, you command line is completed, e.g::
 
       git gq ab<TAB>
@@ -91,39 +95,42 @@ Queue management commands
 +++++++++++++++++++++++++
 
   init [QNAME [REV]]
-    Create/select a patch queue with name 'QNAME'. QNAME is optional, the
-    default patch queue name is 'default'. If 'REV' is given this is the parent
-    revision, if it is not givem, 'HEAD' is taken as the parent. You must run
+    Create/select a patch queue with name QNAME. QNAME is optional, the
+    default patch queue name is 'default'. If REV is given this is the parent
+    revision, if it is not given, 'HEAD' is taken as the parent. You must run
     this command once to initialize the patch queue in your repository.
 
   qname [QNAME]   
     If QNAME is not given, show current patch queue name. if QNAME is given,
     change to patch queue QNAME. If the patch queue QNAME is created for the
     first time, the parent revision is set to your 'HEAD' revision. If this is
-    not intended, you may change this with `git gq parent REVISION` to
+    not intended, you may change this with ``git gq parent REVISION`` to
     another revision.
 
   backup         
     Backup patch queue directory with a separate git repository. You may
-    provide a short log message with oṕtion `-m`.
+    provide a short log message with option ``-m``.
 
   restore REVISION   
-    Restore patch directory to a REVISION that was created with `git gq backup`
-    before. This *does not* change your git repository. To do this, you must
-    run `git gq revert`.
+    Restore patch directory to a REVISION that was created with ``git gq
+    backup`` before. This *does not* change your git repository. Enter ``git gq
+    revert`` to reset your repository to the last saved state.
 
   revert
-    Revert git repository to the state stored in the patch queue. All *applied*
-    patches are restored to the state at the last `git gq backup`. All
-    *unapplied* patches remain in their present state. This will create a new
-    branch in the repository beginning at the PARENT revision.
+    Revert git repository to the state from the last backup of the patch queue.
+    All *applied* patches are restored to the state at the last ``git gq
+    backup``. All *unapplied* patches remain in their present state. This will
+    create a new branch in the repository beginning at the PARENT revision.
 
   qrepo COMMAND [-- OPTIONS]
-    Run git command COMMAND with OPTIONS in patch-queue repository.
+    Run git command COMMAND with OPTIONS in patch-queue repository. Note that
+    OPTIONS must be preceded by a *double* '-' character.
 
   change-order   
-    Call an editor to edit the file that contains all currently unapplied
-    patches. Note the the patches in the file are applied from top to bottom.
+    Call an editor to edit the file 'series' that contains all currently
+    unapplied patches. Note that ``git gq push`` always applies the patch from
+    the *first* line in this file, so the top of the queue is the top of the
+    file.
 
   applied    
     Show all applied patches up to parent+1.
@@ -134,10 +141,10 @@ Queue management commands
   parent [REVISION]   
     Set REVISION as patch queue parent revision. Do never go beyond this
     revision with pop. Use 'HEAD' to set your repository HEAD as parent
-    revision. If REVISION is 'NULL', this means that *all* revisions in
-    the repository can be managed with `git gq pop`, you should only
-    use this for unpublished repositories. If REVISION is not given, show the
-    current parent revision.
+    revision. If REVISION is `NULL`, it means that *all* revisions in the
+    repository can be managed with ``git gq pop``, you should only use this for
+    unpublished repositories. If REVISION is not given, show the current parent
+    revision.
 
   export DIRECTORY
     Create numbered patch files from all currently applied patches in
@@ -147,9 +154,9 @@ Queue management commands
   import PATCHFILE [PATCHFILE...]
     Import a number of patchfiles to the patch queue. The last patchfile in the
     list will be on the top of the queue. Note that the patch files must have
-    been generated with `git format-patch` or `git gq pop`. This
-    cannot be used for patches generated with the `patch` program. These you
-    have to apply with `git apply PATCHFILE`.
+    been generated with ``git format-patch`` or ``git gq pop``. This
+    cannot be used for patches generated with the ``patch`` program. These you
+    have to apply with ``git apply PATCHFILE``.
 
 Patch management commands
 +++++++++++++++++++++++++
@@ -160,31 +167,39 @@ Patch management commands
     NAME is omitted, you can enter a complete log message interactively.
 
   record [NAME]  
-    Interactively select changes for a new patch (commit with log-message NAME)
+    Interactively select changes for a new patch (commit with log-message
+    NAME). This command runs ``git add --patch`` to select the changes before
+    ``git commit``.
 
   refresh        
-    Update the topmost patch.
+    Update the top patch, all changes in files known to git are added to the
+    top patch. If you want to add new files, add them with ``git add`` first.
+    If you want complete control over the changes added, run ``git add``
+    yourself and then run this command with option ``--no-add``.
 
   pop            
-    Pop the topmost patch.
+    Pop the top patch, the HEAD patch of your repository is moved to the patch
+    queue.
 
   push           
-    Apply the top patch from the patch queue.
+    Apply the top patch from the patch queue, the patch is moved to your
+    repository as the new HEAD patch.
 
   goto NAME|REGEXP
-    Do push or pop until the specified patch is the latest applied patch.
+    Do push or pop until the patch specified by name or regular expression is
+    the latest applied patch.
 
   fold NAME|REGEXP
-    Fold patch 'NAME' to the topmost patch. Patch 'NAME' must not be appled
+    Fold patch 'NAME' to the top patch. Patch 'NAME' must not have been applied
     already. Note that the log message of the fold-patch is appended to the
-    existing log message. You may change the log message with `git gq
-    refresh -e`.
+    existing log message. You can change the log message with
+    ``git gq refresh -e``.
 
   edit NAME|REGEXP
-    Call an editor to edit an unapplied patch. 
+    Call an editor to edit the patch file of an unapplied patch. 
 
   delete NAME|REGEXP
-    Delete unapplied patch with given name.
+    Delete unapplied patch with given by name or regular expression.
 
   show NAME|REGEXP
     Show changes of an applied or unapplied patch on the console.
@@ -205,8 +220,8 @@ Miscellaneous commands
 
   conflict [CMD]
     Show if the repository is in an unresolved conflict state.
-    CMD is a sub-command, `files` shows files changed by the patch,
-    `show` shows the patch.
+    CMD is a sub-command, ``files`` shows files changed by the patch,
+    ``show`` shows the patch.
 
   doc            
     Show reStructuredText source of man page.
@@ -239,7 +254,7 @@ git manages a repository with *commits*. A commit has the following properties:
 - A state, this is the directory structure and the files and their contents and
   permissions.
 - Metadata: log message, author and date
-- A hash key that git uses internally to distinguish commits. Git hashes are
+- A hash key that git uses internally to identify commits. Git hashes are
   calculated based on the contents of the files in the commit, the metadata of
   the commit (like timestamp and author), and the parent commit's hash.
 - A predecessor commit unless it is the first commit in the repository
@@ -302,24 +317,25 @@ Advantages of the patch queue
 
 The patch-queue is much more flexible than traditional commits:
 
-- Patches can be reordered easily
-- Patches can be combined ('fold')
-- Patches can be updated ('refresh')
+- Patches can be reordered easily.
+- Patches can be combined (``git gq fold``).
+- Patches can be updated (``git gq refresh``).
 - Patches can replace development branches. You can put your local changes on
-  the patch queue, run 'git pull' and put your patches back on the repository.
-- Conflicts may occur but are usually easier to resolve than git merge
-  conflicts
+  the patch queue, run ``git pull`` and put your patches back on the
+  repository.
+- Conflicts that may occur with ``git gq push`` are usually easier to resolve
+  than git merge conflicts.
 
 Disadvantages of the patch queue
 ++++++++++++++++++++++++++++++++
 
-- moving a patch to the patch queue and back changes it's git hash key. This
-  means you shouldn't apply this operation on patches that exist in other
+- Moving a patch to the patch queue and back changes it's git hash key. This
+  means you must not apply this operation on patches that exist in other
   repositories. The definition of the *parent revision* ensures that you cannot
   do this by accident.
-- changing the order of patches may lead to *conflicts*.
+- Changing the order of patches may lead to *conflicts*.
 - Applying new commits in the repository while some patches are unapplied may
-  lead to conflicts when the patches are applied later.
+  lead to conflicts when the patches are applied later on.
 '''
 
 DOC_IMPLEMENTATION=\
@@ -329,10 +345,10 @@ DOC_IMPLEMENTATION=\
 Directory structure
 +++++++++++++++++++
 
-All files `git gq` uses are in directory '.gqpatches'. You may want to add this
-to your '.gitignore' file.
+All files git-gq uses are in directory '.gqpatches'. You may want to add this
+to your .gitignore file.
 
-'.gqpatches/tmp' is the directory for temporary files `git gq` creates.
+'.gqpatches/tmp' is the directory for temporary files git-gq creates.
 
 The program can manage more than one patch queue. Each patch queue has a name
 and all files of the queue are in a directory with the same name, e.g.
@@ -351,25 +367,23 @@ series
 ::::::
 
 The order of patches is kept in a file named 'series' that just contains all
-the filenames of all unapplied patches. `git gq push` takes and applues the
+the filenames of all unapplied patches. ``git gq push`` takes and applies the
 patch from the first line in this file.
 
 parent
 ::::::
 
-The parent revision is stored in a file 'parent'. This is the latest commit
-that is not allowed to be modified. This file is usually created when you start
-your work with `git gq init`. It can be changed with `git gq
-parent`.
+The parent revision is stored in a file 'parent'. This is the most recent
+commit that is not allowed to be modified. This file is created when you start
+your work with ``git gq init``. It can be changed with ``git gq parent``.
 
-A special revision is `NULL`. This is the very first revision in the
-repository where no files are committed. git doesn't have a concept of a
-`NULL` revision, so this is emulated by `git gq` by creating a
-revision with no files in it. When the parent is set to `NULL` this means
-that you can pop the very first revision as a patch and by this have the
-capability to modify the very first revision. Of course, you should never do
-this with a published repository, since `git gq pop` and `git gq
-push` always modify revision hash keys.
+A special revision is `NULL`. This is the very first revision in the repository
+where no files are committed. git doesn't have a concept of a `NULL` revision,
+this is emulated by git-gq by creating a revision with no files in it. When the
+parent is set to `NULL` this means that you can put the very first revision on
+the patch queue and by this have the ability to modify the very first revision.
+Of course, you should never do this with a published repository, since ``git gq
+pop`` and ``git gq push`` always modify revision hash keys.
 
 patch files '\\*.patch'
 ::::::::::::::::::::::
@@ -378,15 +392,15 @@ A *patch file* is basically a file with recipes for changes in files. Each
 recipe is called a *hunk*. A *hunk* contains line numbers, context lines, lines
 to remove and lines to add.
 
-`git gq` uses standard git commands to move patches between the
+git-gq uses standard git commands to move patches between the
 repository and the patch queue. In the patch queue, each patch is a file
 created from the difference of a commit and it's predecessor in the repository
-with `git format-patch`. Among the changes between two commits this file also
+with ``git format-patch``. Among the changes between two commits this file also
 contains all the metadata of the second commit. The name of the patch file is
 computed from the first line of the log message where spaces are replaced with
 dashes and end with the extension '.patch'.
 
-A patch file is re-applied to the repository with `git am`. 
+A patch file is re-applied to the repository with ``git am``. 
 
 Here is an example of a patch file::
 
@@ -419,9 +433,9 @@ Here is an example of a patch file::
 applied
 :::::::
 
-Directory 'applied' is created by `git gq backup`. It contains the *applied*
+Directory 'applied' is created by ``git gq backup``. It contains the *applied*
 patches from the time this command is issued. Note that files in this directory
-are not changed by `git gq push` or `git gq pop`, only by `git gq backup`.
+are not changed by ``git gq push`` or ``git gq pop``, only by ``git gq backup``.
 '''
 
 # Note how this example was created:
@@ -445,14 +459,14 @@ DOC_CONFLICTS=\
 
 Conflicts may happen when:
 
-- you change the order of unapplied patches with `git gq change-order`
-  and then run `git gq push`
-- you unapply patches, make changes in the repository, e.g. `git pull` and
+- you change the order of unapplied patches with ``git gq change-order``
+  and then run ``git gq push``
+- you unapply patches, make changes in the repository, e.g. ``git pull`` and
   then apply the patches again
-- you combine unapplied patches with `git gq fold` that are not in
+- you combine unapplied patches with ``git gq fold`` that are not in
   consecutive order
 
-In the patch file example above, you see after '@@ -4,8 +4,8 @@' a single
+In the patch file example above, you see after ``@@ -4,8 +4,8 @@`` a single
 *hunk*. The numbers are line numbers in the source file, here 'sample.c'.
 
 All following lines that are indented with a single space are *context* lines.
@@ -462,8 +476,8 @@ a '+' character are to be added.
 A conflict occurs when the context lines or the lines to be removed couldn't be
 found. In this case, a reject file is created.
 
-Here are the messages you see in case of a conflict after you ran `git gq
-push`::
+Here are the messages you see in case of a conflict after you ran
+``git gq push``::
 
   Applying: sample-comment
   Checking patch sample.c...
@@ -491,19 +505,20 @@ push`::
   ------------------------
   
   Resolve this conflict by looking at the *.rej files.
-  For files that were not found there is no reject file, then look at the patch with:
+  For files that were not found there is no reject file, look at the original
+  patch with:
     less .gqpatches/tmp/DIFF.patch
   
-  To see the state of your repo run:
+  To see the state of your repository enter:
     git status
   
-  Unknown files for git that should be part of the patch have to be added with:
+  Unknown files for git that should be part of the patch must be added with:
     git add FILE
   
-  If you could resolve the conflicts run:
+  If you managed to resolve all the conflicts run:
     git gq continue
   
-  To abort the operation without resolving run:
+  To abort the whole operation without resolving conflicts run:
     git gq abort
 
 And here is the content of the reject file, 'sample.c.rej' in this case::
@@ -534,14 +549,20 @@ any text editor, we can easily see what the patch intended to do and apply the
 changes manually.
 
 This is called *resolving a conflict*. You have to go through all reject files,
-there may be more than one and resolve all conflicts.
+there may be more than one, and resolve all conflicts.
+
+ .. important::
+    If a file that the patch modifies couldn't be found, **there is no reject
+    file**. Look carefully at the git message and look at the original patch as
+    described in the git-gq help message that is printed when the conflict is
+    detected.
 
 After you are finished, run::
 
   git gq continue
 
 This finishes the operation and tells git that the conflict was resolved. You
-*must not* run `git am continue` yourself, `git gq continue` already
+*must not* run ``git am continue`` yourself, ``git gq continue`` already
 does this for you.
 
 If you cannot resolve conflicts because the reject files are too long or
@@ -561,11 +582,11 @@ Local development
 +++++++++++++++++
 
 Assuming you have cloned another git repository and want to start development
-here. With `git gq` you don't need to create a local branch. Just run::
+here. With git-gq you don't need to create a local branch. Just run::
 
   git gq init
 
-This sets up the `git gq` directory and marks the current HEAD revision
+This sets up the git-gq directory and marks the current HEAD revision
 as parent revision.
 
 You can now begin to make changes. You create preliminary commits with::
@@ -576,9 +597,9 @@ where NAME should be a one line string with no spaces in it. This is a
 preliminary log message that you can later update and extend. Every time you
 make more changes you can either:
 
-- run `git gq new` to create a new commit
-- run `git gq refresh` to update the topmost commit
-- run the `git add..` and `git commit` as usual to create a new commit
+- run ``git gq new`` to create a new commit
+- run ``git gq refresh`` to update the topmost commit
+- run the ``git add..`` and ``git commit`` as usual to create a new commit
 
 You can see what patches are applied with::
 
@@ -618,7 +639,7 @@ Updates from a remote repository
 
 When you have created local patches and want to update your repository with new
 patches from a remote repository, the usual way would be to run
-`git pull` and then `git merge` or `git rebase -i`.
+``git pull`` and then ``git merge`` or ``git rebase -i``.
 
 With the patch queue, there is now another way to handle this. Before pulling
 patches from the public repository, put all your local changes on the patch
@@ -646,7 +667,7 @@ If you get messages about conflicts ("rejects") you have to resolve them. See
 further above at "Conflicts and conflict resolution".
 
 This workflow allows to resolve conflicts step by step which is usually easier
-than resolving all conflicts that arise from `git pull` all at once. Also the
+than resolving all conflicts that arise from ``git pull`` all at once. Also the
 reject files created for each conflict clearly show which change was intended
 at the patch which is usually easier than the common 3-way merge.
 '''
@@ -656,20 +677,30 @@ f'''git gq help on conflicts
 ------------------------
 
 Resolve this conflict by looking at the *.rej files.
-For files that were not found there is no reject file, then look at the patch with:
+For files that were not found there is no reject file, look at the original
+patch with:
   less {DIFF_FILENAME}
 
-To see the state of your repo run:
+To see the state of your repository enter:
   git status
 
-Unknown files for git that should be part of the patch have to be added with:
+Unknown files for git that should be part of the patch must be added with:
   git add FILE
 
-If you could resolve the conflicts run:
+If you managed to resolve all the conflicts run:
   git gq continue
 
-To abort the operation without resolving run:
+To abort the whole operation without resolving conflicts run:
   git gq abort'''
+
+DOC_SEE_ALSO=\
+'''See also
+--------
+
+git-gq online documentation at
+
+https://goetzpf.github.io/git-gq
+'''
 
 # ---------------------------------------------------------
 # globals
@@ -1010,6 +1041,9 @@ def print_doc(part):
     if (not part) or (part=="commandline"):
         print("Command line interface\n----------------------")
         print(short_help_text(style="rst"))
+        print()
+    if (not part) or (part=="see also"):
+        print(DOC_SEE_ALSO)
 
 def print_short_help():
     """print short help."""
@@ -2969,11 +3003,11 @@ def main():
                        )
     parser.add_argument("--verbose",
                         action="store_true",
-                        help="show called commands"
+                        help="show what commands are called"
                        )
     parser.add_argument("--dry-run",
                         action="store_true",
-                        help="do not actually call commands"
+                        help="show what commands would be called"
                        )
     parser.add_argument("-D", "--debug",
                         action="store_true",
@@ -3011,7 +3045,7 @@ def main():
     parser.add_argument("-R", "--force",
                         action="store_true",
                         help="Allow to run `git gq pop` and "
-                             "`git gq push` even if there are "
+                             "``git gq push`` even if there are "
                              "uncommited changes. Note the with 'pop' this "
                              "will discard uncommited changes."
                        )
