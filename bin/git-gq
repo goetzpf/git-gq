@@ -1305,10 +1305,10 @@ def git_goto_repo_dir():
 # functions that call git
 # ---------------------------------------------------------
 
-def git_init(dir_):
+def git_init(dir_, initial_branch="master"):
     """git init and git add."""
 
-    cmd_list= ["git", "init"]
+    cmd_list= ["git", "init", "-b", initial_branch]
     if dir_:
         cmd_list.append(dir_)
     system_simple(cmd_list)
