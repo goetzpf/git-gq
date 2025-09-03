@@ -63,9 +63,14 @@ BASHCOMPLETION=r'_git_gq() { __gitcomp "$(git-gq commands)" "" "$cur"; }'
 USAGE= "%(prog)s [OPTIONS] COMMAND"
 
 DESC= '''
-.. note::
-   REGEXP is a
-   `regular expression <https://docs.python.org/3/howto/regex.html#regex-howto>`_.
+Documentation conventions
++++++++++++++++++++++++++
+
+- Arguments for commands are in capital letters.
+- Arguments in square brackets are optional.
+- A '|' means that one of the shown arguments must be used.
+- 'REGEXP' is a regular expression. For regular expression syntax see:
+  https://docs.python.org/3/howto/regex.html#regex-howto
 
 Bash completion commands
 ++++++++++++++++++++++++
