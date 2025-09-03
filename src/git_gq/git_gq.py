@@ -54,6 +54,11 @@ CONFLICT_FILENAME=ojoin(TEMPDIR, "CONFLICT")
 UNKNOWN1_FILENAME=ojoin(TEMPDIR, "UNKNOWN.1")
 UNKNOWN2_FILENAME=ojoin(TEMPDIR, "UNKNOWN.2")
 
+HOMEPAGE="https://goetzpf.github.io/git-gq"
+
+# name of bash completion function, see also BASHCOMPLETION:
+COMPLETION_FUNC="_git_gq"
+
 VERSION= "2.0.2" #VERSION#
 
 SUMMARY="A program to implement patch queues for git."
@@ -79,6 +84,7 @@ Bash completion commands
     List all known commands on the console
 
   bashcompletion
+
     Prints a text that, if you add it to your bash configuration in
     $HOME/.bashrc, adds bash completion. This means that you get a list of
     possible commands when you type <TAB>, e.g.::
@@ -699,12 +705,12 @@ To abort the whole operation without resolving conflicts run:
   git gq abort'''
 
 DOC_SEE_ALSO=\
-'''See also
+f'''See also
 --------
 
 git-gq online documentation at
 
-https://goetzpf.github.io/git-gq
+{HOMEPAGE}
 '''
 
 # ---------------------------------------------------------
@@ -2773,6 +2779,7 @@ def check_command_args(command, command_args, min_, max_):
         if (command_args) and (len(command_args)>max_):
             raise GitGqException(f"Error, too many arguments for "
                                  f"command '{command}'")
+
 
 def process(args, rest):
     """do all the work.

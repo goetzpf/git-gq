@@ -12,7 +12,7 @@ if [ "$1" == "-h" ] || [ "$1" == "--help" ] ; then
     exit 0
 fi
 
-FILES="doc/conf.py bin/git-gq"
+FILES="doc/conf.py src/git_gq/git_gq.py pyproject.toml"
 
 for f in $FILES; do
     VER=$(grep '#VERSION#' "$f" | sed -e 's/^[^=]\+= *//;s/ #.*//;s/"//g' | sed -e "s/'//g")

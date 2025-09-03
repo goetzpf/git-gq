@@ -18,7 +18,7 @@ if ! echo "$VERSION" | grep -q '^[0-9\.]\+$'; then
     exit 1
 fi
 
-FILES="doc/conf.py bin/git-gq"
+FILES="doc/conf.py src/git_gq/git_gq.py pyproject.toml"
 
 for f in $FILES; do
     sed -i -e "s/^\([^'\"]\+\)\(['\"]\)[^'\"]\+\(['\"]\)\( *#VERSION#\) *$/\1\2$VERSION\3\4/" $f
