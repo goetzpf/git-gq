@@ -32,6 +32,12 @@ import datetime
 import pydoc
 import re
 
+if sys.version_info < (3, 9):
+    import importlib_resources as resources
+else:
+    from importlib import resources
+
+
 # pylint: disable=invalid-name
 
 ojoin= os.path.join
@@ -1040,28 +1046,38 @@ def short_help_text(style):
     return "\n".join(new)
 
 
-def print_doc(part):
-    """Print documentation."""
+def print_doc(part, lst):
+    """Print documentation.
+
+    If lst is a list, append text parts to that list.
+    """
+    def lprint(txt, lst):
+        """internal print."""
+        if lst is not None:
+            lst.append(txt)
+        else:
+            print(txt)
     if part is not None:
         if part not in ("overview", "implementation", "conflicts",
                         "examples", "commandline"):
-            raise AssertionError(f"unknown part in print_doc: {part}")
+            raise ValueError(f"unknown documentation part for 'doc' "
+                             f"command: {part}")
     if not part:
-        print(DOC_HEADING)
+        lprint(DOC_HEADING, lst)
     if (not part) or (part=="overview"):
-        print(DOC_OVERVIEW)
+        lprint(DOC_OVERVIEW, lst)
     if (not part) or (part=="implementation"):
-        print(DOC_IMPLEMENTATION)
+        lprint(DOC_IMPLEMENTATION, lst)
     if (not part) or (part=="conflicts"):
-        print(DOC_CONFLICTS)
+        lprint(DOC_CONFLICTS, lst)
     if (not part) or (part=="examples"):
-        print(DOC_EXAMPLES)
+        lprint(DOC_EXAMPLES, lst)
     if (not part) or (part=="commandline"):
-        print("Command line interface\n----------------------")
-        print(short_help_text(style="rst"))
-        print()
+        lprint("Command line interface\n----------------------", lst)
+        lprint(short_help_text(style="rst"), lst)
+        lprint("", lst)
     if (not part) or (part=="see also"):
-        print(DOC_SEE_ALSO)
+        lprint(DOC_SEE_ALSO, lst)
 
 def print_short_help():
     """print short help."""
@@ -1096,12 +1112,16 @@ def copy_env():
 # filehandle
 
 def system_rc_io(cmd,
+                 stdin_par,
                  stdout_par, stderr_par,
                  env, verbose, dry_run):
     """execute a command.
 
     cmd: either a string or a list of strings
 
+    stdin_par:
+      - None         : no standard input
+      - <str>        : take input from string
     stdout_par:
       - None         : do not capture 
       - "PIPE"       : capture
@@ -1149,13 +1169,19 @@ def system_rc_io(cmd,
     if env is None:
         env= _new_env
 
+    stdin_p_par= None
+    stdin_bytes= None
+    if stdin_par is not None:
+        stdin_p_par= subprocess.PIPE
+        stdin_bytes= stdin_par.encode("utf-8")
     # pylint: disable=consider-using-with
     p= subprocess.Popen(cmd, shell= isinstance(cmd, str),
+                        stdin=stdin_p_par,
                         stdout=stdout_par, stderr=stderr_par,
                         close_fds=True,
                         env= env
                        )
-    (child_stdout, child_stderr) = p.communicate()
+    (child_stdout, child_stderr) = p.communicate(input= stdin_bytes)
     # pylint: disable=E1101
     #         "Instance 'Popen'has no 'returncode' member
     return (to_str(child_stdout), to_str(child_stderr), p.returncode)
@@ -1180,15 +1206,20 @@ def system_rc(cmd, catch_stdout, catch_stderr, env, verbose, dry_run):
     stderr_par= None
     if catch_stderr:
         stderr_par= "PIPE"
-    return system_rc_io(cmd, stdout_par, stderr_par, env, verbose, dry_run)
+    return system_rc_io(cmd, None, stdout_par, stderr_par, env,
+                        verbose, dry_run)
 
 def system_io(cmd,
+              stdin_par,
               stdout_par, stderr_par,
               env, verbose, dry_run):
     """execute a command.
 
     cmd: either a string or a list of strings
 
+    stdin_par:
+      - None         : no standard input
+      - <str>        : take input from string
     stdout_par:
       - None         : do not capture 
       - "PIPE"       : capture
@@ -1211,6 +1242,7 @@ def system_io(cmd,
     # pylint: disable=too-many-arguments
     # pylint: disable=too-many-positional-arguments
     (child_stdout, child_stderr, rc)= system_rc_io(cmd,
+                                                   stdin_par,
                                                    stdout_par, stderr_par,
                                                    env,
                                                    verbose, dry_run)
@@ -1694,7 +1726,7 @@ def git_conflict_diff(file):
         stdout_par= open(file, "wt", encoding= "utf-8")
     try:
         (out, _)= system_io(cmd_lst,
-                            stdout_par, None,
+                            None, stdout_par, None,
                             env= None,
                             verbose= gbl_verbose, dry_run= gbl_dry_run)
     finally:
@@ -1986,7 +2018,7 @@ def git_mk_changes_files(only_diff_patch):
     """
     with open(DIFF_FILENAME, "wt", encoding= "utf8") as fh:
         (_, _)= system_io(("git", "diff", "--cached"),
-                          fh, None,
+                          None, fh, None,
                           env= None,
                           verbose= gbl_verbose, dry_run= gbl_dry_run)
     if os.path.getsize(DIFF_FILENAME)==0:
@@ -1994,7 +2026,7 @@ def git_mk_changes_files(only_diff_patch):
     if not only_diff_patch:
         with open(HDIFF_FILENAME, "wt", encoding="utf-8") as fh:
             (_, _)= system_io(("git", "show", "HEAD"),
-                              fh, None,
+                              None, fh, None,
                               env= None,
                               verbose= gbl_verbose, dry_run= gbl_dry_run)
         if os.path.getsize(HDIFF_FILENAME)==0:
@@ -2299,15 +2331,45 @@ def git_gq_man():
                               env= None,
                               verbose= gbl_verbose, dry_run= gbl_dry_run)
         return rc==0
+                       # 'pip install'.
+    lst= []
+    print_doc(None, lst)
+    txt= "\n".join(lst)
+
+    # Try to find man page in a portable way. The recommendation to use
+    # importlib.resources was taken from:
+    # https://setuptools.pypa.io/en/latest/userguide/datafiles.html#subdir-data-files
+    manpage= None
+    for d in resources.files("git_gq.man.man1").iterdir():
+        if d.name=="git-gq.1":
+            manpage= d
+            break
+
+    if manpage is not None:
+        system_simple(["man", "-l", manpage])
+        return
+
+    # test if 'rst2man' is installed:
     if not testrun(("rst2man", "--version")):
         errprint("rst2man not found, display reStructuredText instead.")
-        if not testrun(("less", "-V")):
-            # use less pager for help:
-            system_simple(f"{__file__} doc | less")
-        else:
-            print_doc(None)
+        pydoc.pager(txt)
     else:
-        system_simple(f"{__file__} doc | rst2man | man -l -")
+        # convert with 'rst2man':
+        (out, _)= system_io(["rst2man"],
+                            stdin_par= txt,
+                            stdout_par= "PIPE",
+                            stderr_par= None,
+                            env= None,
+                            verbose= gbl_verbose,
+                            dry_run= gbl_dry_run)
+        # now pipe through 'man', the man page viewer:
+        (_, _) = system_io(["man", "-l", "-"],
+                            stdin_par= out,
+                            stdout_par= None,
+                            stderr_par= None,
+                            env= None,
+                            verbose= gbl_verbose,
+                            dry_run= gbl_dry_run)
 
 def git_gq_restore(revision):
     """restore from revision."""
@@ -2835,7 +2897,9 @@ def process(args, rest):
 
         if command=="doc":
             check_command_args(command, command_args, None, 1)
-            print_doc(unpack_one(command_args))
+            lst= []
+            print_doc(unpack_one(command_args), lst)
+            pydoc.pager("\n".join(lst))
             return
 
         git_goto_repo_dir()
@@ -2982,7 +3046,7 @@ def process(args, rest):
             return
 
         raise GitGqException(f"Error, unknown command '{command}'")
-    except GitGqException as e:
+    except (GitGqException, ValueError) as e:
         if args.exception:
             raise
         sys.exit(str(e))
