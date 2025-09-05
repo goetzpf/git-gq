@@ -823,6 +823,32 @@ def errprint(*args, **kwargs):
     kwargs["file"]= sys.stderr
     print(*args, **kwargs)
 
+def sh_prg_exists(program):
+    """test if a program exists."""
+    return shutil.which(program) is not None
+
+def sh_set_from_file(filename):
+    """create a set from a file."""
+    with open(filename, "r", encoding="utf-8") as f:
+        line_set = {line.rstrip("\n") for line in f}
+    return line_set
+
+def sh_cat_file(filename):
+    """prints a text file to the console."""
+    with open(filename, "r", encoding="utf-8") as f:
+        for line in f:
+            print(line, end="")
+
+def sh_file_pager(filename):
+    """show a file with a pager, much like 'less'.
+
+    Note that will read the complete file first.
+    """
+    with open(filename, "r", encoding="utf-8") as f:
+        text = f.read()
+    # Display with pager (uses less/more if available)
+    pydoc.pager(text)
+
 def sh_file_add_extension(file, ext):
     """add an extension to a filename."""
     return f"{file}.{ext}"
@@ -1674,7 +1700,8 @@ def _git_oneline_log(revision_spec, lines,
                          verbose= gbl_verbose, dry_run= gbl_dry_run)
         return out.splitlines()
     my_env= copy_env()
-    my_env["GIT_PAGER"]="cat"
+    if sh_prg_exists("cat"):
+        my_env["GIT_PAGER"]="cat"
     (_, _)= system(cmd_lst,
                    catch_stdout= False, catch_stderr= False,
                    env= my_env,
@@ -1726,7 +1753,8 @@ def git_print_oneline_log_single(revision_spec):
     """prints one-line log, possible with color, to the console."""
 
     my_env= copy_env()
-    my_env["GIT_PAGER"]="cat"
+    if sh_prg_exists("cat"):
+        my_env["GIT_PAGER"]="cat"
     system_simple(("git", "log", "--color=auto", "--oneline", "-1",
                    revision_spec))
 
@@ -1947,28 +1975,19 @@ def git_head_patch_filelist():
 
 def _new_unknown_files(oldlist_file, newlist_file):
     """return list of new unknown files for git."""
-    cmd_list= ('diff', oldlist_file, newlist_file)
-    (out, _, rc)= system_rc(cmd_list,
-                            catch_stdout= True, catch_stderr= False,
-                            env= None,
-                            verbose= gbl_verbose, dry_run= gbl_dry_run)
-    # Note: rc==1 means that the files are different
-    if rc not in (0, 1):
-        raise IOError(rc,
-                      f"cmd '{cmd_list}', rc '{rc}'")
-
+    old_files= sh_set_from_file(oldlist_file)
+    new_files= sh_set_from_file(newlist_file)
     lst= []
-    for l in out.splitlines():
-        if not l.startswith(">"):
-            continue
-        file= l[1:].lstrip()
+    if old_files == new_files:
+        return lst
+    for file in sorted(new_files.difference(old_files)):
         # do not add .gqpatches directory:
         if RX_TOPPPATCHDIR.search(file):
             continue
         # do not add 'reject' files:
         if RX_REJ.search(file):
             continue
-        lst.append(l[1:].lstrip())
+        lst.append(file)
     return lst
 
 def rm_new_unknown_files(file1, file2):
@@ -2210,12 +2229,13 @@ def find_head_patch(regexp):
 
 def dump_patch_file(file):
     """print to console."""
-    if sys.stdout.isatty():
+    if sys.stdout.isatty() and sh_prg_exists("colordiff") \
+        and sh_prg_exists("less"):
         # We're running in a real terminal
         system_simple(f"colordiff < {file} | less -R")
     else:
         # You're being piped or redirected
-        system_simple(("cat", file))
+        sh_cat_file(file)
 
 def save_applied_patches():
     """save all applied patches."""
@@ -2865,7 +2885,7 @@ def git_gq_conflict(cmd):
         for l in lines:
             print(l.split()[3][2:])
     elif cmd=="show":
-        system_simple(("less", DIFF_FILENAME))
+        sh_file_pager(DIFF_FILENAME)
     else:
         raise GitGqException(f"Error, unknown sub-command '{cmd}'")
 
