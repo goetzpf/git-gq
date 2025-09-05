@@ -77,6 +77,18 @@ Documentation conventions
 - 'REGEXP' is a regular expression. For regular expression syntax see:
   https://docs.python.org/3/howto/regex.html#regex-howto
 
+Help and documentation
+++++++++++++++++++++++
+
+  help
+    Show this help.
+
+  doc
+    Show reStructuredText source of man page.
+
+  man
+    Show man page.
+
 Bash completion commands
 ++++++++++++++++++++++++
 
@@ -101,6 +113,10 @@ Bash completion commands
       git gq abort
 
     This can save you many keystrokes and makes using this tool easier.
+
+    Example how to install completion::
+
+      git gq bashcompletion >> $HOME/.bashrc
 
 Queue management commands
 +++++++++++++++++++++++++
@@ -226,19 +242,10 @@ Patch management commands
 Miscellaneous commands
 ++++++++++++++++++++++
 
-  help           
-    Show this help.
-
   conflict [CMD]
     Show if the repository is in an unresolved conflict state.
     CMD is a sub-command, ``files`` shows files changed by the patch,
     ``show`` shows the patch.
-
-  doc            
-    Show reStructuredText source of man page.
-
-  man            
-    Show man page.
 
   glog
     Graphical log, display all commits and branches as a tree on the console.
