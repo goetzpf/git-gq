@@ -761,6 +761,60 @@ def portable_isodate():
         datetime.datetime.now().isoformat(timespec="seconds").replace(":","")
 
 # ---------------------------------------------------------
+# porttability
+# ---------------------------------------------------------
+
+def is_wsl():
+    """find out if we run in WSL under windows."""
+    try:
+        with open("/proc/version", "r", encoding="utf-8") as f:
+            return "microsoft" in f.read().lower()
+    except FileNotFoundError:
+        return False
+
+def parent_shell():
+    """return parent shell, needed for WSL in windows."""
+    # pylint: disable=broad-except
+    try:
+        ppid = os.getppid()
+        out = subprocess.check_output(
+            ["ps", "-p", str(ppid), "-o", "comm="], text=True
+        )
+        return out.strip()
+    except Exception:
+        return None
+
+def is_bash_shell():
+    """return if bash shell is used."""
+    shell = os.environ.get("SHELL")
+    if shell is not None:
+        return shell.endswith("bash")
+    if is_wsl():
+        return parent_shell() == "bash"
+    return False
+
+def check_bashcompletion():
+    """Print a message when bash is used and bash completion is not installed.
+    """
+    if not is_bash_shell():
+        return
+    try:
+        subprocess.check_output(
+            ["bash", "-i", "-c", f"declare -F {COMPLETION_FUNC}"],
+            stderr=subprocess.DEVNULL,
+            text=True
+        )
+        return # _git_gq function was found
+    except subprocess.CalledProcessError:
+        pass   # _git_gq function was not found
+    errprint("Note: You can install bash completion on your system with:\n"
+             "  git gq bashcompletion >> $HOME/.bashrc\n"
+             "See also:\n"
+             f"  {HOMEPAGE}\n"
+             "or enter:\n"
+             "  'git gq man' and look for 'bashcompletion'.")
+
+# ---------------------------------------------------------
 # shell utilities
 # ---------------------------------------------------------
 
@@ -2873,6 +2927,7 @@ def process(args, rest):
             sys.exit(0)
         if args.help: # --help
             pydoc.pager(short_help_text("txt"))
+            check_bashcompletion()
             return
         if not rest:
             git_gq_man()
@@ -2883,6 +2938,7 @@ def process(args, rest):
 
         if command in ("help", "man"):
             git_gq_man()
+            check_bashcompletion()
             return
 
         if command=="commands":
@@ -2900,6 +2956,7 @@ def process(args, rest):
             lst= []
             print_doc(unpack_one(command_args), lst)
             pydoc.pager("\n".join(lst))
+            check_bashcompletion()
             return
 
         git_goto_repo_dir()
