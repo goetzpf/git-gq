@@ -40,18 +40,22 @@ clean:
 	rm -rf tmp_$*
 	rm -f $*.tst $*.out
 
-# run a test directly on the console
+# how to generate an out file:
+%.out: %.sh repo.stamp
+	@echo "Test $*" >&2
+	bash ./$< $(GIT_GQ) > $@
+
+# make TESTNAME.remake runs a test again and re-creates the *.out file:
+%.remake: %.clean
+	bash ./$*.sh $(GIT_GQ) > $*.out
+
+# make TESTNAME.run runs a test and prints it's output directly to the console:
 %.run: %.clean
 	@bash ./$*.sh $(GIT_GQ)
 
-# how to generate an out file:
-%.out: %.sh repo.stamp
-	@time (bash ./$< $(GIT_GQ)) > $@ 2> $*.time
-
 # how to perform a shell test:
 $(shell_tests_tst): %.tst: %.sh %.ok %.out
-	@echo "Test $*" >&2
-	@diff $(wordlist 2, 3, $+) 
+	@diff $(wordlist 2, 3, $+)
 	@touch $@
 
 git_gq_add_2.out: git_gq_init.tst
