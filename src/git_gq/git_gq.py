@@ -819,6 +819,17 @@ def check_bashcompletion():
              "  'git gq man' and look for 'bashcompletion'.")
 
 # ---------------------------------------------------------
+# console input
+# ---------------------------------------------------------
+
+def ask_continue():
+    """ask the user to enter 'y' to continue,"""
+    reply= input("Enter 'y' or 'Y' to continue, everything else aborts.")
+    print()
+    sys.stdout.flush()
+    return reply in ("y", "Y")
+
+# ---------------------------------------------------------
 # shell utilities
 # ---------------------------------------------------------
 
@@ -1409,8 +1420,7 @@ def editor_dialog():
         print("Use 'vi' instead ?")
         print("Note that you can always abort editing in 'vi' with")
         print("  <ESC> :qa!")
-        reply= input("Enter 'y' or 'Y' to continue, everything else aborts ")
-        if reply in ("y", "Y"):
+        if ask_continue():
             editor= "vi"
         else:
             raise GitGqException("no editor selected")
@@ -2367,8 +2377,7 @@ def qpop_check(force):
         print("You may abort here and remove the tag with:")
         print("  git tag -d TAGNAME")
         print("or continue nevertheless.")
-        reply= input("Enter 'y' or 'Y' to continue, everything else aborts.")
-        if reply not in ("y", "Y"):
+        if not ask_continue():
             raise GitGqException("user abort")
         # Warn only a single time (relevant for 'git gq pop -a')
         gbl_tag_warning= False
@@ -2577,10 +2586,7 @@ def git_gq_revert(move_branchname):
                              f"in {TOPPATCHDIR}")
     print("Reverting changes in repository cannot be undone easily.")
     print("Continue ?")
-    reply= input("Enter 'y' or 'Y' to continue, everything else aborts.")
-    print()
-    sys.stdout.flush()
-    if reply not in ("y", "Y"):
+    if not ask_continue():
         print("command aborted")
         return
     (parent_hash, parent)= get_parent(exist_test= True, use_exception= False)
