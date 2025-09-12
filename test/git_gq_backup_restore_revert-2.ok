@@ -49,6 +49,7 @@ create mode 100644 default/parent
 create mode 100644 queue
 .gqpatches/default/applied/0001-README-was-improved.patch
 .gqpatches/default/applied/0002-script.sh-was-improved.patch
+$ git backup
 $ git gq pop -a
 HEAD is now at abcdef0 README was improved.
 HEAD is now at abcdef0 initial commit
@@ -111,14 +112,13 @@ Removing default/series
 Removing tmp/
 You can now re-create the patch queue with 'git gq revert'.
 
-Now revert.
-$git gq revert
+Now revert with --move-branchname.
+$git gq revert --move-branchname
 Reverting changes in repository cannot be undone easily.
 Continue ?
 Enter 'y' or 'Y' to continue, everything else aborts.
-Switched to a new branch 'master-1'
 HEAD is now at abcdef0 initial commit
-Switched to and reset branch 'master'
+Switched to a new branch 'master-1'
 Applying: README was improved.
 Applying: script.sh was improved.
 
@@ -152,5 +152,5 @@ abcdef0 README was improved.
 $ git gq unapplied
 
 $git branch -a
-* master
-  master-1
+  master
+* master-1

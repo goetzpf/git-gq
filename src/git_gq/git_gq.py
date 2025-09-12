@@ -153,7 +153,11 @@ Queue management commands
     Revert git repository to the state from the last backup of the patch queue.
     All *applied* patches are restored to the state at the last ``git gq
     backup``. All *unapplied* patches remain in their present state. This will
-    create a new branch in the repository beginning at the PARENT revision.
+    create a new branch in the repository at the PARENT revision. The new
+    branch name will be the name of your current branch with a number appended
+    like in 'master-1'. If you want instead have the new branch given the name
+    of the current branch and the old patches given a new branch name, use
+    option '--move-branchname'.
 
   qrepo COMMAND [-- OPTIONS]
     Run git command COMMAND with OPTIONS in patch-queue repository. Note that
@@ -1443,16 +1447,22 @@ def git_init(dir_, initial_branch="master"):
         cmd_list.append(dir_)
     system_simple(cmd_list)
 
-def git_checkout(revision_spec, dir_= None):
+def git_checkout(revision_spec, dir_= None,
+                 detached_head_warn= True):
     """run git checkout
 
     dir_: change to this directory first
+    detached_head_warn: If True, suppress warning about detached head.
     """
     old_dir= None
     if dir_ is not None:
         old_dir= sh_chdir(dir_)
     try:
-        system_simple(("git", "checkout", revision_spec))
+        cmd= ["git"]
+        if not detached_head_warn:
+            cmd.extend(["-c", "advice.detachedHead=false"])
+        cmd.extend(["checkout", revision_spec])
+        system_simple(cmd)
     finally:
         if old_dir is not None:
             sh_chdir(old_dir)
@@ -1498,6 +1508,44 @@ def git_rev_parse(revision_spec, catch_stderr, dir_= None):
         if old_dir is not None:
             sh_chdir(old_dir)
     return out.strip()
+
+def git_current_branch():
+    """return name of current branch"""
+    (out,_)=system(["git","rev-parse","--abbrev-ref","HEAD"],
+                    catch_stdout= True, catch_stderr= False,
+                    env= None, verbose= gbl_verbose, dry_run= gbl_dry_run)
+    return out.strip()
+
+def git_local_branches():
+    """return a set of all local branches."""
+    (out,_)=system(["git","branch",'--format="%(refname:short)'],
+                   catch_stdout= True, catch_stderr= False,
+                   env= None, verbose= gbl_verbose, dry_run= gbl_dry_run)
+    return set(out.splitlines())
+
+def git_create_branchname(oldname):
+    """create a name for a new branch by appending '-number'.
+
+    This command ensures that the new branch name doesn't already exist.
+    """
+    local_branches= git_local_branches()
+    num=1
+    while True:
+        newname= f"{oldname}-{num}"
+        if newname not in local_branches:
+            break
+        num+=1
+    return newname
+
+def git_switch_branch(branchname):
+    """create a new branch.
+    """
+    system_simple(("git", "checkout", "-b", branchname))
+
+def git_move_branch(branchname, revision):
+    """move bramch to revision
+    """
+    system_simple(("git", "checkout", "-B", branchname, revision))
 
 def git_show(revspec):
     """git show."""
@@ -1589,6 +1637,24 @@ def git_unknown_files(file):
                 continue
             fh_w.write(f"{file}\n")
 
+def git_untracked(dir_= None):
+    """returns list untracked files.
+
+    dir_: change to this directory first
+    """
+    old_dir= None
+    if dir_ is not None:
+        old_dir= sh_chdir(dir_)
+    try:
+        (out, _)= system(("git", "ls-files", "--others", "--exclude-standard"),
+                         catch_stdout= True, catch_stderr= False,
+                         env= None,
+                         verbose= gbl_verbose, dry_run= gbl_dry_run)
+    finally:
+        if old_dir is not None:
+            sh_chdir(old_dir)
+    return out.splitlines()
+
 def git_uncommitted(dir_= None):
     """returns list uncommited changes.
 
@@ -1599,7 +1665,7 @@ def git_uncommitted(dir_= None):
         old_dir= sh_chdir(dir_)
     try:
         (out, _)= system(("git", "status", "--porcelain=v1"),
-                         catch_stdout= True, catch_stderr= True,
+                         catch_stdout= True, catch_stderr= False,
                          env= None,
                          verbose= gbl_verbose, dry_run= gbl_dry_run)
     finally:
@@ -1818,10 +1884,17 @@ def git_conflict_diff(file):
         return []
     return out.splitlines()
 
-def git_reset_hard(revspec):
+def git_reset_hard(revspec, dir_= None):
     """run git reset --hard."""
 
-    system_simple(("git", "reset", "--hard", revspec))
+    old_dir= None
+    if dir_ is not None:
+        old_dir= sh_chdir(dir_)
+    try:
+        system_simple(("git", "reset", "--hard", revspec))
+    finally:
+        if old_dir is not None:
+            sh_chdir(old_dir)
 
 def git_amend_null():
     """create NULL revision with git commit --amend."""
@@ -2445,18 +2518,33 @@ def git_gq_man():
                             verbose= gbl_verbose,
                             dry_run= gbl_dry_run)
 
-def git_gq_restore(revision):
+def git_gq_restore(revision, force):
     """restore from revision."""
     check_conflict(True)
     if not os.path.isdir(ojoin(TOPPATCHDIR, ".git")):
         raise GitGqException("Error, 'git gq backup' was never run.")
-    if git_uncommitted(TOPPATCHDIR):
-        raise GitGqException(f"Error, there are uncomited changes "
-                             f"in {TOPPATCHDIR}")
+
+    if not force:
+        untracked= git_untracked(TOPPATCHDIR)
+        if untracked:
+            raise GitGqException(f"Error, there are files not tracked in "
+                                 f"in {TOPPATCHDIR}: {' '.join(untracked)}")
+    uncommitted= git_uncommitted(TOPPATCHDIR)
+    if uncommitted:
+        if not force:
+            raise GitGqException(f"Error, there are uncommitted changes "
+                                 f"in {TOPPATCHDIR}: {' '.join(uncommitted)}")
+        git_reset_hard("HEAD", TOPPATCHDIR)
+
     try:
         revspec= git_rev_parse(revision, catch_stderr= False,
                                dir_= TOPPATCHDIR)
-        git_checkout(revspec, TOPPATCHDIR)
+        head_rev= git_head_revision()
+        if revspec != head_rev:
+
+            git_checkout(revspec, TOPPATCHDIR)
+            errprint(f"Note: The 'detached HEAD' warning concerns to the "
+                     f"repository in '{TOPPATCHDIR}'.")
         git_clean(TOPPATCHDIR)
     except IOError as e:
         raise GitGqException(str(e)) from None
@@ -2479,17 +2567,19 @@ def git_gq_restore(revision):
     if parent_exists and (os.path.isdir(APPLIEDDIR)):
         print("You can now re-create the patch queue with 'git gq revert'.")
 
-def git_gq_revert():
+def git_gq_revert(move_branchname):
     """revert repo to state in patch queue."""
     check_conflict(True)
     if not os.path.isdir(ojoin(TOPPATCHDIR, ".git")):
         raise GitGqException("Error, 'git gq backup' was never run.")
     if git_uncommitted(TOPPATCHDIR):
-        raise GitGqException(f"Error, there are uncomited changes "
+        raise GitGqException(f"Error, there are uncommitted changes "
                              f"in {TOPPATCHDIR}")
     print("Reverting changes in repository cannot be undone easily.")
     print("Continue ?")
     reply= input("Enter 'y' or 'Y' to continue, everything else aborts.")
+    print()
+    sys.stdout.flush()
     if reply not in ("y", "Y"):
         print("command aborted")
         return
@@ -2507,7 +2597,27 @@ def git_gq_revert():
         print("You have to set a valid parent with 'git gq parent' first.")
         return
     else:
-        git_checkout(parent_hash)
+        if git_head_revision() != parent_hash:
+            # only needed if head revision != parent:
+            # name of current branch:
+            curr_branch= git_current_branch()
+            if not move_branchname:
+                # create a new name for the old, deprecated commits:
+                deprecated_branch= git_create_branchname(curr_branch)
+                # create branch for deprecated commits:
+                git_switch_branch(deprecated_branch)
+                # go to older revision, suppress detached head warning:
+                git_checkout(parent_hash, detached_head_warn= False)
+                # now move the original branch here:
+                git_move_branch(curr_branch, "HEAD")
+            else:
+                # create a new name for the new, revert-commits:
+                new_branch= git_create_branchname(curr_branch)
+                # go to older revision, suppress detached head warning:
+                git_checkout(parent_hash, detached_head_warn= False)
+                # create this new branch
+                git_switch_branch(new_branch)
+
     git_am_simple(f"{APPLIEDDIR}/*.patch")
 
 def git_gq_backup(message):
@@ -2988,12 +3098,12 @@ def process(args, rest):
 
         if command=="restore":
             check_command_args(command, command_args, 1, 1)
-            git_gq_restore(command_args[0])
+            git_gq_restore(command_args[0], args.force)
             return
 
         if command=="revert":
             check_command_args(command, command_args, None, 0)
-            git_gq_revert()
+            git_gq_revert(args.move_branchname)
             return
 
         if command=="init":
@@ -3204,10 +3314,17 @@ def main():
                        )
     parser.add_argument("-R", "--force",
                         action="store_true",
-                        help="Allow to run `git gq pop` and "
-                             "``git gq push`` even if there are "
-                             "uncommited changes. Note the with 'pop' this "
-                             "will discard uncommited changes."
+                        help="`git gq pop`, `git gq push`: Execute command "
+                             "even if there are uncommited changes. Note "
+                             "that `git gq pop` will discard uncommited "
+                             "changes. `git gq restore`: discard "
+                             "uncommitted changes and unknown files in "
+                             "patch queue."
+                       )
+    parser.add_argument("--move-branchname",
+                        action="store_true",
+                        help="For ``git gq revert``, move the current branch "
+                             "name to the new created branch.",
                        )
     parser.add_argument("--exception",
                         action="store_true",

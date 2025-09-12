@@ -9,7 +9,7 @@ GIT_GQ="$1"
 source util.sh
 
 SRCDIR="tmp_git_gq_add_2"
-TMPDIR="tmp_git_gq_backup_restore_revert"
+TMPDIR="tmp_git_gq_backup_restore_revert-2"
 
 cp -a $SRCDIR $TMPDIR
 
@@ -44,6 +44,7 @@ echo
 echo "\$ git backup"
 $GIT_GQ backup 2>&1 | filter_pwd | filter_isodate_any | filter_squarebracket_end_hash
 
+echo "\$ git backup"
 echo "\$ git gq pop -a"
 $GIT_GQ pop -a 2>&1 | filter_git_head_hash
 
@@ -88,9 +89,9 @@ echo "\$git gq restore HEAD"
 $GIT_GQ restore HEAD --force 2>&1 | filter_quoted_hash | filter_git_head_hash | filter_isodate_any
 
 echo
-echo "Now revert."
-echo "\$git gq revert"
-yes | $GIT_GQ revert 2>&1 | filter_git_head_hash
+echo "Now revert with --move-branchname."
+echo "\$git gq revert --move-branchname"
+yes | $GIT_GQ revert --move-branchname 2>&1 | filter_git_head_hash
 
 echo
 echo "-------------------------------------------------"

@@ -30,21 +30,26 @@ The command::
 
 checks out the given revision in the queue repository.
 
-.. caution
-   All changes in the patch queue since the last backup are discarded with this
-   command.
+.. note::
+   The command fails if there are *any* uncommitted changes or unknown files in
+   the queue repository. This ensures that you don't accidently loose data with
+   ``git gq restore``.
 
 .. note::
-   Your git repository is not changed by the commands ``git gq backup`` and
-   ``git gq restore``.
+   Your project git repository is never changed by the commands ``git gq
+   backup`` and ``git gq restore``.
 
 The command::
 
-  git revert
+  git gq revert
 
 changes the git repository to the state it had when the last backup was made.
 At the parent revision a new branch is created where all the patches from
 directory 'applied' are added as regular commits.
+
+The new branch gets the name of your current branch with a number appended,
+e.g. 'master' becomes 'master-1'.With option ``--move-branchname``, the new
+branch gets your current branch name and the old branch gets the new name.
 
 How to create  a backup
 -----------------------

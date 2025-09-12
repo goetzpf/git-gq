@@ -4,6 +4,7 @@ git_gq_abort                    abort
 git_gq_applied_unapplied        applied/unapplied
 git_gq_backup                   backup/qrepo/revert
 git_gq_backup_restore_revert    backup/restore/revert
+git_gq_backup_restore_revert-2  backup/restore/revert with --move-branchname
 X                               bashcompletion
 X                               change-order
 X                               commands

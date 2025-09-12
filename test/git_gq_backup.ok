@@ -47,24 +47,10 @@ Now revert the patch queue directly:
 $ git gq revert
 Reverting changes in repository cannot be undone easily.
 Continue ?
-Enter 'y' or 'Y' to continue, everything else aborts.Note: switching to 'abcdef0'.
-
-You are in 'detached HEAD' state. You can look around, make experimental
-changes and commit them, and you can discard any commits you make in this
-state without impacting any branches by switching back to a branch.
-
-If you want to create a new branch to retain commits you create, you may
-do so (now or later) by using -c with the switch command. Example:
-
-git switch -c <new-branch-name>
-
-Or undo this operation with:
-
-git switch -
-
-Turn off this advice by setting config variable advice.detachedHead to false
-
+Enter 'y' or 'Y' to continue, everything else aborts.
+Switched to a new branch 'master-1'
 HEAD is now at abcdef0 initial commit
+Switched to and reset branch 'master'
 Applying: README was improved.
 Applying: script.sh was improved.
 
