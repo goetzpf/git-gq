@@ -11,9 +11,8 @@ In order to run git-gq you need to have installed these programs/packages:
 
 - git
 - `Python <https://www.python.org/>`_ v.3.6 or newer
-- colordiff
+- colordiff (optional)
 - vi or some other text editor
-- rst2man (optional)
 - less (optional)
 
 Standard

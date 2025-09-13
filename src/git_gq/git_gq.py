@@ -2318,7 +2318,7 @@ def dump_patch_file(file):
         system_simple(f"colordiff < {file} | less -R")
     else:
         # You're being piped or redirected
-        sh_cat_file(file)
+        sh_file_pager(file)
 
 def save_applied_patches():
     """save all applied patches."""
@@ -2479,53 +2479,34 @@ def create_parentfile(revspec):
 # ---------------------------------------------------------
 
 def git_gq_man():
-    """display man page generated with rst2man."""
-    def testrun(cmd_list):
-        """test if prg. exists."""
-        (_, _, rc)= system_rc(cmd_list,
-                              catch_stdout= True, catch_stderr= True,
-                              env= None,
-                              verbose= gbl_verbose, dry_run= gbl_dry_run)
-        return rc==0
-                       # 'pip install'.
-    lst= []
-    print_doc(None, lst)
-    txt= "\n".join(lst)
+    """display man page."""
 
     # Try to find man page in a portable way. The recommendation to use
     # importlib.resources was taken from:
     # https://setuptools.pypa.io/en/latest/userguide/datafiles.html#subdir-data-files
     manpage= None
-    for d in resources.files("git_gq.man.man1").iterdir():
-        if d.name=="git-gq.1":
-            manpage= d
-            break
+    if sh_prg_exists("man"):
+        try:
+            for d in resources.files("git_gq.man.man1").iterdir():
+                if d.name=="git-gq.1":
+                    manpage= d
+                    break
+        except ModuleNotFoundError:
+            pass
+        # Fallback: search relative to THIS binary:
+        if manpage is None:
+            b= os.path.dirname(__file__)
+            m= os.path.join(b, "../src/git_gq/man/man1/git-gq.1")
+            if os.path.exists(m):
+                manpage= os.path.abspath(m)
+        if manpage is not None:
+            system_simple(["man", "-l", manpage])
+            return
 
-    if manpage is not None:
-        system_simple(["man", "-l", manpage])
-        return
-
-    # test if 'rst2man' is installed:
-    if not testrun(("rst2man", "--version")):
-        errprint("rst2man not found, display reStructuredText instead.")
-        pydoc.pager(txt)
-    else:
-        # convert with 'rst2man':
-        (out, _)= system_io(["rst2man"],
-                            stdin_par= txt,
-                            stdout_par= "PIPE",
-                            stderr_par= None,
-                            env= None,
-                            verbose= gbl_verbose,
-                            dry_run= gbl_dry_run)
-        # now pipe through 'man', the man page viewer:
-        (_, _) = system_io(["man", "-l", "-"],
-                            stdin_par= out,
-                            stdout_par= None,
-                            stderr_par= None,
-                            env= None,
-                            verbose= gbl_verbose,
-                            dry_run= gbl_dry_run)
+    errprint("'man' program or manpage not found, displaying reStructuredText instead.")
+    lst= []
+    print_doc(None, lst)
+    pydoc.pager("\n".join(lst))
 
 def git_gq_restore(revision, force):
     """restore from revision."""
