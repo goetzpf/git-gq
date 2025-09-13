@@ -18,6 +18,8 @@ if [ -z "$SCRIPT_IS_SOURCED" ]; then
     exit 1
 fi
 
+mkdir -p "$MYDIR/../bin"
+(cd $MYDIR/../bin && ln -s ../src/git_gq/git_gq.py git-gq)
 PATH="$(readlink -e "$MYDIR/../bin"):$PATH"
 eval "$(git-gq bashcompletion)"
 MYPS="$PS1"
