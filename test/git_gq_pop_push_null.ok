@@ -48,15 +48,31 @@ $ git status --porcelain
 
 Now apply all patches.
 $ git gq push -a
+Checking patch .gitignore...
+Checking patch README.txt...
+Checking patch script.sh...
+.git/rebase-apply/patch:36: new blank line at EOF.
++
+Applied patch .gitignore cleanly.
+Applied patch README.txt cleanly.
+Applied patch script.sh cleanly.
+warning: 1 line adds whitespace errors.
 Applying: initial commit
 HEAD is now at abcdef0 NULL
+.gqpatches/default/initial-commit.patch:41: new blank line at EOF.
++
+warning: 1 line adds whitespace errors.
 [master abcdef0] initial commit
 Date: Sun Dec 31 09:12:34 2001 +0100
 3 files changed, 9 insertions(+)
 create mode 100644 .gitignore
 create mode 100644 README.txt
 create mode 100755 script.sh
+Checking patch README.txt...
+Applied patch README.txt cleanly.
 Applying: README was improved.
+Checking patch script.sh...
+Applied patch script.sh cleanly.
 Applying: script.sh was improved.
 
 $ git gq applied

@@ -64,7 +64,7 @@ git status --porcelain
 echo
 echo "Now apply all patches."
 echo "\$ git gq push -a"
-$GIT_GQ push -a | filter_git_head_hash | filter_squarebracket_hash | filter_mail_date
+$GIT_GQ push -a 2>&1 | filter_git_head_hash | filter_squarebracket_hash | filter_mail_date
 
 echo
 echo "\$ git gq applied"
