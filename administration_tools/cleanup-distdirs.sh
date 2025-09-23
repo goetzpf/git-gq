@@ -6,4 +6,5 @@ MYDIR=$(dirname "$ME")
 cd "$MYDIR/.." || exit
 
 rm -rf dist
+rm -rf dist-github
 

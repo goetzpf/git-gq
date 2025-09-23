@@ -37,10 +37,9 @@ fi
 
 
 DISTDIR="git-gq-$(python $GIT_GQ --version)"
-DISTPATH="dist/$DISTDIR"
+DISTPATH="dist-github/$DISTDIR"
 
-mkdir -p dist
-rm -rf "$DISTPATH" "$DISTPATH.tar.gz"
+rm -rf "dist-github"
 mkdir -p "$DISTPATH"
 
 cp -a README.rst "$DISTPATH"
@@ -56,7 +55,7 @@ cp "$MYDIR/install.sh" "$DISTPATH"
 cp "$MYDIR/git-gq-uninstall.sh" "$DISTPATH"
 cp -a doc/_build/html "$DISTPATH/doc"
 
-(cd dist && tar -czf "$DISTDIR.tar.gz" "$DISTDIR")
+(cd dist-github && tar -czf "$DISTDIR.tar.gz" "$DISTDIR")
 
 if [ -z "$keep" ]; then
     rm -rf "$DISTPATH"
