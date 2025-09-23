@@ -1,5 +1,3 @@
-
-
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" data-content_root="./">
 <head>
@@ -8,14 +6,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Example Workflows &mdash; git-gq 2.1 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
-      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=330c1f8c" />
 
   
-      <script src="_static/jquery.js?v=5d32c60e"></script>
-      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=c4a36953"></script>
-      <script src="_static/doctools.js?v=9a2dae69"></script>
-      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+  
+        <script src="_static/jquery.js?v=5d32c60e"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="_static/documentation_options.js?v=c4a36953"></script>
+        <script src="_static/doctools.js?v=9a2dae69"></script>
+        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -34,6 +33,9 @@
           <a href="index.html" class="icon icon-home">
             git-gq
           </a>
+              <div class="version">
+                2.1
+              </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
     <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
@@ -141,9 +143,9 @@ as parent revision.</p>
 preliminary log message that you can later update and extend. Every time you
 make more changes you can either:</p>
 <ul class="simple">
-<li><p>run <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">gq</span> <span class="pre">new</span></code> to create a new commit</p></li>
-<li><p>run <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">gq</span> <span class="pre">refresh</span></code> to update the topmost commit</p></li>
-<li><p>run the <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">add..</span></code> and <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">commit</span></code> as usual to create a new commit</p></li>
+<li><p>enter <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">gq</span> <span class="pre">new</span></code> to create a new commit</p></li>
+<li><p>enter <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">gq</span> <span class="pre">refresh</span></code> to update the topmost commit</p></li>
+<li><p>enter <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">add</span> <span class="pre">FILE(S)</span></code> and <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">commit</span></code> as usual to create a new commit</p></li>
 </ul>
 <p>You can see what patches are applied with:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">git</span> <span class="n">gq</span> <span class="n">applied</span>
