@@ -3,7 +3,7 @@ Prerequisites
 
 git-gq should run on all 
 `Linux <https://en.wikipedia.org/wiki/Linux>`_.
-distrbutions and probably most
+distributions and probably most
 `Unix <https://en.wikipedia.org/wiki/Unix>`_.
 variants.
 

@@ -625,9 +625,9 @@ where NAME should be a one line string with no spaces in it. This is a
 preliminary log message that you can later update and extend. Every time you
 make more changes you can either:
 
-- run ``git gq new`` to create a new commit
-- run ``git gq refresh`` to update the topmost commit
-- run the ``git add..`` and ``git commit`` as usual to create a new commit
+- enter ``git gq new`` to create a new commit
+- enter ``git gq refresh`` to update the topmost commit
+- enter ``git add FILE(S)`` and ``git commit`` as usual to create a new commit
 
 You can see what patches are applied with::
 
