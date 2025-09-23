@@ -95,4 +95,3 @@ applied
 Directory 'applied' is created by ``git gq backup``. It contains the *applied*
 patches from the time this command is issued. Note that files in this directory
 are not changed by ``git gq push`` or ``git gq pop``, only by ``git gq backup``.
-

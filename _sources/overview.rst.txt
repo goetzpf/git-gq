@@ -91,4 +91,3 @@ Disadvantages of the patch queue
 - Changing the order of patches may lead to *conflicts*.
 - Applying new commits in the repository while some patches are unapplied may
   lead to conflicts when the patches are applied later on.
-

@@ -93,4 +93,3 @@ This workflow allows to resolve conflicts step by step which is usually easier
 than resolving all conflicts that arise from ``git pull`` all at once. Also the
 reject files created for each conflict clearly show which change was intended
 at the patch which is usually easier than the common 3-way merge.
-

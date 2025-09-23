@@ -1,20 +1,21 @@
+
+
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" data-content_root="./">
 <head>
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Command line interface &mdash; git-gq 2.0.2 documentation</title>
+  <title>Command line interface &mdash; git-gq 2.1 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
-      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=330c1f8c" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
 
   
-  
-        <script src="_static/jquery.js?v=5d32c60e"></script>
-        <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-        <script src="_static/documentation_options.js?v=c2377ec0"></script>
-        <script src="_static/doctools.js?v=9a2dae69"></script>
-        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=c4a36953"></script>
+      <script src="_static/doctools.js?v=9a2dae69"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -33,9 +34,6 @@
           <a href="index.html" class="icon icon-home">
             git-gq
           </a>
-              <div class="version">
-                2.0.2
-              </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
     <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
@@ -78,6 +76,8 @@
 </ul>
 </li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Command line interface</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#documentation-conventions">Documentation conventions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#help-and-documentation">Help and documentation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#bash-completion-commands">Bash completion commands</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#queue-management-commands">Queue management commands</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#patch-management-commands">Patch management commands</a></li>
@@ -86,13 +86,14 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="install.html">How to install git-gq</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="install.html#install-from-source">Install from source</a></li>
-<li class="toctree-l2"><a class="reference internal" href="install.html#install-from-distribution">Install from distribution</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="install.html#install-from-pypi-with-pip-recommended">Install from pypi with pip (recommended)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="install.html#install-from-distribution-tar-file">Install from distribution tar file</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="install.html#system-wide-installation">System wide installation</a></li>
 <li class="toctree-l3"><a class="reference internal" href="install.html#local-installation-in-directory">Local installation in DIRECTORY</a></li>
+<li class="toctree-l3"><a class="reference internal" href="install.html#how-to-uninstall">How to uninstall</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="install.html#how-to-uninstall">How to uninstall</a></li>
+<li class="toctree-l2"><a class="reference internal" href="install.html#install-from-source">Install from source</a></li>
 </ul>
 </li>
 </ul>
@@ -123,19 +124,40 @@
              
   <section id="command-line-interface">
 <h1>Command line interface<a class="headerlink" href="#command-line-interface" title="Link to this heading"></a></h1>
-<p>usage: git-gq [OPTIONS] COMMAND</p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>REGEXP is a
-<a class="reference external" href="https://docs.python.org/3/howto/regex.html#regex-howto">regular expression</a>.</p>
-</div>
+<p>usage: git_gq.py [OPTIONS] COMMAND</p>
+<section id="documentation-conventions">
+<h2>Documentation conventions<a class="headerlink" href="#documentation-conventions" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p>Arguments for commands are in capital letters.</p></li>
+<li><p>Arguments in square brackets are optional.</p></li>
+<li><p>A ‘|’ means that one of the shown arguments must be used.</p></li>
+<li><p>‘REGEXP’ is a regular expression. For regular expression syntax see:
+<a class="reference external" href="https://docs.python.org/3/howto/regex.html#regex-howto">https://docs.python.org/3/howto/regex.html#regex-howto</a></p></li>
+</ul>
+</section>
+<section id="help-and-documentation">
+<h2>Help and documentation<a class="headerlink" href="#help-and-documentation" title="Link to this heading"></a></h2>
+<blockquote>
+<div><dl class="simple">
+<dt>help</dt><dd><p>Show this help.</p>
+</dd>
+<dt>doc</dt><dd><p>Show reStructuredText source of man page.</p>
+</dd>
+<dt>man</dt><dd><p>Show man page.</p>
+</dd>
+</dl>
+</div></blockquote>
+</section>
 <section id="bash-completion-commands">
 <h2>Bash completion commands<a class="headerlink" href="#bash-completion-commands" title="Link to this heading"></a></h2>
 <blockquote>
-<div><dl>
+<div><dl class="simple">
 <dt>commands</dt><dd><p>List all known commands on the console</p>
 </dd>
-<dt>bashcompletion</dt><dd><p>Prints a text that, if you add it to your bash configuration in
+</dl>
+<p>bashcompletion</p>
+<blockquote>
+<div><p>Prints a text that, if you add it to your bash configuration in
 $HOME/.bashrc, adds bash completion. This means that you get a list of
 possible commands when you type &lt;TAB&gt;, e.g.:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">git</span> <span class="n">gq</span> <span class="n">a</span><span class="o">&lt;</span><span class="n">TAB</span><span class="o">&gt;</span>
@@ -151,8 +173,11 @@ matching command, you command line is completed, e.g:</p>
 </pre></div>
 </div>
 <p>This can save you many keystrokes and makes using this tool easier.</p>
-</dd>
-</dl>
+<p>Example how to install completion:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>git gq bashcompletion &gt;&gt; $HOME/.bashrc
+</pre></div>
+</div>
+</div></blockquote>
 </div></blockquote>
 </section>
 <section id="queue-management-commands">
@@ -180,7 +205,11 @@ provide a short log message with option <code class="docutils literal notranslat
 <dt>revert</dt><dd><p>Revert git repository to the state from the last backup of the patch queue.
 All <em>applied</em> patches are restored to the state at the last <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">gq</span>
 <span class="pre">backup</span></code>. All <em>unapplied</em> patches remain in their present state. This will
-create a new branch in the repository beginning at the PARENT revision.</p>
+create a new branch in the repository at the PARENT revision. The new
+branch name will be the name of your current branch with a number appended
+like in ‘master-1’. If you want instead have the new branch given the name
+of the current branch and the old patches given a new branch name, use
+option ‘–move-branchname’.</p>
 </dd>
 <dt>qrepo COMMAND [– OPTIONS]</dt><dd><p>Run git command COMMAND with OPTIONS in patch-queue repository. Note that
 OPTIONS must be preceded by a <em>double</em> ‘-’ character.</p>
@@ -264,15 +293,9 @@ This also removes all reject (*.rej) files that are not tracked by git.</p>
 <h2>Miscellaneous commands<a class="headerlink" href="#miscellaneous-commands" title="Link to this heading"></a></h2>
 <blockquote>
 <div><dl class="simple">
-<dt>help</dt><dd><p>Show this help.</p>
-</dd>
 <dt>conflict [CMD]</dt><dd><p>Show if the repository is in an unresolved conflict state.
 CMD is a sub-command, <code class="docutils literal notranslate"><span class="pre">files</span></code> shows files changed by the patch,
 <code class="docutils literal notranslate"><span class="pre">show</span></code> shows the patch.</p>
-</dd>
-<dt>doc</dt><dd><p>Show reStructuredText source of man page.</p>
-</dd>
-<dt>man</dt><dd><p>Show man page.</p>
 </dd>
 <dt>glog</dt><dd><p>Graphical log, display all commits and branches as a tree on the console.</p>
 </dd>
@@ -323,9 +346,15 @@ changes to patch.</p>
 by the command. Print only the first LINECOUNT lines.</p>
 </dd>
 <dt><kbd><span class="option">-R</span>, <span class="option">--force</span></kbd></dt>
-<dd><p>Allow to run <cite>git gq pop</cite> and <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">gq</span> <span class="pre">push</span></code> even if
-there are uncommited changes. Note the with ‘pop’ this
-will discard uncommited changes.</p>
+<dd><p><cite>git gq pop</cite>, <cite>git gq push</cite>: Execute command even if
+there are uncommited changes. Note that <cite>git gq pop</cite>
+will discard uncommited changes. <cite>git gq restore</cite>:
+discard uncommitted changes and unknown files in patch
+queue.</p>
+</dd>
+<dt><kbd><span class="option">--move-branchname</span></kbd></dt>
+<dd><p>For <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">gq</span> <span class="pre">revert</span></code>, move the current branch name to
+the new created branch.</p>
 </dd>
 <dt><kbd><span class="option">--exception</span></kbd></dt>
 <dd><p>do not catch exceptions (for debugging).</p>
