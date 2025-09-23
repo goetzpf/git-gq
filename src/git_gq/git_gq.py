@@ -65,7 +65,7 @@ HOMEPAGE="https://goetzpf.github.io/git-gq"
 # name of bash completion function, see also BASHCOMPLETION:
 COMPLETION_FUNC="_git_gq"
 
-VERSION= "2.0.2" #VERSION#
+VERSION= "2.1" #VERSION#
 
 SUMMARY="A program to implement patch queues for git."
 
