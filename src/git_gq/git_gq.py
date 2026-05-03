@@ -69,7 +69,7 @@ KNOWN_SHELLS= {"bash", "zsh"} # type: ignore
 COMPLETION_FUNC= { "bash": "_git_gq",
                    "zsh" : "_git-gq" }
 
-VERSION= "2.1" #VERSION#
+VERSION= "2.2" #VERSION#
 
 SUMMARY="A program to implement patch queues for git."
 
