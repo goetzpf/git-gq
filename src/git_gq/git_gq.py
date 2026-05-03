@@ -31,6 +31,7 @@ import shutil
 import datetime
 import pydoc
 import re
+import functools
 
 if sys.version_info < (3, 9):
     import importlib_resources as resources
@@ -62,14 +63,28 @@ UNKNOWN2_FILENAME=ojoin(TEMPDIR, "UNKNOWN.2")
 
 HOMEPAGE="https://goetzpf.github.io/git-gq"
 
-# name of bash completion function, see also BASHCOMPLETION:
-COMPLETION_FUNC="_git_gq"
+KNOWN_SHELLS= {"bash", "zsh"} # type: ignore
+
+# name of bash completion function, see also COMPLETION:
+COMPLETION_FUNC= { "bash": "_git_gq",
+                   "zsh" : "_git-gq" }
 
 VERSION= "2.1" #VERSION#
 
 SUMMARY="A program to implement patch queues for git."
 
-BASHCOMPLETION=r'_git_gq() { __gitcomp "$(git-gq commands)" "" "$cur"; }'
+COMPLETION= { "bash": r'''_git_gq() {
+  __gitcomp "$(git-gq commands)" "" "$cur";
+}''',
+              "zsh" : r'''_git-gq() {
+  local -a commands;
+  # Fetch commands and split them into an array by line/space
+  commands=(${(f)"$(git-gq commands)"})
+
+  # _describe handles the display and selection
+  _describe 'gq commands' commands
+}'''
+            }
 
 USAGE= "%(prog)s [OPTIONS] COMMAND"
 
@@ -95,17 +110,18 @@ Help and documentation
   man
     Show man page.
 
-Bash completion commands
-++++++++++++++++++++++++
+Shell completion commands
++++++++++++++++++++++++++
 
   commands       
     List all known commands on the console
 
-  bashcompletion
+  bashcompletion / zshcompletion
 
-    Prints a text that, if you add it to your bash configuration in
-    $HOME/.bashrc, adds bash completion. This means that you get a list of
-    possible commands when you type <TAB>, e.g.::
+    Prints a text that, if you add it to your shell configuration, adds bash
+    completion. 'bashcompletion' prints the completion function for bash, 'zshcompletion' prints
+    it for zsh. Completion means that you get a list of possible commands when you
+    type <TAB>, e.g.::
 
       git gq a<TAB>
 
@@ -120,9 +136,13 @@ Bash completion commands
 
     This can save you many keystrokes and makes using this tool easier.
 
-    Example how to install completion::
+    Example how to install completion for bash::
 
       git gq bashcompletion >> $HOME/.bashrc
+
+    Example how to install completion for zsh::
+
+      git gq zshcompletion >> $HOME/.zshrc
 
 Queue management commands
 +++++++++++++++++++++++++
@@ -788,35 +808,61 @@ def parent_shell():
     except Exception:
         return None
 
-def is_bash_shell():
-    """return if bash shell is used."""
+@functools.lru_cache
+def get_shell_type():
+    """returns "bash", "zsh" or None.
+
+    Currently only bash and zsh are recognized here.
+    """
     shell = os.environ.get("SHELL")
     if shell is not None:
-        return shell.endswith("bash")
-    if is_wsl():
-        return parent_shell() == "bash"
+        shell= os.path.basename(shell)
+    elif is_wsl():
+        shell= parent_shell()
+    if shell in KNOWN_SHELLS:
+        return shell
+    return None
+
+def shell_function_defined(funcname):
+    """tests if a shell function is defined."""
+    shell= get_shell_type()
+    if shell is None:
+        return False
+    if shell=="bash":
+        cmd= ["bash", "-i", "-c", f"declare -F {funcname}"]
+    elif shell=="zsh":
+        cmd= ["type", "-f", funcname]
+    else:
+        raise AssertionError
+
+    try:
+        subprocess.check_output(cmd, stderr=subprocess.DEVNULL, text=True)
+        return True
+    except subprocess.CalledProcessError:
+        pass
     return False
 
-def check_bashcompletion():
-    """Print a message when bash is used and bash completion is not installed.
+def check_shell_completion():
+    """Print message when bash or zsh are sed and completion is not installed.
     """
-    if not is_bash_shell():
+    shell= get_shell_type()
+    if not shell: # unknown shell
         return
-    try:
-        subprocess.check_output(
-            ["bash", "-i", "-c", f"declare -F {COMPLETION_FUNC}"],
-            stderr=subprocess.DEVNULL,
-            text=True
-        )
-        return # _git_gq function was found
-    except subprocess.CalledProcessError:
-        pass   # _git_gq function was not found
-    errprint("Note: You can install bash completion on your system with:\n"
-             "  git gq bashcompletion >> $HOME/.bashrc\n"
-             "See also:\n"
+    cfunc= COMPLETION_FUNC[shell]
+    if shell_function_defined(cfunc):
+        return
+    if shell=="bash":
+        cmd= "git gq bashcompletion >> $HOME/.bashrc"
+    elif shell=="zsh":
+        cmd= "git gq zshcompletion >> $HOME/.zshrc"
+    else:
+        raise AssertionError
+    errprint(f"Note: You can install bash completion on your system with:\n"
+             f"  {cmd}\n"
+             f"See also:\n"
              f"  {HOMEPAGE}\n"
-             "or enter:\n"
-             "  'git gq man' and look for 'bashcompletion'.")
+             f"or enter:\n"
+             f"  'git gq man' and look for 'Shell completion commands'.")
 
 # ---------------------------------------------------------
 # console input
@@ -1112,11 +1158,12 @@ QUEUEFILE=ojoin(TOPPATCHDIR, "queue")
 
 
 ALL_COMMANDS={\
-    "abort", "applied", "backup", "bashcompletion", "change-order", "commands",
-    "conflict", "continue", "delete", "doc", "edit", "export", "fold", "glog",
-    "goto", "help", "import", "init", "man", "new", "parent", "pop", "push",
-    "qname", "qrepo", "record", "refresh", "restore", "revert",
-    "show", "unapplied"} # type: ignore
+    "abort", "applied", "backup", "bashcompletion", "zshcompletion",
+    "change-order", "commands", "conflict", "continue", "delete",
+    "doc", "edit", "export", "fold", "glog", "goto", "help",
+    "import", "init", "man", "new", "parent", "pop", "push", "qname",
+    "qrepo", "record", "refresh", "restore", "revert", "show",
+    "unapplied"} # type: ignore
 
 # ---------------------------------------------------------
 # documentation functions
@@ -3044,7 +3091,7 @@ def process(args, rest):
             sys.exit(0)
         if args.help: # --help
             pydoc.pager(short_help_text("txt"))
-            check_bashcompletion()
+            check_shell_completion()
             return
         if not rest:
             git_gq_man()
@@ -3055,7 +3102,7 @@ def process(args, rest):
 
         if command in ("help", "man"):
             git_gq_man()
-            check_bashcompletion()
+            check_shell_completion()
             return
 
         if command=="commands":
@@ -3065,7 +3112,12 @@ def process(args, rest):
 
         if command=="bashcompletion":
             check_command_args(command, command_args, None, 0)
-            print(BASHCOMPLETION)
+            print(COMPLETION["bash"])
+            return
+
+        if command=="zshcompletion":
+            check_command_args(command, command_args, None, 0)
+            print(COMPLETION["zsh"])
             return
 
         if command=="doc":
@@ -3073,7 +3125,7 @@ def process(args, rest):
             lst= []
             print_doc(unpack_one(command_args), lst)
             pydoc.pager("\n".join(lst))
-            check_bashcompletion()
+            check_shell_completion()
             return
 
         git_goto_repo_dir()
