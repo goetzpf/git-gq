@@ -16,7 +16,7 @@ index abcdef0..abcdef1 abcdef3
 @@ -1 +1,2 @@
 This is an improved README file.
 +This file will describe my project.
-(1/1) Stage this hunk [y,n,q,a,d,e,p,?]?
+(1/1) Stage this hunk [y,n,q,a,d,e,p,P,?]?
 [master abcdef0] README-second-change
 1 file changed, 1 insertion(+)
 
