@@ -2661,7 +2661,10 @@ def git_gq_backup(message):
     git_add(os.listdir(TOPPATCHDIR), TOPPATCHDIR)
     if message is None:
         message=f"backup {portable_isodate()}"
-    git_commit(message, TOPPATCHDIR)
+    try:
+        git_commit(message, TOPPATCHDIR)
+    except IOError as e:
+        raise GitGqException(str(e)) from None
 
 def git_gq_qrepo(command_args):
     """run git command in .gqpatches.
