@@ -20,12 +20,6 @@ if ! cd "$MYDIR"; then
     exit 1
 fi
 
-if echo "$MYDIR" | grep -q '^/usr'; then
-    etcdir="/etc/profile.d"
-else
-    etcdir="$TOPDIR/profile.d"
-fi
-
 if basename "$(pwd)" != "bin"; then
     echo "Error, script not installed in 'bin' sub-directory, cannot continue" >&2
     exit 1
@@ -47,7 +41,6 @@ fi
 
 rm "$TOPDIR/bin/git-gq"
 rm "$TOPDIR/bin/git-gq-uninstall.sh"
-rm "$etcdir/git-gq.sh"
 rm "$TOPDIR/share/man/man1/git-gq.1"
 rm -rf "$TOPDIR/share/git-gq"
 

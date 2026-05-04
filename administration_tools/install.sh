@@ -14,7 +14,7 @@ if [ "$1" = "-h" ] || [ "$1" = "--help" ]; then
     echo
     echo "DIRECTORY:"
     echo "  if given, install in DIRECTORY/bin"
-    echo "  if not given, install in /us/local/bin"
+    echo "  if not given, install in /usr/local/bin"
     echo "OPTIONS may be:"
     echo
     echo "   -h --help: This help"
@@ -32,18 +32,11 @@ if [ -z "$TOPDIR" ]; then
     TOPDIR="$GLOBAL_DIR"
 fi
 
-if echo "$TOPDIR" | grep -q '^/usr'; then
-    etcdir="/etc/profile.d"
-else
-    etcdir="$TOPDIR/profile.d"
-fi
-
 if ! install -D bin/git-gq -t "$TOPDIR/bin"; then
     echo "Cannot install, maybe you should use 'sudo' ?" >&2
     exit 1
 fi
 install -D git-gq-uninstall.sh -t "$TOPDIR/bin"
-install -D profile.d/git-gq.sh -t "$etcdir"
 install -D -m 644 man/man1/git-gq.1 -t "$TOPDIR/man/man1"
 install -D -d doc "$TOPDIR/share/git-gq"
 cp -a doc/* "$TOPDIR/share/git-gq"
@@ -52,15 +45,15 @@ chmod a+r "$TOPDIR/share/git-gq"
 echo "git-gq was installed in the following directories:"
 echo "    $TOPDIR/bin"
 echo "    $TOPDIR/man/man1"
-echo "    $etcdir"
 echo "    $TOPDIR/share/git-gq"
 echo
 echo
 echo "Final notes:"
 echo "Directory $TOPDIR/bin should be in your PATH."
-echo "To have command completion, add this line to your .bashrc file:"
+echo "To have bash completion, add this line to your .bashrc file for bash or"
+echo ".zshrc file for zsh:"
 echo
-echo "source $TOPDIR/profile.d/git-gq.sh"
+echo 'eval "$(git-gq completion)"'
 echo
 echo "To find the man page do:"
 echo

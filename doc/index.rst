@@ -31,7 +31,7 @@ other built-in git subcommand like in::
 
   git gq COMMAND OPTIONS
 
-With it's bash
+With it's bash or zsh
 `command completion <https://en.wikipedia.org/wiki/Command-line_completion>`_ 
 support you can always just enter the first letters of your COMMAND and press
 <TAB> to show all possible completions.
