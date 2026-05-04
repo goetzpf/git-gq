@@ -1,20 +1,21 @@
+
+
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" data-content_root="./">
 <head>
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Command line interface &mdash; git-gq 2.1 documentation</title>
-      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
-      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=330c1f8c" />
+  <title>Command line interface &mdash; git-gq 2.2 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=7a5cd723" />
 
   
-  
-        <script src="_static/jquery.js?v=5d32c60e"></script>
-        <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-        <script src="_static/documentation_options.js?v=c4a36953"></script>
-        <script src="_static/doctools.js?v=9a2dae69"></script>
-        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=f35be339"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -33,9 +34,6 @@
           <a href="index.html" class="icon icon-home">
             git-gq
           </a>
-              <div class="version">
-                2.1
-              </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
     <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
@@ -80,7 +78,7 @@
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Command line interface</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#documentation-conventions">Documentation conventions</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#help-and-documentation">Help and documentation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#bash-completion-commands">Bash completion commands</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#shell-completion-commands">Shell completion commands</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#queue-management-commands">Queue management commands</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#patch-management-commands">Patch management commands</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#miscellaneous-commands">Miscellaneous commands</a></li>
@@ -150,18 +148,19 @@
 </dl>
 </div></blockquote>
 </section>
-<section id="bash-completion-commands">
-<h2>Bash completion commands<a class="headerlink" href="#bash-completion-commands" title="Link to this heading"></a></h2>
+<section id="shell-completion-commands">
+<h2>Shell completion commands<a class="headerlink" href="#shell-completion-commands" title="Link to this heading"></a></h2>
 <blockquote>
 <div><dl class="simple">
 <dt>commands</dt><dd><p>List all known commands on the console</p>
 </dd>
 </dl>
-<p>bashcompletion</p>
+<p>bashcompletion / zshcompletion</p>
 <blockquote>
-<div><p>Prints a text that, if you add it to your bash configuration in
-$HOME/.bashrc, adds bash completion. This means that you get a list of
-possible commands when you type &lt;TAB&gt;, e.g.:</p>
+<div><p>Prints a text that, if you add it to your shell configuration, adds bash
+completion. ‘bashcompletion’ prints the completion function for bash, ‘zshcompletion’ prints
+it for zsh. Completion means that you get a list of possible commands when you
+type &lt;TAB&gt;, e.g.:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">git</span> <span class="n">gq</span> <span class="n">a</span><span class="o">&lt;</span><span class="n">TAB</span><span class="o">&gt;</span>
 </pre></div>
 </div>
@@ -175,8 +174,12 @@ matching command, you command line is completed, e.g:</p>
 </pre></div>
 </div>
 <p>This can save you many keystrokes and makes using this tool easier.</p>
-<p>Example how to install completion:</p>
+<p>Example how to install completion for bash:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>git gq bashcompletion &gt;&gt; $HOME/.bashrc
+</pre></div>
+</div>
+<p>Example how to install completion for zsh:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>git gq zshcompletion &gt;&gt; $HOME/.zshrc
 </pre></div>
 </div>
 </div></blockquote>

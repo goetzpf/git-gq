@@ -23,17 +23,18 @@ Help and documentation
   man
     Show man page.
 
-Bash completion commands
-++++++++++++++++++++++++
+Shell completion commands
++++++++++++++++++++++++++
 
   commands       
     List all known commands on the console
 
-  bashcompletion
+  bashcompletion / zshcompletion
 
-    Prints a text that, if you add it to your bash configuration in
-    $HOME/.bashrc, adds bash completion. This means that you get a list of
-    possible commands when you type <TAB>, e.g.::
+    Prints a text that, if you add it to your shell configuration, adds bash
+    completion. 'bashcompletion' prints the completion function for bash, 'zshcompletion' prints
+    it for zsh. Completion means that you get a list of possible commands when you
+    type <TAB>, e.g.::
 
       git gq a<TAB>
 
@@ -48,9 +49,13 @@ Bash completion commands
 
     This can save you many keystrokes and makes using this tool easier.
 
-    Example how to install completion::
+    Example how to install completion for bash::
 
       git gq bashcompletion >> $HOME/.bashrc
+
+    Example how to install completion for zsh::
+
+      git gq zshcompletion >> $HOME/.zshrc
 
 Queue management commands
 +++++++++++++++++++++++++
