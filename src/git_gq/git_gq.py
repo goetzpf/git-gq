@@ -116,12 +116,11 @@ Shell completion commands
   commands       
     List all known commands on the console
 
-  bashcompletion / zshcompletion
+  completion
 
-    Prints a text that, if you add it to your shell configuration, adds bash
-    completion. 'bashcompletion' prints the completion function for bash, 'zshcompletion' prints
-    it for zsh. Completion means that you get a list of possible commands when you
-    type <TAB>, e.g.::
+    Prints a text that, if you add it to your shell configuration, adds command
+    completion. Completion means that you get a list of possible commands when
+    you type <TAB>, e.g.::
 
       git gq a<TAB>
 
@@ -138,11 +137,11 @@ Shell completion commands
 
     Example how to install completion for bash::
 
-      git gq bashcompletion >> $HOME/.bashrc
+      git gq completion >> $HOME/.bashrc
 
     Example how to install completion for zsh::
 
-      git gq zshcompletion >> $HOME/.zshrc
+      git gq completion >> $HOME/.zshrc
 
 Queue management commands
 +++++++++++++++++++++++++
@@ -3110,14 +3109,12 @@ def process(args, rest):
             print("\n".join(sorted(ALL_COMMANDS)))
             return
 
-        if command=="bashcompletion":
+        if command=="completion":
             check_command_args(command, command_args, None, 0)
-            print(COMPLETION["bash"])
-            return
-
-        if command=="zshcompletion":
-            check_command_args(command, command_args, None, 0)
-            print(COMPLETION["zsh"])
+            shell= get_shell_type()
+            if shell is None:
+                raise GitGqException("unsupported shell")
+            print(COMPLETION[shell])
             return
 
         if command=="doc":
