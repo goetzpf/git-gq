@@ -32,7 +32,7 @@ $GIT_GQ backup 2>&1 | filter_pwd | filter_isodate_any | filter_squarebracket_end
 echo
 echo "Created backup:"
 echo "\$ git gq qrepo log -- --oneline | cat"
-$GIT_GQ qrepo log -- --oneline | filter_isodate | filter_linestart_hash
+$GIT_GQ qrepo log -- --oneline | filter_isodate_any | filter_linestart_hash
 
 echo
 echo "Now create an extra, new file, 'NEW_FILE':"

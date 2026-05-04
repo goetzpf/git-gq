@@ -26,7 +26,7 @@ create mode 100644 queue
 
 Created backup:
 $ git gq qrepo log -- --oneline | cat
-abcdef0 backup 2025-2001-12-31T091234
+abcdef0 backup 2001-12-31T091234
 
 Now create an extra, new file, 'NEW_FILE':
 $ git add NEW_FILE
