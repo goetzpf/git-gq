@@ -6,14 +6,14 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Command line interface &mdash; git-gq 2.2 documentation</title>
+  <title>Command line interface &mdash; git-gq 2.2.1 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=7a5cd723" />
 
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=f35be339"></script>
+      <script src="_static/documentation_options.js?v=16656018"></script>
       <script src="_static/doctools.js?v=9bcbadda"></script>
       <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/js/theme.js"></script>
@@ -155,12 +155,11 @@
 <dt>commands</dt><dd><p>List all known commands on the console</p>
 </dd>
 </dl>
-<p>bashcompletion / zshcompletion</p>
+<p>completion</p>
 <blockquote>
-<div><p>Prints a text that, if you add it to your shell configuration, adds bash
-completion. ‘bashcompletion’ prints the completion function for bash, ‘zshcompletion’ prints
-it for zsh. Completion means that you get a list of possible commands when you
-type &lt;TAB&gt;, e.g.:</p>
+<div><p>Prints a text that, if you add it to your shell configuration, adds command
+completion. Completion means that you get a list of possible commands when
+you type &lt;TAB&gt;, e.g.:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">git</span> <span class="n">gq</span> <span class="n">a</span><span class="o">&lt;</span><span class="n">TAB</span><span class="o">&gt;</span>
 </pre></div>
 </div>
@@ -175,11 +174,11 @@ matching command, you command line is completed, e.g:</p>
 </div>
 <p>This can save you many keystrokes and makes using this tool easier.</p>
 <p>Example how to install completion for bash:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>git gq bashcompletion &gt;&gt; $HOME/.bashrc
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>git gq completion &gt;&gt; $HOME/.bashrc
 </pre></div>
 </div>
 <p>Example how to install completion for zsh:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>git gq zshcompletion &gt;&gt; $HOME/.zshrc
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>git gq completion &gt;&gt; $HOME/.zshrc
 </pre></div>
 </div>
 </div></blockquote>

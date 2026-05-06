@@ -6,14 +6,14 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>How to install git-gq &mdash; git-gq 2.2 documentation</title>
+  <title>How to install git-gq &mdash; git-gq 2.2.1 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=7a5cd723" />
 
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=f35be339"></script>
+      <script src="_static/documentation_options.js?v=16656018"></script>
       <script src="_static/doctools.js?v=9bcbadda"></script>
       <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/js/theme.js"></script>
@@ -172,9 +172,9 @@ name):</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>PATH=DIRECTORY/bin:$PATH
 </pre></div>
 </div>
-<p>To have bash completion, add this line to your <cite>$HOME/.bashrc</cite> file (replace
-‘DIRECTORY’ with the actual directory name):</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">source</span> <span class="n">DIRECTORY</span><span class="o">/</span><span class="n">profile</span><span class="o">.</span><span class="n">d</span><span class="o">/</span><span class="n">git</span><span class="o">-</span><span class="n">gq</span><span class="o">.</span><span class="n">sh</span>
+<p>To have bash completion, add this line to your <cite>$HOME/.bashrc</cite> for bash or
+<cite>$HOME/.zshrc</cite> for zsh:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nb">eval</span> <span class="s2">&quot;$(git-gq completion)&quot;</span>
 </pre></div>
 </div>
 </section>

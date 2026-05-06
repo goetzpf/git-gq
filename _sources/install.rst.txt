@@ -53,10 +53,10 @@ name)::
 
   PATH=DIRECTORY/bin:$PATH
 
-To have bash completion, add this line to your `$HOME/.bashrc` file (replace
-'DIRECTORY' with the actual directory name)::
+To have bash completion, add this line to your `$HOME/.bashrc` for bash or
+`$HOME/.zshrc` for zsh::
 
-  source DIRECTORY/profile.d/git-gq.sh
+  eval "$(git-gq completion)"
 
 How to uninstall
 ++++++++++++++++
