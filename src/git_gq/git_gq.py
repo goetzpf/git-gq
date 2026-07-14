@@ -278,6 +278,8 @@ Miscellaneous commands
 
   glog
     Graphical log, display all commits and branches as a tree on the console.
+    To see changed files use this with option '--stat'. To see the patches use
+    with option '--patch'.
 
 OPTIONS
 +++++++
@@ -1614,9 +1616,14 @@ def git_head_tags():
                      env= None, verbose= gbl_verbose, dry_run= gbl_dry_run)
     return out.splitlines()
 
-def git_glog():
+def git_glog(stat, patch):
     """git graphlog."""
-    system_simple(("git", "log", "--graph", "--all", "--decorate"))
+    cmd_list= ["git", "log", "--graph", "--all", "--decorate"]
+    if stat:
+        cmd_list.append("--stat")
+    if patch:
+        cmd_list.append("--patch")
+    system_simple(cmd_list)
 
 def git_add(filelist, dir_=None):
     """add a list of files to git.+
@@ -3135,7 +3142,7 @@ def process(args, rest):
 
         if command=="glog":
             check_command_args(command, command_args, None, 0)
-            git_glog()
+            git_glog(args.stat, args.patch)
             return
 
         if command=="restore":
@@ -3367,6 +3374,15 @@ def main():
                         action="store_true",
                         help="For ``git gq revert``, move the current branch "
                              "name to the new created branch.",
+                       )
+    parser.add_argument("--stat",
+                        action="store_true",
+                        help="For `git gq glog``, show which files were "
+                             "changed.",
+                       )
+    parser.add_argument("-p", "--patch",
+                        action="store_true",
+                        help="For `git gq glog``, show the patches, too.",
                        )
     parser.add_argument("--exception",
                         action="store_true",
