@@ -1623,7 +1623,14 @@ def git_glog(stat, patch):
         cmd_list.append("--stat")
     if patch:
         cmd_list.append("--patch")
-    system_simple(cmd_list)
+    try:
+        system_simple(cmd_list)
+    except IOError as e:
+         # Check if it was just the user quitting the pager
+        if e.errno in (-13, 141):
+            pass
+        else:
+            raise
 
 def git_add(filelist, dir_=None):
     """add a list of files to git.+
