@@ -2408,13 +2408,27 @@ def qpop_check(force):
     GitGqException
     """
 
+    rc= None
     git_head_track_error()
     # may raise GitGqException:
     check_uncomitted("pop", force)
     tags= None
     # pylint: disable= global-statement
     global gbl_tag_warning
-    if gbl_tag_warning:
+    # may raise GitGqException:
+    (parent_hash, parent)= get_parent(exist_test= True, use_exception= True)
+    if parent=="NULL":
+        # with PARENT==NULL, qpop is always allowed unless we are at the NULL
+        # revision:
+        rc= not at_null_revision()
+    else:
+        head_rev= git_head_revision()
+        # pop is allowed when we are not at the parent revision:
+        rc= parent_hash != head_rev
+    # check for tags:
+    tags= None
+    if gbl_tag_warning and rc:
+        # check for tags only if 'git gq pop' is allowed:
         tags= git_head_tags()
     if tags:
         print(f"Warning: The HEAD revision has the tag(s) {tags!r}")
@@ -2427,18 +2441,7 @@ def qpop_check(force):
             raise GitGqException("user abort")
         # Warn only a single time (relevant for 'git gq pop -a')
         gbl_tag_warning= False
-    # may raise GitGqException:
-    (parent_hash, parent)= get_parent(exist_test= True, use_exception= True)
-    if parent=="NULL":
-        # with PARENT==NULL, qpop is always allowed
-        if at_null_revision():
-            # NULL revision reached
-            return False
-        return True
-    head_rev= git_head_revision()
-    if parent_hash == head_rev:
-        return False
-    return True
+    return rc
 
 def qpop_one():
     """a single qpop operation."""
