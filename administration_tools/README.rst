@@ -1,6 +1,13 @@
 git-gq administration scripts
 =============================
 
+Run the tests
+-------------
+
+Enter::
+
+  (cd ../test && make clean -sj && make -sj)
+
 How to create a new release
 ---------------------------
 
@@ -32,7 +39,7 @@ Upload documentation to github
 
 Run::
 
-  github-upload-html.sh
+  ./github-upload-html.sh
 
 and follwow the instructions printed on the console.
 
