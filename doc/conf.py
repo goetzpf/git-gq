@@ -7,7 +7,7 @@
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = 'git-gq'
-copyright = '2025, Goetz Pfeiffer <goetzpf@googlemail.com>'
+copyright = '2026, Goetz Pfeiffer <goetzpf@googlemail.com>'
 author = 'Goetz Pfeiffer <goetzpf@googlemail.com>'
 version = '2.2.1' #VERSION#
 release = version

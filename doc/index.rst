@@ -112,7 +112,7 @@ Indices and tables
 License and copyright
 ---------------------
 
-Copyright (c) 2025 by Goetz Pfeiffer <goetzpf@googlemail.com>
+Copyright (c) 2026 by Goetz Pfeiffer <goetzpf@googlemail.com>
 
 This software of this project can be used under GPL v.3, see :doc:`license`.
 
