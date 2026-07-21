@@ -56,5 +56,5 @@ mkdir -p "$SRCDIR/man/man1"
 $GIT_GQ doc | rst2man > "$SRCDIR"/man/man1/git-gq.1
 
 mkdir -p "$SRCDIR/profile_d"
-$GIT_GQ bashcompletion > "$SRCDIR"/profile_d/git-gq.sh
+$GIT_GQ completion > "$SRCDIR"/profile_d/git-gq.sh
 

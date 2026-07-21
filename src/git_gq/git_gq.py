@@ -852,10 +852,8 @@ def check_shell_completion():
     cfunc= COMPLETION_FUNC[shell]
     if shell_function_defined(cfunc):
         return
-    if shell=="bash":
-        cmd= "git gq bashcompletion >> $HOME/.bashrc"
-    elif shell=="zsh":
-        cmd= "git gq zshcompletion >> $HOME/.zshrc"
+    if shell in ("bash", "zsh"):
+        cmd= "git gq completion >> $HOME/.bashrc"
     else:
         raise AssertionError
     errprint(f"Note: You can install bash completion on your system with:\n"
@@ -1159,11 +1157,10 @@ QUEUEFILE=ojoin(TOPPATCHDIR, "queue")
 
 
 ALL_COMMANDS={\
-    "abort", "applied", "backup", "bashcompletion", "zshcompletion",
-    "change-order", "commands", "conflict", "continue", "delete",
-    "doc", "edit", "export", "fold", "glog", "goto", "help",
-    "import", "init", "man", "new", "parent", "pop", "push", "qname",
-    "qrepo", "record", "refresh", "restore", "revert", "show",
+    "abort", "applied", "backup", "change-order", "commands", "completion",
+    "conflict", "continue", "delete", "doc", "edit", "export", "fold", "glog",
+    "goto", "help", "import", "init", "man", "new", "parent", "pop", "push",
+    "qname", "qrepo", "record", "refresh", "restore", "revert", "show",
     "unapplied"} # type: ignore
 
 # ---------------------------------------------------------

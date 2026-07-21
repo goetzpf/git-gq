@@ -21,6 +21,6 @@ fi
 mkdir -p "$MYDIR/../bin"
 (cd $MYDIR/../bin && ln -s ../src/git_gq/git_gq.py git-gq)
 PATH="$(readlink -e "$MYDIR/../bin"):$PATH"
-eval "$(git-gq bashcompletion)"
+eval "$(git-gq completion)"
 MYPS="$PS1"
 export PS1="gitgq $MYPS"
