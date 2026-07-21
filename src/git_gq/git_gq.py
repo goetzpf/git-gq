@@ -832,9 +832,9 @@ def shell_function_defined(funcname):
     if shell=="bash":
         cmd= ["bash", "-i", "-c", f"declare -F {funcname}"]
     elif shell=="zsh":
-        cmd= ["type", "-f", funcname]
+        cmd= ["zsh", "-c", f"whence -f {funcname}"]
     else:
-        raise AssertionError
+        raise AssertionError(f"shell not supported: {shell!r}")
 
     try:
         subprocess.check_output(cmd, stderr=subprocess.DEVNULL, text=True)
@@ -844,7 +844,7 @@ def shell_function_defined(funcname):
     return False
 
 def check_shell_completion():
-    """Print message when bash or zsh are sed and completion is not installed.
+    """Print message when bash or zsh are used and completion is not installed.
     """
     shell= get_shell_type()
     if not shell: # unknown shell
@@ -852,11 +852,14 @@ def check_shell_completion():
     cfunc= COMPLETION_FUNC[shell]
     if shell_function_defined(cfunc):
         return
-    if shell in ("bash", "zsh"):
+    if shell == "bash":
         cmd= "git gq completion >> $HOME/.bashrc"
+    elif shell in "zsh":
+        cmd= "git gq completion >> $HOME/.zshrc"
     else:
-        raise AssertionError
-    errprint(f"Note: You can install bash completion on your system with:\n"
+        # quietly return, some kind of unsupported shell
+        return
+    errprint(f"\nNote: You can install bash completion on your system with:\n"
              f"  {cmd}\n"
              f"See also:\n"
              f"  {HOMEPAGE}\n"
