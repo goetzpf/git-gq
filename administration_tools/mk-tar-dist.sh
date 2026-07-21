@@ -49,6 +49,7 @@ mkdir -p "$DISTPATH/bin"
 cp -a $GIT_GQ "$DISTPATH/bin/git-gq"
 mkdir -p "$DISTPATH"/man/man1
 python $GIT_GQ doc | rst2man > "$DISTPATH"/man/man1/git-gq.1
+echo "# Dummy for Python 3.9 bug in importlib.resources.files()" > "$DISTPATH"/man/man1/__init__.py
 cp "$MYDIR/install.sh" "$DISTPATH"
 cp "$MYDIR/git-gq-uninstall.sh" "$DISTPATH"
 cp -a doc/_build/html "$DISTPATH/doc"

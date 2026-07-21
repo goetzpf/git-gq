@@ -54,6 +54,7 @@ cp -a _build/html/* "$SRCDIR/doc/html"
 
 mkdir -p "$SRCDIR/man/man1"
 $GIT_GQ doc | rst2man > "$SRCDIR"/man/man1/git-gq.1
+echo "# Dummy for Python 3.9 bug in importlib.resources.files()" > "$SRCDIR"/man/man1/__init__.py
 
 mkdir -p "$SRCDIR/profile_d"
 $GIT_GQ completion > "$SRCDIR"/profile_d/git-gq.sh
